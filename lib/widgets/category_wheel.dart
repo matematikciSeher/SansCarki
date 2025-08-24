@@ -18,7 +18,8 @@ class CategoryWheel extends StatefulWidget {
   State<CategoryWheel> createState() => _CategoryWheelState();
 }
 
-class _CategoryWheelState extends State<CategoryWheel> with TickerProviderStateMixin {
+class _CategoryWheelState extends State<CategoryWheel>
+    with TickerProviderStateMixin {
   late AnimationController _bounceController;
   late AnimationController _glowController;
   late Animation<double> _bounceAnimation;
@@ -67,14 +68,19 @@ class _CategoryWheelState extends State<CategoryWheel> with TickerProviderStateM
       _isSpinning = true;
     });
 
-    final categories = CategoryData.getAllCategories();
-    _currentSelectedIndex = DateTime.now().millisecondsSinceEpoch % categories.length;
+    final baseCategories = CategoryData.getAllCategories();
+    final categories =
+        CategoryData.getAllCategories(); // Sadece 12 kategori, tekrar yok
+    _currentSelectedIndex =
+        DateTime.now().millisecondsSinceEpoch % categories.length;
     _selectedController.add(_currentSelectedIndex);
   }
 
   @override
   Widget build(BuildContext context) {
-    final categories = CategoryData.getAllCategories();
+    final baseCategories = CategoryData.getAllCategories();
+    final categories =
+        CategoryData.getAllCategories(); // Sadece 12 kategori, tekrar yok
 
     return Column(
       children: [
@@ -136,8 +142,11 @@ class _CategoryWheelState extends State<CategoryWheel> with TickerProviderStateM
                         _isSpinning = false;
                       });
                       final categories = CategoryData.getAllCategories();
-                      widget.onCategorySelected(categories[_currentSelectedIndex]);
-                      _bounceController.forward().then((_) => _bounceController.reverse());
+                      widget.onCategorySelected(
+                          categories[_currentSelectedIndex]);
+                      _bounceController
+                          .forward()
+                          .then((_) => _bounceController.reverse());
                     },
                     indicators: const <FortuneIndicator>[
                       FortuneIndicator(
@@ -154,24 +163,30 @@ class _CategoryWheelState extends State<CategoryWheel> with TickerProviderStateM
                             borderWidth: 2,
                             textAlign: TextAlign.center,
                           ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(category.emoji, style: const TextStyle(fontSize: 24)),
-                              const SizedBox(height: 6),
-                              Text(
-                                category.name,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                  shadows: [
-                                    Shadow(color: Colors.black, offset: Offset(1, 1), blurRadius: 2),
-                                  ],
+                              Text(category.emoji,
+                                  style: const TextStyle(fontSize: 20)),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  category.name,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    shadows: [
+                                      Shadow(
+                                          color: Colors.black,
+                                          offset: Offset(1, 1),
+                                          blurRadius: 2),
+                                    ],
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
@@ -189,7 +204,7 @@ class _CategoryWheelState extends State<CategoryWheel> with TickerProviderStateM
               curve: Curves.elasticOut,
             ),
 
-        const SizedBox(height: 40),
+        const SizedBox(height: 20),
 
         // Spin butonu
         Container(
@@ -258,53 +273,14 @@ class _CategoryWheelState extends State<CategoryWheel> with TickerProviderStateM
               ],
             ),
           ),
-        ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.5, duration: 700.ms, curve: Curves.easeOutBack),
+        )
+            .animate()
+            .fadeIn(delay: 400.ms)
+            .slideY(begin: 0.5, duration: 700.ms, curve: Curves.easeOutBack),
 
-        const SizedBox(height: 25),
+        const SizedBox(height: 5),
 
         // Bilgi kartı
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-          decoration: BoxDecoration(
-            color: widget.canSpin ? Colors.blue.withValues(alpha: 0.1) : Colors.grey.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: widget.canSpin ? Colors.blue.withValues(alpha: 0.3) : Colors.grey.withValues(alpha: 0.3),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: (widget.canSpin ? Colors.blue : Colors.grey).withValues(alpha: 0.1),
-                blurRadius: 10,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                widget.canSpin ? Icons.category : Icons.schedule,
-                color: widget.canSpin ? Colors.blue : Colors.grey,
-                size: 20,
-              ),
-              const SizedBox(width: 10),
-              Flexible(
-                child: Text(
-                  widget.canSpin
-                      ? 'Önce bir kategori seç, sonra görev çarkını çevir! 🎯'
-                      : 'Bugün kategori seçimi yapıldı! Yarın tekrar dene! ⏰',
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: widget.canSpin ? Colors.blue : Colors.grey,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ],
-          ),
-        ).animate().fadeIn(delay: 700.ms).slideY(begin: 0.3, duration: 600.ms, curve: Curves.easeOutBack),
       ],
     );
   }

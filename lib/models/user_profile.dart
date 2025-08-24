@@ -8,6 +8,27 @@ class UserProfile {
   final List<String> badges;
   final Map<String, int> categoryStats;
 
+  // Quiz sistemi için yeni alanlar
+  final int? highestQuizScore;
+  final int? fastestQuizTime;
+  final double? quizAccuracy;
+  final int? totalQuizzes;
+  final int? correctQuizAnswers;
+  final int? averageQuizTime;
+  final int? totalQuizPoints;
+
+  // Avatar sistemi için yeni alanlar
+  final int avatarLevel;
+  final int intelligencePoints; // Zeka puanı (Matematik)
+  final int strengthPoints; // Güç puanı (Spor)
+  final int wisdomPoints; // Bilgelik puanı (Okuma)
+  final int creativityPoints; // Yaratıcılık puanı (Sanat)
+  final int socialPoints; // Sosyal puanı (İyilik)
+  final int techPoints; // Teknoloji puanı
+  final List<String> unlockedItems; // Açılan kıyafet/aksesuarlar
+  final List<String> unlockedAbilities; // Açılan yetenekler
+  final List<String> solvedQuestionIds;
+
   UserProfile({
     this.points = 0,
     this.completedTasks = 0,
@@ -15,9 +36,41 @@ class UserProfile {
     DateTime? lastSpinDate,
     List<String>? badges,
     Map<String, int>? categoryStats,
+    this.highestQuizScore,
+    this.fastestQuizTime,
+    this.quizAccuracy,
+    this.totalQuizzes,
+    this.correctQuizAnswers,
+    this.averageQuizTime,
+    this.totalQuizPoints,
+    this.avatarLevel = 1,
+    this.intelligencePoints = 0,
+    this.strengthPoints = 0,
+    this.wisdomPoints = 0,
+    this.creativityPoints = 0,
+    this.socialPoints = 0,
+    this.techPoints = 0,
+    List<String>? unlockedItems,
+    List<String>? unlockedAbilities,
+    List<String>? solvedQuestionIds,
   })  : lastSpinDate = lastSpinDate ?? DateTime.now(),
         badges = badges ?? [],
-        categoryStats = categoryStats ?? {};
+        categoryStats = categoryStats ?? {},
+        unlockedItems = unlockedItems ?? [],
+        unlockedAbilities = unlockedAbilities ?? [],
+        solvedQuestionIds = solvedQuestionIds ?? [];
+
+  // Toplam puanları hesapla
+  int get totalAllPoints => points + (totalQuizPoints ?? 0);
+
+  // Avatar için toplam deneyim puanı
+  int get totalAvatarExperience =>
+      intelligencePoints +
+      strengthPoints +
+      wisdomPoints +
+      creativityPoints +
+      socialPoints +
+      techPoints;
 
   UserProfile copyWith({
     int? points,
@@ -26,6 +79,23 @@ class UserProfile {
     DateTime? lastSpinDate,
     List<String>? badges,
     Map<String, int>? categoryStats,
+    int? highestQuizScore,
+    int? fastestQuizTime,
+    double? quizAccuracy,
+    int? totalQuizzes,
+    int? correctQuizAnswers,
+    int? averageQuizTime,
+    int? totalQuizPoints,
+    int? avatarLevel,
+    int? intelligencePoints,
+    int? strengthPoints,
+    int? wisdomPoints,
+    int? creativityPoints,
+    int? socialPoints,
+    int? techPoints,
+    List<String>? unlockedItems,
+    List<String>? unlockedAbilities,
+    List<String>? solvedQuestionIds,
   }) {
     return UserProfile(
       points: points ?? this.points,
@@ -34,6 +104,23 @@ class UserProfile {
       lastSpinDate: lastSpinDate ?? this.lastSpinDate,
       badges: badges ?? this.badges,
       categoryStats: categoryStats ?? this.categoryStats,
+      highestQuizScore: highestQuizScore ?? this.highestQuizScore,
+      fastestQuizTime: fastestQuizTime ?? this.fastestQuizTime,
+      quizAccuracy: quizAccuracy ?? this.quizAccuracy,
+      totalQuizzes: totalQuizzes ?? this.totalQuizzes,
+      correctQuizAnswers: correctQuizAnswers ?? this.correctQuizAnswers,
+      averageQuizTime: averageQuizTime ?? this.averageQuizTime,
+      totalQuizPoints: totalQuizPoints ?? this.totalQuizPoints,
+      avatarLevel: avatarLevel ?? this.avatarLevel,
+      intelligencePoints: intelligencePoints ?? this.intelligencePoints,
+      strengthPoints: strengthPoints ?? this.strengthPoints,
+      wisdomPoints: wisdomPoints ?? this.wisdomPoints,
+      creativityPoints: creativityPoints ?? this.creativityPoints,
+      socialPoints: socialPoints ?? this.socialPoints,
+      techPoints: techPoints ?? this.techPoints,
+      unlockedItems: unlockedItems ?? this.unlockedItems,
+      unlockedAbilities: unlockedAbilities ?? this.unlockedAbilities,
+      solvedQuestionIds: solvedQuestionIds ?? this.solvedQuestionIds,
     );
   }
 
@@ -45,6 +132,23 @@ class UserProfile {
       'lastSpinDate': lastSpinDate.toIso8601String(),
       'badges': badges,
       'categoryStats': categoryStats,
+      'highestQuizScore': highestQuizScore,
+      'fastestQuizTime': fastestQuizTime,
+      'quizAccuracy': quizAccuracy,
+      'totalQuizzes': totalQuizzes,
+      'correctQuizAnswers': correctQuizAnswers,
+      'averageQuizTime': averageQuizTime,
+      'totalQuizPoints': totalQuizPoints,
+      'avatarLevel': avatarLevel,
+      'intelligencePoints': intelligencePoints,
+      'strengthPoints': strengthPoints,
+      'wisdomPoints': wisdomPoints,
+      'creativityPoints': creativityPoints,
+      'socialPoints': socialPoints,
+      'techPoints': techPoints,
+      'unlockedItems': unlockedItems,
+      'unlockedAbilities': unlockedAbilities,
+      'solvedQuestionIds': solvedQuestionIds,
     };
   }
 
@@ -58,12 +162,30 @@ class UserProfile {
           : DateTime.now(),
       badges: List<String>.from(json['badges'] ?? []),
       categoryStats: Map<String, int>.from(json['categoryStats'] ?? {}),
+      highestQuizScore: json['highestQuizScore'],
+      fastestQuizTime: json['fastestQuizTime'],
+      quizAccuracy: json['quizAccuracy']?.toDouble(),
+      totalQuizzes: json['totalQuizzes'],
+      correctQuizAnswers: json['correctQuizAnswers'],
+      averageQuizTime: json['averageQuizTime'],
+      totalQuizPoints: json['totalQuizPoints'],
+      avatarLevel: json['avatarLevel'] ?? 1,
+      intelligencePoints: json['intelligencePoints'] ?? 0,
+      strengthPoints: json['strengthPoints'] ?? 0,
+      wisdomPoints: json['wisdomPoints'] ?? 0,
+      creativityPoints: json['creativityPoints'] ?? 0,
+      socialPoints: json['socialPoints'] ?? 0,
+      techPoints: json['techPoints'] ?? 0,
+      unlockedItems: List<String>.from(json['unlockedItems'] ?? []),
+      unlockedAbilities: List<String>.from(json['unlockedAbilities'] ?? []),
+      solvedQuestionIds: List<String>.from(json['solvedQuestionIds'] ?? []),
     );
   }
 
   bool get canSpinToday {
     final now = DateTime.now();
-    final lastSpin = DateTime(lastSpinDate.year, lastSpinDate.month, lastSpinDate.day);
+    final lastSpin =
+        DateTime(lastSpinDate.year, lastSpinDate.month, lastSpinDate.day);
     final today = DateTime(now.year, now.month, now.day);
     return lastSpin.isBefore(today);
   }

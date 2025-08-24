@@ -58,23 +58,58 @@ class TaskCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: task.category.color.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            task.category.displayName,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: task.category.color,
-                              fontWeight: FontWeight.w600,
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color:
+                                    task.category.color.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                task.category.displayName,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: task.category.color,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ),
-                          ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: task.difficulty.color
+                                    .withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    _getDifficultyEmoji(task.difficulty),
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${task.basePoints} puan',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: task.difficulty.color,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -142,9 +177,9 @@ class TaskCard extends StatelessWidget {
                       'Tamamlandı: ${_formatDate(task.completedAt!)}',
                       style: TextStyle(
                         fontSize: 12,
-                                               color: Colors.green.withValues(alpha: 0.7),
-                       fontWeight: FontWeight.w500,
-                     ),
+                        color: Colors.green.withValues(alpha: 0.7),
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ],
                 ),
@@ -168,6 +203,19 @@ class TaskCard extends StatelessWidget {
       return '${difference.inDays} gün önce';
     } else {
       return '${date.day}/${date.month}/${date.year}';
+    }
+  }
+
+  String _getDifficultyEmoji(TaskDifficulty difficulty) {
+    switch (difficulty) {
+      case TaskDifficulty.easy:
+        return '🟢';
+      case TaskDifficulty.medium:
+        return '🟡';
+      case TaskDifficulty.hard:
+        return '🟠';
+      case TaskDifficulty.expert:
+        return '🔴';
     }
   }
 }

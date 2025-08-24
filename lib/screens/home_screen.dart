@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'dart:math';
 import '../models/task.dart';
 import '../models/user_profile.dart';
 import '../models/category.dart';
+import '../models/badge.dart' as app_badge;
 import '../data/task_data.dart';
-import '../data/category_tasks.dart';
-import '../widgets/fortune_wheel.dart';
 import '../widgets/category_wheel.dart';
 import '../widgets/task_card.dart';
 import '../widgets/profile_page.dart';
+import 'quiz_arena_screen.dart';
+import 'game_selection_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -23,13 +25,18 @@ class _HomeScreenState extends State<HomeScreen> {
   UserProfile _profile = UserProfile();
   List<Task> _completedTasks = [];
   Category? _selectedCategory;
-  bool _showTaskWheel = false;
+  Task? _selectedTask;
 
   @override
   void initState() {
     super.initState();
     _loadProfile();
     _loadCompletedTasks();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   Future<void> _loadProfile() async {
@@ -51,48 +58,69 @@ class _HomeScreenState extends State<HomeScreen> {
     final prefs = await SharedPreferences.getInstance();
     final tasksJson = prefs.getStringList('completed_tasks') ?? [];
     setState(() {
-      _completedTasks = tasksJson
-          .map((json) => Task.fromJson(jsonDecode(json)))
-          .toList();
+      _completedTasks =
+          tasksJson.map((json) => Task.fromJson(jsonDecode(json))).toList();
     });
   }
 
   Future<void> _saveCompletedTasks() async {
     final prefs = await SharedPreferences.getInstance();
-    final tasksJson = _completedTasks
-        .map((task) => jsonEncode(task.toJson()))
-        .toList();
+    final tasksJson =
+        _completedTasks.map((task) => jsonEncode(task.toJson())).toList();
     await prefs.setStringList('completed_tasks', tasksJson);
   }
 
   void _onCategorySelected(Category category) {
-    setState(() {
-      _selectedCategory = category;
-      _showTaskWheel = true;
-    });
+    // Kategori seçildiğinde o kategoriden rastgele bir görev seç
+    List<Task> categoryTasks = [];
+    // Kategori ID'sine göre uygun görevleri seç
+    final allTasks = TaskData.getAllTasks();
+    categoryTasks = allTasks
+        .where(
+            (task) => task.category.toString().split('.').last == category.id)
+        .toList();
+    // Tamamlanan görevleri hariç tut
+    final completedIds = _completedTasks.map((t) => t.id).toSet();
+    final availableTasks =
+        categoryTasks.where((task) => !completedIds.contains(task.id)).toList();
+    if (availableTasks.isNotEmpty) {
+      final random = Random();
+      final randomTask = availableTasks[random.nextInt(availableTasks.length)];
+      setState(() {
+        _selectedCategory = category;
+        _selectedTask = randomTask;
+      });
+    } else {
+      setState(() {
+        _selectedCategory = category;
+        _selectedTask = null;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Bu kategoride yeni görev kalmadı!'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
-  void _onTaskSelected(Task task) {
-    // Görev seçildiğinde direkt tamamla
-    _completeTask(task);
+  void _completeTask([Task? specificTask]) {
+    final task = specificTask ?? _selectedTask;
+    if (task == null) return;
 
-    // Görev tamamlandıktan sonra kategori seçimine geri dön
-    setState(() {
-      _showTaskWheel = false;
-      _selectedCategory = null;
-    });
-  }
-
-  void _completeTask(Task task) {
     final completedTask = task.copyWith(
       isCompleted: true,
       completedAt: DateTime.now(),
     );
 
+    // Görev zorluğuna göre puan hesapla
+    int earnedPoints = task.basePoints;
+    String? specialBadge = task.specialBadge;
+
     setState(() {
       _completedTasks.insert(0, completedTask);
       _profile = _profile.copyWith(
-        points: _profile.points + 10,
+        points: _profile.points + earnedPoints,
         completedTasks: _profile.completedTasks + 1,
         streakDays: _profile.streakDays + 1,
         lastSpinDate: DateTime.now(),
@@ -113,68 +141,102 @@ class _HomeScreenState extends State<HomeScreen> {
     _saveCompletedTasks();
 
     // Başarı mesajı göster
+    String message = 'Görev tamamlandı! +$earnedPoints puan kazandın! 🎉';
+    if (specialBadge != null) {
+      message += '\nÖzel rozet kazandın! 🏆';
+    }
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
             const Icon(Icons.celebration, color: Colors.white),
             const SizedBox(width: 8),
-            Text('Görev tamamlandı! +10 puan kazandın! 🎉'),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(fontSize: 14),
+              ),
+            ),
           ],
         ),
         backgroundColor: Colors.green,
-        duration: const Duration(seconds: 3),
+        duration: const Duration(seconds: 4),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
+
+    // Sadece çark sayfasından tamamlanan görevler için kategori seçimine geri dön
+    if (specificTask == null) {
+      setState(() {
+        _selectedCategory = null;
+        _selectedTask = null;
+      });
+    }
+  }
+
+  void _spinAgain() {
+    if (_selectedCategory != null) {
+      _onCategorySelected(_selectedCategory!);
+    }
   }
 
   void _checkAndAddBadges() {
     final newBadges = <String>[];
     final currentBadges = Set<String>.from(_profile.badges);
+    final allBadges = app_badge.BadgeData.getAllBadges();
 
-    // İlk görev rozeti
-    if (_profile.completedTasks == 1) {
-      newBadges.add('🎯 İlk Görev');
-    }
+    // Kullanıcının görev geçmişi
+    final completed = _completedTasks;
+    final completedByCategory = <String, int>{};
+    final completedByDifficulty = <app_badge.BadgeTier, int>{};
+    final completedByDifficultyCount = <TaskDifficulty, int>{};
+    final completedCategories = <String>{};
 
-    // Seri gün rozetleri
-    if (_profile.streakDays == 7) {
-      newBadges.add('🔥 7 Gün Seri');
-    }
-    if (_profile.streakDays == 30) {
-      newBadges.add('🌟 30 Gün Seri');
-    }
-
-    // Puan rozetleri
-    if (_profile.points >= 100 && !currentBadges.contains('💎 100 Puan')) {
-      newBadges.add('💎 100 Puan');
-    }
-    if (_profile.points >= 500 && !currentBadges.contains('🏆 500 Puan')) {
-      newBadges.add('🏆 500 Puan');
-    }
-    if (_profile.points >= 1000 && !currentBadges.contains('👑 1000 Puan')) {
-      newBadges.add('👑 1000 Puan');
+    for (final task in completed) {
+      // Kategoriye göre say
+      final cat = task.category.toString().split('.').last;
+      completedByCategory[cat] = (completedByCategory[cat] ?? 0) + 1;
+      completedCategories.add(cat);
+      // Zorluk sayımı
+      completedByDifficultyCount[task.difficulty] =
+          (completedByDifficultyCount[task.difficulty] ?? 0) + 1;
     }
 
-    // Kategori rozetleri
-    final categoryStats = _profile.categoryStats;
-    if ((categoryStats[TaskCategory.creative.toString()] ?? 0) >= 5 &&
-        !currentBadges.contains('🎨 Yaratıcı')) {
-      newBadges.add('🎨 Yaratıcı');
-    }
-    if ((categoryStats[TaskCategory.active.toString()] ?? 0) >= 5 &&
-        !currentBadges.contains('💪 Aktif')) {
-      newBadges.add('💪 Aktif');
-    }
-    if ((categoryStats[TaskCategory.social.toString()] ?? 0) >= 5 &&
-        !currentBadges.contains('🤝 Sosyal')) {
-      newBadges.add('🤝 Sosyal');
-    }
-    if ((categoryStats[TaskCategory.challenge.toString()] ?? 0) >= 5 &&
-        !currentBadges.contains('😄 Eğlenceli')) {
-      newBadges.add('😄 Eğlenceli');
+    // Rozet koşullarını kontrol et
+    for (final badge in allBadges) {
+      if (currentBadges.contains(badge.id)) continue;
+      bool earned = false;
+      switch (badge.type) {
+        case app_badge.BadgeType.zorluk:
+          if (badge.requiredDifficulty != null && badge.requiredCount != null) {
+            final count =
+                completedByDifficultyCount[badge.requiredDifficulty!] ?? 0;
+            if (count >= badge.requiredCount!) earned = true;
+          }
+          break;
+        case app_badge.BadgeType.kategori:
+          if (badge.categoryId != null && badge.requiredCount != null) {
+            final count = completedByCategory[badge.categoryId!] ?? 0;
+            if (count >= badge.requiredCount!) earned = true;
+          }
+          break;
+        case app_badge.BadgeType.streak:
+          if (badge.requiredCount != null &&
+              _profile.streakDays >= badge.requiredCount!) earned = true;
+          break;
+        case app_badge.BadgeType.cesitlilik:
+          if (badge.requiredCount != null &&
+              completedCategories.length >= badge.requiredCount!) earned = true;
+          break;
+        case app_badge.BadgeType.ozel:
+          if (badge.id == 'ilk_gorev' && _profile.completedTasks == 1)
+            earned = true;
+          // Diğer özel rozetler için ek koşullar eklenebilir
+          break;
+      }
+      if (earned) newBadges.add(badge.id);
     }
 
     if (newBadges.isNotEmpty) {
@@ -183,26 +245,191 @@ class _HomeScreenState extends State<HomeScreen> {
           badges: [..._profile.badges, ...newBadges],
         );
       });
-
-      // Rozet kazanma mesajı
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.emoji_events, color: Colors.white),
-              const SizedBox(width: 8),
-              Text('Yeni rozet kazandın: ${newBadges.first}! 🏆'),
-            ],
-          ),
-          backgroundColor: Colors.amber,
-          duration: const Duration(seconds: 4),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
+      final allBadges = app_badge.BadgeData.getAllBadges();
+      for (final badgeId in newBadges) {
+        final badge = allBadges.firstWhere((b) => b.id == badgeId);
+        _showBadgeEarnedMessage(badge);
+      }
     }
+  }
+
+  int _getCategoryPoints(String categoryId) {
+    // Kategori ID'sine göre puan hesapla
+    switch (categoryId) {
+      case 'kitap':
+        return _getCategoryPointsByTaskCategory(TaskCategory.kitap);
+      case 'yazma':
+        return _getCategoryPointsByTaskCategory(TaskCategory.yazma);
+      case 'matematik':
+        return _getCategoryPointsByTaskCategory(TaskCategory.matematik);
+      case 'fen':
+        return _getCategoryPointsByTaskCategory(TaskCategory.fen);
+      case 'spor':
+        return _getCategoryPointsByTaskCategory(TaskCategory.spor);
+      case 'sanat':
+        return _getCategoryPointsByTaskCategory(TaskCategory.sanat);
+      case 'muzik':
+        return _getCategoryPointsByTaskCategory(TaskCategory.muzik);
+      case 'teknoloji':
+        return _getCategoryPointsByTaskCategory(TaskCategory.teknoloji);
+      case 'iyilik':
+        return _getCategoryPointsByTaskCategory(TaskCategory.iyilik);
+      case 'ev':
+        return _getCategoryPointsByTaskCategory(TaskCategory.ev);
+      case 'oyun':
+        return _getCategoryPointsByTaskCategory(TaskCategory.oyun);
+      case 'zihin':
+        return _getCategoryPointsByTaskCategory(TaskCategory.zihin);
+      default:
+        return 0;
+    }
+  }
+
+  int _getCategoryPointsByTaskCategory(TaskCategory category) {
+    int totalPoints = 0;
+    for (final completedTask in _completedTasks) {
+      if (completedTask.category == category) {
+        totalPoints += completedTask.basePoints;
+      }
+    }
+    return totalPoints;
+  }
+
+  void _showBadgeEarnedMessage(app_badge.Badge badge) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Text(badge.emoji, style: const TextStyle(fontSize: 20)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Yeni Rozet!',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Text(
+                    badge.name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: badge.color,
+        duration: const Duration(seconds: 4),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
+  void _checkBadgeUpgrades() {
+    final currentBadges = Set<String>.from(_profile.badges);
+    final allBadges = app_badge.BadgeData.getAllBadges();
+    final upgradedBadges = <String>[];
+
+    // Her rozet seviyesi için yükseltme kontrolü
+    for (final tier in app_badge.BadgeTier.values) {
+      // En üst seviye elmas, mastery yok
+      if (tier == app_badge.BadgeTier.elmas) continue;
+
+      final tierBadges = allBadges.where((b) => b.tier == tier).toList();
+      final userTierBadges =
+          tierBadges.where((b) => currentBadges.contains(b.id)).toList();
+
+      if (userTierBadges.length >= tier.upgradeRequirement) {
+        // Yükseltme rozetini bul
+        final nextTier = _getNextTier(tier);
+        if (nextTier != null) {
+          final upgradeBadge = allBadges.firstWhere(
+            (b) => b.tier == nextTier && b.categoryId == null,
+            orElse: () => allBadges.first,
+          );
+
+          if (!currentBadges.contains(upgradeBadge.id)) {
+            upgradedBadges.add(upgradeBadge.id);
+          }
+        }
+      }
+    }
+
+    // Yükseltme rozetlerini ekle
+    if (upgradedBadges.isNotEmpty) {
+      setState(() {
+        _profile = _profile.copyWith(
+          badges: [..._profile.badges, ...upgradedBadges],
+        );
+      });
+
+      // Yükseltme mesajı göster
+      for (final badgeId in upgradedBadges) {
+        final badge = allBadges.firstWhere((b) => b.id == badgeId);
+        _showBadgeUpgradeMessage(badge);
+      }
+    }
+  }
+
+  app_badge.BadgeTier? _getNextTier(app_badge.BadgeTier currentTier) {
+    switch (currentTier) {
+      case app_badge.BadgeTier.bronz:
+        return app_badge.BadgeTier.gumus;
+      case app_badge.BadgeTier.gumus:
+        return app_badge.BadgeTier.altin;
+      case app_badge.BadgeTier.altin:
+        return app_badge.BadgeTier.elmas;
+      case app_badge.BadgeTier.elmas:
+        return null;
+    }
+  }
+
+  void _showBadgeUpgradeMessage(app_badge.Badge badge) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.trending_up, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Rozet Yükseltildi!',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Text(
+                    '${badge.tier?.displayName ?? ''} ${badge.name}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.purple,
+        duration: const Duration(seconds: 5),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
   }
 
   @override
@@ -222,8 +449,8 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: const Icon(Icons.arrow_back),
               onPressed: () {
                 setState(() {
-                  _showTaskWheel = false;
                   _selectedCategory = null;
+                  _selectedTask = null;
                 });
               },
             ),
@@ -236,8 +463,6 @@ class _HomeScreenState extends State<HomeScreen> {
           _buildWheelPage(),
           // Profil sayfası
           ProfilePage(profile: _profile, completedTasks: _completedTasks),
-          // Görevler sayfası
-          _buildTasksPage(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -252,10 +477,6 @@ class _HomeScreenState extends State<HomeScreen> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.casino), label: 'Çark'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.task_alt),
-            label: 'Görevler',
-          ),
         ],
       ),
     );
@@ -266,75 +487,137 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          // Hoş geldin mesajı
+          // Hoş geldin kartı
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Colors.orange, Colors.pink],
+                colors: [
+                  Colors.blue.shade400,
+                  Colors.purple.shade400,
+                ],
               ),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.orange.withValues(alpha: 0.3),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
+                  color: Colors.blue.withOpacity(0.3),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
                 ),
               ],
             ),
             child: Column(
               children: [
-                const Text(
-                  '🎉 Hoş Geldin!',
-                  style: TextStyle(
+                Text(
+                  'Merhaba Oyuncu! 👋',
+                  style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
+                  textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 Text(
-                  'Bugün ${_profile.level} seviyesindesin!',
-                  style: const TextStyle(fontSize: 16, color: Colors.white),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '${_profile.points} puanın var',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                  'Bugün hangi görevi yapmak istiyorsun?',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.white.withOpacity(0.9),
                   ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildStatCard(
+                        '🏆 Seviye', '${_profile.level}', Colors.amber),
+                    _buildStatCard(
+                        '⭐ Görev Puanı', '${_profile.points}', Colors.blue),
+                    _buildStatCard('🎮 Quiz Puanı',
+                        '${_profile.totalQuizPoints ?? 0}', Colors.purple),
+                    _buildStatCard('💎 Toplam Puan',
+                        '${_profile.totalAllPoints}', Colors.green),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => _navigateToQuizArena(),
+                        icon: const Icon(Icons.quiz, color: Colors.white),
+                        label: const Text(
+                          '🎯 Quiz Arena',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange.shade600,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => _navigateToGameCenter(),
+                        icon: const Icon(Icons.games, color: Colors.white),
+                        label: const Text(
+                          '🎮 Oyun Merkezi',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.pink.shade600,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
 
-          const SizedBox(height: 32),
+          const SizedBox(height: 8),
 
           // Seçilen kategori bilgisi
           if (_selectedCategory != null)
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
                     _selectedCategory!.color,
-                    _selectedCategory!.color.withValues(alpha: 0.7),
+                    _selectedCategory!.color.withOpacity(0.7),
                   ],
                 ),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
-                    color: _selectedCategory!.color.withValues(alpha: 0.3),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
+                    color: _selectedCategory!.color.withOpacity(0.15),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
@@ -342,206 +625,163 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Text(
                     _selectedCategory!.emoji,
-                    style: const TextStyle(fontSize: 48),
+                    style: const TextStyle(fontSize: 32),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   Text(
                     _selectedCategory!.name,
                     style: const TextStyle(
-                      fontSize: 24,
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   Text(
                     _selectedCategory!.description,
-                    style: const TextStyle(fontSize: 16, color: Colors.white),
+                    style: const TextStyle(fontSize: 12, color: Colors.white),
                     textAlign: TextAlign.center,
                   ),
                 ],
               ),
             ),
 
-          const SizedBox(height: 32),
+          const SizedBox(height: 12),
 
           // Çark sistemi
-          if (!_showTaskWheel)
+          if (_selectedTask == null)
             CategoryWheel(
               onCategorySelected: _onCategorySelected,
-              canSpin: true, // Test için her zaman çevirilebilir
+              canSpin: true,
             )
           else
-            FortuneWheel(onTaskSelected: _onTaskSelected, canSpin: true),
-
-          const SizedBox(height: 32),
-
-          // Günlük motivasyon
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.blue.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: Colors.blue.withValues(alpha: 0.3),
-                width: 1,
-              ),
-            ),
-            child: Column(
+            Column(
               children: [
-                const Text(
-                  '💭 Günlük Motivasyon',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue,
+                // Seçilen görev
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.green,
+                        Colors.green.withOpacity(0.7),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.green.withOpacity(0.15),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      const Text(
+                        '🎯 Seçilen Görev',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TaskCard(
+                        task: _selectedTask!,
+                        onComplete: _completeTask,
+                        showCompleteButton: true,
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  _getDailyMotivation(),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: Colors.blue,
-                    fontStyle: FontStyle.italic,
+                const SizedBox(height: 8),
+                ElevatedButton.icon(
+                  onPressed: _spinAgain,
+                  icon:
+                      const Icon(Icons.refresh, color: Colors.white, size: 18),
+                  label: const Text(
+                    'Tekrar Çevir',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
-                  textAlign: TextAlign.center,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    elevation: 4,
+                  ),
                 ),
               ],
             ),
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildTasksPage() {
-    return Column(
-      children: [
-        // Başlık
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Colors.green, Colors.blue],
-            ),
-          ),
-          child: const Column(
-            children: [
-              Text(
-                '📋 Tüm Görevler',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              SizedBox(height: 8),
-              Text(
-                'Kategorilere göre düzenlenmiş görevler!',
-                style: TextStyle(fontSize: 16, color: Colors.white),
-              ),
-            ],
-          ),
+  void _navigateToQuizArena() async {
+    final updatedProfile = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => QuizArenaScreen(
+          profile: _profile,
         ),
-
-        // Kategori seçimi
-        Container(
-          height: 60,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: CategoryData.getAllCategories().length + 1,
-            itemBuilder: (context, index) {
-              if (index == 0) {
-                return _buildCategoryChip(null, 'Tümü', '🔍', Colors.grey);
-              }
-              final category = CategoryData.getAllCategories()[index - 1];
-              return _buildCategoryChip(
-                category.id,
-                category.name,
-                category.emoji,
-                category.color,
-              );
-            },
-          ),
-        ),
-
-        // Görev listesi
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: TaskData.getAllTasks().length,
-            itemBuilder: (context, index) {
-              final task = TaskData.getAllTasks()[index];
-              final isCompleted = _completedTasks.any((t) => t.id == task.id);
-              final completedTask = isCompleted
-                  ? _completedTasks.firstWhere((t) => t.id == task.id)
-                  : null;
-
-              return TaskCard(
-                task: completedTask ?? task,
-                onComplete: isCompleted ? null : () => _completeTask(task),
-                showCompleteButton: !isCompleted,
-              );
-            },
-          ),
-        ),
-      ],
+      ),
     );
+    if (updatedProfile != null && updatedProfile is UserProfile) {
+      setState(() {
+        _profile = updatedProfile;
+      });
+    } else {
+      _loadProfile();
+    }
   }
 
-  Widget _buildCategoryChip(
-    String? categoryId,
-    String name,
-    String emoji,
-    Color color,
-  ) {
-    return Container(
-      margin: const EdgeInsets.only(right: 12),
-      child: FilterChip(
-        selected: false,
-        label: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(emoji, style: const TextStyle(fontSize: 16)),
-            const SizedBox(width: 4),
-            Text(name),
-          ],
+  void _navigateToGameCenter() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => GameSelectionScreen(
+          profile: _profile,
         ),
-        onSelected: (selected) {
-          // Kategori filtreleme işlemi burada yapılabilir
-        },
-        backgroundColor: color.withValues(alpha: 0.1),
-        selectedColor: color.withValues(alpha: 0.3),
-        checkmarkColor: color,
       ),
     );
   }
 
-  String _getDailyMotivation() {
-    final motivations = [
-      'Her gün yeni bir başlangıç! 🌅',
-      'Küçük adımlar büyük değişimler yaratır! 🚀',
-      'Bugün harika bir gün olacak! ✨',
-      'Kendine inan, her şey mümkün! 💪',
-      'Gülümseme bulaşıcıdır, yay! 😊',
-      'Her görev seni daha güçlü yapar! 🎯',
-      'Şans seninle, sadece çarkı çevir! 🍀',
-      'Bugün kendine bir iyilik yap! 💖',
-    ];
-
-    final today = DateTime.now();
-    final index = today.day % motivations.length;
-    return motivations[index];
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
+  Widget _buildStatCard(String title, String value, Color color) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
