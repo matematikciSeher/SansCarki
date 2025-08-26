@@ -548,14 +548,20 @@ class _QuizGameScreenState extends State<QuizGameScreen>
       ),
       child: Column(
         children: [
-          Text(
-            question.question,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
+          Flexible(
+            child: Text(
+              question.question,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+              textAlign: TextAlign.center,
+              softWrap: true,
+              overflow: TextOverflow.ellipsis,
+              maxLines:
+                  6, // Maksimum 6 satır göster, daha fazlası üç nokta ile kısalır
             ),
-            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
           Container(
