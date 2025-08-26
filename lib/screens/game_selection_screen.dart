@@ -6,7 +6,15 @@ import 'puzzle_game_screen.dart';
 import 'word_scramble_game_screen.dart';
 import 'math_challenge_game_screen.dart';
 import 'pattern_matching_game_screen.dart';
+// import 'quiz_arena_screen.dart';
+// import 'avatar_adventure_screen.dart';
 import '../widgets/profile_page.dart';
+import 'maze_game_screen.dart';
+import 'sudoku_game_screen.dart';
+import 'shape_shift_game_screen.dart';
+// import 'ice_breaker_game_screen.dart';
+import 'balloon_pop_game_screen.dart';
+import 'target_shooter_game_screen.dart';
 
 class GameSelectionScreen extends StatefulWidget {
   final UserProfile profile;
@@ -26,6 +34,8 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
+  late UserProfile _profile;
+
   final List<GameInfo> _games = [
     GameInfo(
       id: 'memory',
@@ -33,7 +43,6 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
       description: 'Eşleşen kartları bul ve hafızanı test et!',
       emoji: '🧠',
       color: Colors.blue,
-      difficulty: 'Kolay',
       estimatedTime: '3-5 dk',
     ),
     GameInfo(
@@ -42,7 +51,6 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
       description: 'Sayıları doğru sıraya diz ve bulmacayı çöz!',
       emoji: '🧩',
       color: Colors.green,
-      difficulty: 'Orta',
       estimatedTime: '5-8 dk',
     ),
     GameInfo(
@@ -51,7 +59,6 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
       description: 'Karışık harflerden anlamlı kelimeler oluştur!',
       emoji: '📝',
       color: Colors.orange,
-      difficulty: 'Orta',
       estimatedTime: '4-6 dk',
     ),
     GameInfo(
@@ -60,7 +67,6 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
       description: 'Hızlı matematik işlemleri yap ve puan kazan!',
       emoji: '🔢',
       color: Colors.purple,
-      difficulty: 'Zor',
       estimatedTime: '6-10 dk',
     ),
     GameInfo(
@@ -69,14 +75,54 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
       description: 'Desenleri hatırla ve tekrarla!',
       emoji: '🎨',
       color: Colors.pink,
-      difficulty: 'Orta',
       estimatedTime: '4-7 dk',
+    ),
+    GameInfo(
+      id: 'maze',
+      name: 'Labirent',
+      description: 'Çıkışı bul, süreyle yarış!',
+      emoji: '🌀',
+      color: Colors.blueGrey,
+      estimatedTime: '3-6 dk',
+    ),
+    GameInfo(
+      id: 'sudoku',
+      name: 'Sudoku',
+      description: 'Klasik Sudoku bulmacasını çöz!',
+      emoji: '🧩',
+      color: Colors.indigo,
+      estimatedTime: '5-15 dk',
+    ),
+    GameInfo(
+      id: 'shape_shift',
+      name: 'Şekil Dönüştürme',
+      description: 'Parçaları döndürerek şekli tamamla',
+      emoji: '🔷',
+      color: Colors.teal,
+      estimatedTime: '1-3 dk',
+    ),
+    GameInfo(
+      id: 'balloon_pop',
+      name: 'Balon Patlat',
+      description: 'Görev balonlarını patlat, yanlış renkten kaçın!',
+      emoji: '🎈',
+      color: Colors.redAccent,
+      estimatedTime: '1-3 dk',
+    ),
+    GameInfo(
+      id: 'target_shooter',
+      name: 'Hedef Avı',
+      description: 'Hareketli hedefleri vur, isabetli atışlarla puan topla!',
+      emoji: '🎯',
+      color: Colors.deepPurple,
+      estimatedTime: '1-2 dk',
     ),
   ];
 
   @override
   void initState() {
     super.initState();
+    _profile = widget.profile;
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
@@ -113,51 +159,94 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
     _navigateToGame(randomGame.id);
   }
 
-  void _navigateToGame(String gameId) {
+  Future<void> _navigateToGame(String gameId) async {
+    dynamic result;
     switch (gameId) {
       case 'memory':
-        Navigator.push(
+        result = await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => MemoryCardGameScreen(profile: widget.profile),
+            builder: (context) => MemoryCardGameScreen(profile: _profile),
           ),
         );
         break;
       case 'puzzle':
-        Navigator.push(
+        result = await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => PuzzleGameScreen(profile: widget.profile),
+            builder: (context) => PuzzleGameScreen(profile: _profile),
           ),
         );
         break;
       case 'word':
-        Navigator.push(
+        result = await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) =>
-                WordScrambleGameScreen(profile: widget.profile),
+            builder: (context) => WordScrambleGameScreen(profile: _profile),
           ),
         );
         break;
       case 'math':
-        Navigator.push(
+        result = await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) =>
-                MathChallengeGameScreen(profile: widget.profile),
+            builder: (context) => MathChallengeGameScreen(profile: _profile),
           ),
         );
         break;
       case 'pattern':
-        Navigator.push(
+        result = await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) =>
-                PatternMatchingGameScreen(profile: widget.profile),
+            builder: (context) => PatternMatchingGameScreen(profile: _profile),
           ),
         );
         break;
+      case 'maze':
+        result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MazeGameScreen(profile: _profile),
+          ),
+        );
+        break;
+      case 'sudoku':
+        result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SudokuGameScreen(profile: _profile),
+          ),
+        );
+        break;
+      case 'shape_shift':
+        result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ShapeShiftGameScreen(profile: _profile),
+          ),
+        );
+        break;
+      case 'balloon_pop':
+        result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => BalloonPopGameScreen(profile: _profile),
+          ),
+        );
+        break;
+      case 'target_shooter':
+        result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => TargetShooterGameScreen(profile: _profile),
+          ),
+        );
+        break;
+    }
+    if (result is UserProfile) {
+      setState(() {
+        _profile = result;
+      });
     }
   }
 
@@ -321,7 +410,7 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
           ),
           const SizedBox(height: 8),
           Text(
-            '5 farklı eğlenceli oyun seni bekliyor!',
+            '${_games.length} farklı eğlenceli oyun seni bekliyor!',
             style: TextStyle(
               fontSize: 16,
               color: Colors.white.withOpacity(0.9),
@@ -332,10 +421,10 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildStatItem('🎮', 'Toplam Oyun', '5'),
+              _buildStatItem('🎮', 'Toplam Oyun', '${_games.length}'),
               _buildStatItem(
-                  '🏆', 'En Yüksek', '${widget.profile.highestQuizScore ?? 0}'),
-              _buildStatItem('⭐', 'Puan', '${widget.profile.points}'),
+                  '🏆', 'En Yüksek', '${_profile.highestQuizScore ?? 0}'),
+              _buildStatItem('⭐', 'Puan', '${_profile.points}'),
             ],
           ),
         ],
@@ -479,25 +568,6 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: game.color.withOpacity(0.3),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              game.difficulty,
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: game.color,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -534,7 +604,7 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) => ProfilePage(
-        profile: widget.profile,
+        profile: _profile,
         completedTasks: const [], // Boş liste olarak geçiyoruz
       ),
     );
@@ -547,7 +617,6 @@ class GameInfo {
   final String description;
   final String emoji;
   final Color color;
-  final String difficulty;
   final String estimatedTime;
 
   GameInfo({
@@ -556,7 +625,6 @@ class GameInfo {
     required this.description,
     required this.emoji,
     required this.color,
-    required this.difficulty,
     required this.estimatedTime,
   });
 }

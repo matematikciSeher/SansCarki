@@ -9,11 +9,7 @@ enum QuizCategory {
   sanat,
 }
 
-enum QuizDifficulty {
-  kolay,
-  orta,
-  zor,
-}
+// Zorluk kavramı kaldırıldı
 
 class QuizQuestion {
   final String id;
@@ -21,7 +17,6 @@ class QuizQuestion {
   final List<String> options;
   final int correctAnswerIndex;
   final QuizCategory category;
-  final QuizDifficulty difficulty;
   final String? explanation;
   final int basePoints;
 
@@ -31,7 +26,6 @@ class QuizQuestion {
     required this.options,
     required this.correctAnswerIndex,
     required this.category,
-    required this.difficulty,
     this.explanation,
     required this.basePoints,
   });
@@ -45,7 +39,6 @@ class QuizQuestion {
       'options': options,
       'correctAnswerIndex': correctAnswerIndex,
       'category': category.toString(),
-      'difficulty': difficulty.toString(),
       'explanation': explanation,
       'basePoints': basePoints,
     };
@@ -60,10 +53,6 @@ class QuizQuestion {
       category: QuizCategory.values.firstWhere(
         (e) => e.toString() == json['category'],
         orElse: () => QuizCategory.genelKultur,
-      ),
-      difficulty: QuizDifficulty.values.firstWhere(
-        (e) => e.toString() == json['difficulty'],
-        orElse: () => QuizDifficulty.orta,
       ),
       explanation: json['explanation'],
       basePoints: json['basePoints'] ?? 10,
@@ -228,37 +217,4 @@ extension QuizCategoryExtension on QuizCategory {
   }
 }
 
-extension QuizDifficultyExtension on QuizDifficulty {
-  String get displayName {
-    switch (this) {
-      case QuizDifficulty.kolay:
-        return 'Kolay';
-      case QuizDifficulty.orta:
-        return 'Orta';
-      case QuizDifficulty.zor:
-        return 'Zor';
-    }
-  }
-
-  Color get color {
-    switch (this) {
-      case QuizDifficulty.kolay:
-        return Colors.green;
-      case QuizDifficulty.orta:
-        return Colors.orange;
-      case QuizDifficulty.zor:
-        return Colors.red;
-    }
-  }
-
-  int get timeLimit {
-    switch (this) {
-      case QuizDifficulty.kolay:
-        return 45; // 45 saniye
-      case QuizDifficulty.orta:
-        return 30; // 30 saniye
-      case QuizDifficulty.zor:
-        return 20; // 20 saniye
-    }
-  }
-}
+// Difficulty extension kaldırıldı

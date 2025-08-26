@@ -31,6 +31,7 @@ class _MathChallengeGameScreenState extends State<MathChallengeGameScreen>
   bool _isAnswered = false;
   int? _selectedAnswerIndex;
   bool _isGameComplete = false;
+  bool _showInfo = true;
 
   @override
   void initState() {
@@ -159,23 +160,10 @@ class _MathChallengeGameScreenState extends State<MathChallengeGameScreen>
       question: questionText,
       options: options,
       correctAnswerIndex: options.indexOf(correctAnswer),
-      difficulty: _getDifficulty(operation, num1, num2),
     );
   }
 
-  String _getDifficulty(int operation, int num1, int num2) {
-    if (operation <= 1) {
-      // Toplama/Çıkarma
-      if (num1 < 20 && num2 < 20) return 'Kolay';
-      if (num1 < 40 && num2 < 40) return 'Orta';
-      return 'Zor';
-    } else {
-      // Çarpma/Bölme
-      if (num1 <= 6 && num2 <= 6) return 'Kolay';
-      if (num1 <= 10 && num2 <= 10) return 'Orta';
-      return 'Zor';
-    }
-  }
+  // Zorluk hesaplaması kaldırıldı
 
   void _startTimer() {
     _gameTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -243,21 +231,7 @@ class _MathChallengeGameScreenState extends State<MathChallengeGameScreen>
     int basePoints = 100;
     int timeBonus = (_remainingTime * 3).clamp(0, 30);
 
-    // Zorluk bonusu
-    int difficultyBonus = 0;
-    switch (question.difficulty) {
-      case 'Kolay':
-        difficultyBonus = 0;
-        break;
-      case 'Orta':
-        difficultyBonus = 20;
-        break;
-      case 'Zor':
-        difficultyBonus = 50;
-        break;
-    }
-
-    return basePoints + timeBonus + difficultyBonus;
+    return basePoints + timeBonus;
   }
 
   void _showAnswerResult(bool isCorrect, MathQuestion question) {
@@ -446,6 +420,89 @@ class _MathChallengeGameScreenState extends State<MathChallengeGameScreen>
 
   @override
   Widget build(BuildContext context) {
+    return Scaffold(
+      body: _showInfo ? _buildInfoPage() : _buildGameBody(),
+    );
+  }
+
+  Widget _buildInfoPage() {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.purple.shade900,
+            Colors.purple.shade700,
+          ],
+        ),
+      ),
+      child: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const Text(
+                  '🔢 Matematik Mücadelesi',
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Text(
+                    'Kurallar:\n\n• Ekranda çıkan matematik sorularını hızlıca çöz.\n• Doğru cevabı girerek puan kazan.\n• Süre bitmeden olabildiğince çok soru çöz!\n',
+                    style: TextStyle(fontSize: 18, color: Colors.white),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Text(
+                    'Puanlama:\n\n• Her doğru cevap: +10 puan\n• Hızlı cevap: Ekstra puan\n',
+                    style: TextStyle(fontSize: 18, color: Colors.white),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      _showInfo = false;
+                    });
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.purple,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 32, vertical: 16),
+                  ),
+                  child: const Text('Başla', style: TextStyle(fontSize: 22)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGameBody() {
     if (_questions.isEmpty) {
       return const Scaffold(
         body: Center(
@@ -647,39 +704,13 @@ class _MathChallengeGameScreenState extends State<MathChallengeGameScreen>
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: _getDifficultyColor(question.difficulty).withOpacity(0.3),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              question.difficulty,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: _getDifficultyColor(question.difficulty),
-              ),
-            ),
-          ),
+          const SizedBox(height: 8),
         ],
       ),
     );
   }
 
-  Color _getDifficultyColor(String difficulty) {
-    switch (difficulty) {
-      case 'Kolay':
-        return Colors.green;
-      case 'Orta':
-        return Colors.orange;
-      case 'Zor':
-        return Colors.red;
-      default:
-        return Colors.green;
-    }
-  }
+  // Zorluk rengi kaldırıldı
 
   Widget _buildAnswerOptions(MathQuestion question) {
     return Column(
@@ -769,13 +800,10 @@ class MathQuestion {
   final String question;
   final List<int> options;
   final int correctAnswerIndex;
-  final String difficulty;
 
   MathQuestion({
     required this.question,
     required this.options,
     required this.correctAnswerIndex,
-    required this.difficulty,
   });
 }
-

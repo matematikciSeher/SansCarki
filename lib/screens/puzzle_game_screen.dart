@@ -27,6 +27,7 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
   Timer? _gameTimer;
   int _elapsedTime = 0;
   bool _isGameComplete = false;
+  bool _showInfo = true;
 
   @override
   void initState() {
@@ -34,6 +35,12 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
     _initializeAnimations();
     _initializeGame();
     _startTimer();
+  }
+
+  void _startNewGame() {
+    setState(() {
+      _showInfo = false;
+    });
   }
 
   void _initializeAnimations() {
@@ -228,38 +235,115 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.green.shade900,
-              Colors.green.shade700,
-              Colors.green.shade500,
-            ],
-          ),
+      body: _showInfo ? _buildInfoPage() : _buildGameBody(),
+    );
+  }
+
+  Widget _buildInfoPage() {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.green.shade900,
+            Colors.green.shade400,
+          ],
         ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Header
-              _buildHeader(),
-
-              // Oyun bilgileri
-              _buildGameInfo(),
-
-              // Bulmaca tahtası
-              Expanded(
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: _buildPuzzleBoard(),
+      ),
+      child: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const Text(
+                  '🧩 Sayı Bulmaca',
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Text(
+                    'Kurallar:\n\n• Sayıları doğru sıraya dizerek bulmacayı çöz.\n• Her doğru hamle puan kazandırır.\n',
+                    style: TextStyle(fontSize: 18, color: Colors.white),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Text(
+                    'Puanlama:\n\n• Her doğru hamle: +10 puan\n',
+                    style: TextStyle(fontSize: 18, color: Colors.white),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                ElevatedButton(
+                  onPressed: _startNewGame,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.green,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 32, vertical: 16),
+                  ),
+                  child: const Text('Başla', style: TextStyle(fontSize: 22)),
+                ),
+              ],
+            ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGameBody() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.green.shade900,
+            Colors.green.shade700,
+            Colors.green.shade500,
+          ],
+        ),
+      ),
+      child: SafeArea(
+        child: Column(
+          children: [
+            // Header
+            _buildHeader(),
+
+            // Oyun bilgileri
+            _buildGameInfo(),
+
+            // Bulmaca tahtası
+            Expanded(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: _buildPuzzleBoard(),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -436,4 +520,3 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
     );
   }
 }
-

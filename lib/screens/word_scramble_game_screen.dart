@@ -43,6 +43,7 @@ class _WordScrambleGameScreenState extends State<WordScrambleGameScreen>
   int _elapsedTime = 0;
   bool _isGameComplete = false;
   bool _showHint = false;
+  bool _showInfo = true;
 
   @override
   void initState() {
@@ -268,6 +269,12 @@ class _WordScrambleGameScreenState extends State<WordScrambleGameScreen>
     });
   }
 
+  void _startGame() {
+    setState(() {
+      _showInfo = false;
+    });
+  }
+
   @override
   void dispose() {
     _letterAnimationController.dispose();
@@ -278,56 +285,133 @@ class _WordScrambleGameScreenState extends State<WordScrambleGameScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.orange.shade900,
-              Colors.orange.shade700,
-              Colors.orange.shade500,
-            ],
-          ),
+      body: _showInfo ? _buildInfoPage() : _buildGameBody(),
+    );
+  }
+
+  Widget _buildInfoPage() {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.orange.shade900,
+            Colors.orange.shade400,
+          ],
         ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Header
-              _buildHeader(),
-
-              // Oyun bilgileri
-              _buildGameInfo(),
-
-              // Ana oyun alanı
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      // İpucu
-                      _buildHintSection(),
-
-                      const SizedBox(height: 24),
-
-                      // Karışık kelime
-                      _buildScrambledWord(),
-
-                      const SizedBox(height: 32),
-
-                      // Kullanıcı cevabı
-                      _buildUserAnswer(),
-
-                      const SizedBox(height: 32),
-
-                      // Harf butonları
-                      Expanded(child: _buildLetterButtons()),
-                    ],
+      ),
+      child: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const Text(
+                  '📝 Kelime Karıştır',
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Text(
+                    'Kurallar:\n\n• Karışık harflerden anlamlı kelimeler oluştur.\n• Her doğru kelime puan kazandırır.\n',
+                    style: TextStyle(fontSize: 18, color: Colors.white),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Text(
+                    'Puanlama:\n\n• Her doğru kelime: +10 puan\n',
+                    style: TextStyle(fontSize: 18, color: Colors.white),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                ElevatedButton(
+                  onPressed: _startGame,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.orange,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 32, vertical: 16),
+                  ),
+                  child: const Text('Başla', style: TextStyle(fontSize: 22)),
+                ),
+              ],
+            ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGameBody() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.orange.shade900,
+            Colors.orange.shade700,
+            Colors.orange.shade500,
+          ],
+        ),
+      ),
+      child: SafeArea(
+        child: Column(
+          children: [
+            // Header
+            _buildHeader(),
+
+            // Oyun bilgileri
+            _buildGameInfo(),
+
+            // Ana oyun alanı
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    // İpucu
+                    _buildHintSection(),
+
+                    const SizedBox(height: 24),
+
+                    // Karışık kelime
+                    _buildScrambledWord(),
+
+                    const SizedBox(height: 32),
+
+                    // Kullanıcı cevabı
+                    _buildUserAnswer(),
+
+                    const SizedBox(height: 32),
+
+                    // Harf butonları
+                    Expanded(child: _buildLetterButtons()),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -598,4 +682,3 @@ class WordPuzzle {
     required this.hint,
   });
 }
-
