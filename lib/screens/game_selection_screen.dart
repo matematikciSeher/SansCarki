@@ -11,10 +11,11 @@ import 'pattern_matching_game_screen.dart';
 import '../widgets/profile_page.dart';
 import 'maze_game_screen.dart';
 import 'sudoku_game_screen.dart';
-import 'shape_shift_game_screen.dart';
+// import 'shape_shift_game_screen.dart';
 // import 'ice_breaker_game_screen.dart';
 import 'balloon_pop_game_screen.dart';
 import 'target_shooter_game_screen.dart';
+import 'logic_gates_puzzle_screen.dart';
 
 class GameSelectionScreen extends StatefulWidget {
   final UserProfile profile;
@@ -94,14 +95,6 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
       estimatedTime: '5-15 dk',
     ),
     GameInfo(
-      id: 'shape_shift',
-      name: 'Şekil Dönüştürme',
-      description: 'Parçaları döndürerek şekli tamamla',
-      emoji: '🔷',
-      color: Colors.teal,
-      estimatedTime: '1-3 dk',
-    ),
-    GameInfo(
       id: 'balloon_pop',
       name: 'Balon Patlat',
       description: 'Görev balonlarını patlat, yanlış renkten kaçın!',
@@ -116,6 +109,14 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
       emoji: '🎯',
       color: Colors.deepPurple,
       estimatedTime: '1-2 dk',
+    ),
+    GameInfo(
+      id: 'logic_gates',
+      name: 'Mantık Kapıları',
+      description: 'Girişleri ayarla, kapıları çöz, enerjiyi çıkışa ulaştır!',
+      emoji: '🔌',
+      color: Colors.blueGrey,
+      estimatedTime: '2-5 dk',
     ),
   ];
 
@@ -218,14 +219,6 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
           ),
         );
         break;
-      case 'shape_shift':
-        result = await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ShapeShiftGameScreen(profile: _profile),
-          ),
-        );
-        break;
       case 'balloon_pop':
         result = await Navigator.push(
           context,
@@ -239,6 +232,14 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
           context,
           MaterialPageRoute(
             builder: (context) => TargetShooterGameScreen(profile: _profile),
+          ),
+        );
+        break;
+      case 'logic_gates':
+        result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => LogicGatesPuzzleScreen(profile: _profile),
           ),
         );
         break;

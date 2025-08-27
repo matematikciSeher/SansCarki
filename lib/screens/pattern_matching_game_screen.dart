@@ -82,6 +82,21 @@ class _PatternMatchingGameScreenState extends State<PatternMatchingGameScreen>
     _showPattern();
   }
 
+  // Yeni seviyeyi başlatır (seviye arttıktan sonra çağrılır)
+  void _startNewLevel() {
+    setState(() {
+      _pattern.clear();
+      _userPattern.clear();
+      _isShowingPattern = false;
+      _isUserTurn = false;
+      _isGameOver = false;
+      _patternIndex = 0;
+    });
+
+    _generatePattern();
+    _showPattern();
+  }
+
   void _generatePattern() {
     final random = Random();
     for (int i = 0; i < _currentLevel + 2; i++) {
@@ -258,11 +273,6 @@ class _PatternMatchingGameScreenState extends State<PatternMatchingGameScreen>
   }
 
   void _showGameWonDialog() {
-    // Profil güncelleme
-    final updatedProfile = widget.profile.copyWith(
-      points: widget.profile.points + _score,
-    );
-
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -326,6 +336,11 @@ class _PatternMatchingGameScreenState extends State<PatternMatchingGameScreen>
     _startNewLevel();
   }
 
+  // Bilgi ekranındaki "Başla" butonu için kısayol
+  void _startGame() {
+    _startNewGame();
+  }
+
   @override
   void dispose() {
     _patternAnimationController.dispose();
@@ -356,7 +371,7 @@ class _PatternMatchingGameScreenState extends State<PatternMatchingGameScreen>
       ),
       child: SafeArea(
         child: Center(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -574,17 +589,17 @@ class _PatternMatchingGameScreenState extends State<PatternMatchingGameScreen>
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Wrap(
+            alignment: WrapAlignment.center,
             children: _pattern.asMap().entries.map((entry) {
               final index = entry.key;
               final colorIndex = entry.value;
               final isActive = index == _patternIndex;
 
               return Container(
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                width: 40,
-                height: 40,
+                margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
                   color: isActive
                       ? _colors[colorIndex]
@@ -623,13 +638,13 @@ class _PatternMatchingGameScreenState extends State<PatternMatchingGameScreen>
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Wrap(
+            alignment: WrapAlignment.center,
             children: _userPattern.map((colorIndex) {
               return Container(
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                width: 40,
-                height: 40,
+                margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
                   color: _colors[colorIndex],
                   shape: BoxShape.circle,

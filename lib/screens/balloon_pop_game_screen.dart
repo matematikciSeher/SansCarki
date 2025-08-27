@@ -180,6 +180,7 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
   void _showWinDialog() {
     _isGameActive = false;
     _controller.stop();
+    final int nonNegativeScore = max(0, _score);
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -190,7 +191,7 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Seviye: $_level'),
-            Text('Puan: $_score'),
+            Text('Puan: $nonNegativeScore'),
             Text('Patlatılan balon: $_poppedTargetCount'),
             if (_combo > 1) Text('Kombo: $_combo'),
           ],
@@ -200,7 +201,7 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
             onPressed: () {
               Navigator.pop(context);
               final updated = widget.profile.copyWith(
-                points: widget.profile.points + _score,
+                points: widget.profile.points + nonNegativeScore,
               );
               Navigator.pop(context, updated);
             },
@@ -227,6 +228,7 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
   void _showGameOverDialog() {
     _isGameActive = false;
     _controller.stop();
+    final int nonNegativeScore = max(0, _score);
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -237,7 +239,7 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Seviye: $_level'),
-            Text('Puan: $_score'),
+            Text('Puan: $nonNegativeScore'),
             Text('Patlatılan balon: $_poppedTargetCount'),
           ],
         ),

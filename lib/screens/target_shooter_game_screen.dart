@@ -56,6 +56,11 @@ class _TargetShooterGameScreenState extends State<TargetShooterGameScreen>
   int _totalScore = 0;
   int _maxLevel = 5;
 
+  int _levelTimeSeconds() {
+    // Daha makul: taban 20 sn, seviyeye göre +4 sn, üst sınır 40 sn
+    return min(20 + _level * 4, 40);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -82,7 +87,7 @@ class _TargetShooterGameScreenState extends State<TargetShooterGameScreen>
     _fakesHit = 0;
     _isGameActive = true;
     _perfect = true;
-    _timeLeft = 40 + min(_level * 3, 20); // Süre uzatıldı: 40-60 sn
+    _timeLeft = _levelTimeSeconds();
     _startTime = DateTime.now();
     _spawnInitialTargets();
   }
@@ -128,7 +133,7 @@ class _TargetShooterGameScreenState extends State<TargetShooterGameScreen>
       }
       // Zaman kontrolü
       final elapsed = DateTime.now().difference(_startTime).inSeconds;
-      _timeLeft = max(0, 40 + min(_level * 3, 20) - elapsed).toInt();
+      _timeLeft = max(0, _levelTimeSeconds() - elapsed).toInt();
       if (_timeLeft <= 0 || _shots >= _maxShots) {
         _isGameActive = false;
         _controller.stop();
