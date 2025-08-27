@@ -22,6 +22,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
+  int _navIndex = 0;
   UserProfile _profile = UserProfile();
   List<Task> _completedTasks = [];
   Category? _selectedCategory;
@@ -466,16 +467,27 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
+        currentIndex: _navIndex,
         onTap: (index) {
           setState(() {
-            _currentIndex = index;
+            _navIndex = index;
+            if (index == 1) {
+              _navigateToGameCenter();
+            } else if (index == 2) {
+              _navigateToQuizArena();
+            } else if (index == 3) {
+              _currentIndex = 1; // Profil sayfası
+            } else {
+              _currentIndex = 0; // Çark sayfası
+            }
           });
         },
         selectedItemColor: Colors.orange,
         unselectedItemColor: Colors.grey,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.casino), label: 'Çark'),
+          BottomNavigationBarItem(icon: Icon(Icons.games), label: 'Oyun'),
+          BottomNavigationBarItem(icon: Icon(Icons.quiz), label: 'Quiz'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
         ],
       ),
@@ -483,249 +495,159 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildWheelPage() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          // Hoş geldin kartı
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Colors.blue.shade400,
-                  Colors.purple.shade400,
-                ],
-              ),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.blue.withOpacity(0.3),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                Text(
-                  'Merhaba Oyuncu! 👋',
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Düz metin olarak puan/başlıklar (alt alta)
+            Text('🏆 ${_profile.level}',
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text('⭐ Görev Puanı: ${_profile.points}',
+                style: const TextStyle(fontSize: 14)),
+            Text('🎮 Oyun Puanı: ${_profile.totalGamePoints ?? 0}',
+                style: const TextStyle(fontSize: 14)),
+            Text('🧠 Quiz Puanı: ${_profile.totalQuizPoints ?? 0}',
+                style: const TextStyle(fontSize: 14)),
+            Text('💎 Toplam Puan: ${_profile.totalAllPoints}',
+                style: const TextStyle(fontSize: 14)),
+
+            const SizedBox(height: 16),
+
+            // Seçilen kategori bilgisi
+            if (_selectedCategory != null)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      _selectedCategory!.color,
+                      _selectedCategory!.color.withOpacity(0.7),
+                    ],
                   ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Bugün hangi görevi yapmak istiyorsun?',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white.withOpacity(0.9),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildStatCard(
-                        '🏆 Seviye', '${_profile.level}', Colors.amber),
-                    _buildStatCard(
-                        '⭐ Görev Puanı', '${_profile.points}', Colors.blue),
-                    _buildStatCard('🎮 Quiz Puanı',
-                        '${_profile.totalQuizPoints ?? 0}', Colors.purple),
-                    _buildStatCard('💎 Toplam Puan',
-                        '${_profile.totalAllPoints}', Colors.green),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => _navigateToQuizArena(),
-                        icon: const Icon(Icons.quiz, color: Colors.white),
-                        label: const Text(
-                          '🎯 Quiz Arena',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange.shade600,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => _navigateToGameCenter(),
-                        icon: const Icon(Icons.games, color: Colors.white),
-                        label: const Text(
-                          '🎮 Oyun Merkezi',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.pink.shade600,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _selectedCategory!.color.withOpacity(0.15),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-          // Seçilen kategori bilgisi
-          if (_selectedCategory != null)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    _selectedCategory!.color,
-                    _selectedCategory!.color.withOpacity(0.7),
+                child: Column(
+                  children: [
+                    Text(
+                      _selectedCategory!.emoji,
+                      style: const TextStyle(fontSize: 32),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _selectedCategory!.name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _selectedCategory!.description,
+                      style: const TextStyle(fontSize: 12, color: Colors.white),
+                      textAlign: TextAlign.center,
+                    ),
                   ],
                 ),
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: _selectedCategory!.color.withOpacity(0.15),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
               ),
-              child: Column(
+
+            const SizedBox(height: 12),
+
+            // Çark sistemi
+            if (_selectedTask == null)
+              Center(
+                child: CategoryWheel(
+                  onCategorySelected: _onCategorySelected,
+                  canSpin: true,
+                ),
+              )
+            else
+              Column(
                 children: [
-                  Text(
-                    _selectedCategory!.emoji,
-                    style: const TextStyle(fontSize: 32),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _selectedCategory!.name,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _selectedCategory!.description,
-                    style: const TextStyle(fontSize: 12, color: Colors.white),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-
-          const SizedBox(height: 12),
-
-          // Çark sistemi
-          if (_selectedTask == null)
-            CategoryWheel(
-              onCategorySelected: _onCategorySelected,
-              canSpin: true,
-            )
-          else
-            Column(
-              children: [
-                // Seçilen görev
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Colors.green,
-                        Colors.green.withOpacity(0.7),
+                  // Seçilen görev
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.green,
+                          Colors.green.withOpacity(0.7),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.green.withOpacity(0.15),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
                       ],
                     ),
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.green.withOpacity(0.15),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      const Text(
-                        '🎯 Seçilen Görev',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                    child: Column(
+                      children: [
+                        const Text(
+                          '🎯 Seçilen Görev',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
+                        const SizedBox(height: 8),
+                        TaskCard(
+                          task: _selectedTask!,
+                          onComplete: _completeTask,
+                          showCompleteButton: true,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ElevatedButton.icon(
+                    onPressed: _spinAgain,
+                    icon: const Icon(Icons.refresh,
+                        color: Colors.white, size: 18),
+                    label: const Text(
+                      'Tekrar Çevir',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
-                      const SizedBox(height: 8),
-                      TaskCard(
-                        task: _selectedTask!,
-                        onComplete: _completeTask,
-                        showCompleteButton: true,
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                ElevatedButton.icon(
-                  onPressed: _spinAgain,
-                  icon:
-                      const Icon(Icons.refresh, color: Colors.white, size: 18),
-                  label: const Text(
-                    'Tekrar Çevir',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      elevation: 4,
                     ),
                   ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    elevation: 4,
-                  ),
-                ),
-              ],
-            ),
-        ],
+                ],
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -776,6 +698,62 @@ class _HomeScreenState extends State<HomeScreen> {
             value,
             style: const TextStyle(
               fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModernStatCard({
+    required String title,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      width: 160,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            color.withOpacity(0.25),
+            color.withOpacity(0.10),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.35), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.20),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: Colors.white.withOpacity(0.95),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),

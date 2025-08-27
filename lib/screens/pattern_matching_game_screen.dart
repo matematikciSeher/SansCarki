@@ -195,15 +195,17 @@ class _PatternMatchingGameScreenState extends State<PatternMatchingGameScreen>
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: Text('🎉 Seviye $_currentLevel Tamamlandı!'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Harika! Deseni doğru hatırladın.'),
-            const SizedBox(height: 8),
-            Text('Puan: ${_currentLevel * 100}'),
-            const SizedBox(height: 8),
-            Text('Sonraki seviye: ${_currentLevel + 1}'),
-          ],
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Harika! Deseni doğru hatırladın.'),
+              const SizedBox(height: 8),
+              Text('Puan: ${_currentLevel * 100}'),
+              const SizedBox(height: 8),
+              Text('Sonraki seviye: ${_currentLevel + 1}'),
+            ],
+          ),
         ),
         actions: [
           ElevatedButton(
@@ -243,14 +245,16 @@ class _PatternMatchingGameScreenState extends State<PatternMatchingGameScreen>
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Text('❌ Oyun Bitti'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Deseni yanlış hatırladın.'),
-            const SizedBox(height: 8),
-            Text('Seviye: $_currentLevel'),
-            Text('Puan: $_score'),
-          ],
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Deseni yanlış hatırladın.'),
+              const SizedBox(height: 8),
+              Text('Seviye: $_currentLevel'),
+              Text('Puan: $_score'),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -278,35 +282,37 @@ class _PatternMatchingGameScreenState extends State<PatternMatchingGameScreen>
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Text('🎉 Tebrikler!'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Tüm seviyeleri tamamladın!'),
-            const SizedBox(height: 8),
-            Text('Toplam Puan: $_score'),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.green.withOpacity(0.3)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.star, color: Colors.green),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Puanlar ana sisteme eklendi!',
-                    style: TextStyle(
-                      color: Colors.green.shade700,
-                      fontWeight: FontWeight.bold,
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Tüm seviyeleri tamamladın!'),
+              const SizedBox(height: 8),
+              Text('Toplam Puan: $_score'),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.star, color: Colors.green),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Puanlar ana sisteme eklendi!',
+                      style: TextStyle(
+                        color: Colors.green.shade700,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         actions: [
           TextButton(

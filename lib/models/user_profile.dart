@@ -16,6 +16,7 @@ class UserProfile {
   final int? correctQuizAnswers;
   final int? averageQuizTime;
   final int? totalQuizPoints;
+  final int? totalGamePoints;
 
   // Avatar sistemi için yeni alanlar
   final int avatarLevel;
@@ -43,6 +44,7 @@ class UserProfile {
     this.correctQuizAnswers,
     this.averageQuizTime,
     this.totalQuizPoints,
+    this.totalGamePoints,
     this.avatarLevel = 1,
     this.intelligencePoints = 0,
     this.strengthPoints = 0,
@@ -61,7 +63,8 @@ class UserProfile {
         solvedQuestionIds = solvedQuestionIds ?? [];
 
   // Toplam puanları hesapla
-  int get totalAllPoints => points + (totalQuizPoints ?? 0);
+  int get totalAllPoints =>
+      points + (totalQuizPoints ?? 0) + (totalGamePoints ?? 0);
 
   // Avatar için toplam deneyim puanı
   int get totalAvatarExperience =>
@@ -96,6 +99,7 @@ class UserProfile {
     List<String>? unlockedItems,
     List<String>? unlockedAbilities,
     List<String>? solvedQuestionIds,
+    int? totalGamePoints,
   }) {
     return UserProfile(
       points: points ?? this.points,
@@ -111,6 +115,7 @@ class UserProfile {
       correctQuizAnswers: correctQuizAnswers ?? this.correctQuizAnswers,
       averageQuizTime: averageQuizTime ?? this.averageQuizTime,
       totalQuizPoints: totalQuizPoints ?? this.totalQuizPoints,
+      totalGamePoints: totalGamePoints ?? this.totalGamePoints,
       avatarLevel: avatarLevel ?? this.avatarLevel,
       intelligencePoints: intelligencePoints ?? this.intelligencePoints,
       strengthPoints: strengthPoints ?? this.strengthPoints,
@@ -139,6 +144,7 @@ class UserProfile {
       'correctQuizAnswers': correctQuizAnswers,
       'averageQuizTime': averageQuizTime,
       'totalQuizPoints': totalQuizPoints,
+      'totalGamePoints': totalGamePoints,
       'avatarLevel': avatarLevel,
       'intelligencePoints': intelligencePoints,
       'strengthPoints': strengthPoints,
@@ -169,6 +175,7 @@ class UserProfile {
       correctQuizAnswers: json['correctQuizAnswers'],
       averageQuizTime: json['averageQuizTime'],
       totalQuizPoints: json['totalQuizPoints'],
+      totalGamePoints: json['totalGamePoints'],
       avatarLevel: json['avatarLevel'] ?? 1,
       intelligencePoints: json['intelligencePoints'] ?? 0,
       strengthPoints: json['strengthPoints'] ?? 0,
