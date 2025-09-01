@@ -530,10 +530,13 @@ class _AvatarAdventureScreenState extends State<AvatarAdventureScreen>
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 4,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: MediaQuery.of(context).size.width > 400
+                  ? 4
+                  : 3, // Küçük ekranlarda 3 sütun
+              crossAxisSpacing: MediaQuery.of(context).size.width * 0.015,
+              mainAxisSpacing: MediaQuery.of(context).size.width * 0.015,
+              childAspectRatio: 0.8, // Daha iyi oran
             ),
             itemCount: _cards.length,
             itemBuilder: (context, index) {

@@ -423,7 +423,7 @@ class _QuizGameScreenState extends State<QuizGameScreen>
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(
         children: [
           IconButton(
@@ -433,14 +433,14 @@ class _QuizGameScreenState extends State<QuizGameScreen>
           Expanded(
             child: Column(
               children: [
-                Text(
+                const Text(
                   'Quiz',
-                  style: const TextStyle(fontSize: 24),
+                  style: TextStyle(fontSize: 20, color: Colors.white),
                 ),
                 Text(
                   'Soru ${_currentQuestionIndex + 1}/${_questions.length}',
                   style: const TextStyle(
-                    fontSize: 18,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
@@ -509,12 +509,12 @@ class _QuizGameScreenState extends State<QuizGameScreen>
     final color = _remainingTime <= 5 ? Colors.red : Colors.white;
 
     return Container(
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.all(12),
       child: ScaleTransition(
         scale: _timerScaleAnimation,
         child: Container(
-          width: 80,
-          height: 80,
+          width: 70,
+          height: 70,
           decoration: BoxDecoration(
             color: color.withOpacity(0.2),
             shape: BoxShape.circle,
@@ -524,7 +524,7 @@ class _QuizGameScreenState extends State<QuizGameScreen>
             child: Text(
               '$_remainingTime',
               style: TextStyle(
-                fontSize: 24,
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: color,
               ),
@@ -538,7 +538,7 @@ class _QuizGameScreenState extends State<QuizGameScreen>
   Widget _buildQuestionCard(QuizQuestion question) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.1),
         borderRadius: BorderRadius.circular(20),
@@ -551,7 +551,7 @@ class _QuizGameScreenState extends State<QuizGameScreen>
           Text(
             question.question,
             style: const TextStyle(
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
@@ -596,7 +596,7 @@ class _QuizGameScreenState extends State<QuizGameScreen>
             style: ElevatedButton.styleFrom(
               backgroundColor: backgroundColor,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
                 side: BorderSide(color: borderColor, width: 2),
@@ -606,8 +606,8 @@ class _QuizGameScreenState extends State<QuizGameScreen>
             child: Row(
               children: [
                 Container(
-                  width: 32,
-                  height: 32,
+                  width: 28,
+                  height: 28,
                   decoration: BoxDecoration(
                     color: borderColor.withOpacity(0.2),
                     shape: BoxShape.circle,
@@ -616,7 +616,7 @@ class _QuizGameScreenState extends State<QuizGameScreen>
                     child: Text(
                       String.fromCharCode(65 + index), // A, B, C, D
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 14,
                         fontWeight: FontWeight.bold,
                         color: borderColor,
                       ),
@@ -628,7 +628,7 @@ class _QuizGameScreenState extends State<QuizGameScreen>
                   child: Text(
                     option,
                     style: const TextStyle(
-                      fontSize: 16,
+                      fontSize: 15,
                       fontWeight: FontWeight.w500,
                     ),
                     textAlign: TextAlign.left,

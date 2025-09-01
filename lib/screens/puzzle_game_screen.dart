@@ -444,20 +444,23 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
   }
 
   Widget _buildPuzzleBoard() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final boardSize = screenWidth > 400 ? 280.0 : screenWidth * 0.7;
+
     return Container(
-      width: 300,
-      height: 300,
+      width: boardSize,
+      height: boardSize,
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.1),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
       ),
       child: GridView.builder(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(4),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 3,
-          crossAxisSpacing: 4,
-          mainAxisSpacing: 4,
+          crossAxisSpacing: 2,
+          mainAxisSpacing: 2,
         ),
         itemCount: 9,
         itemBuilder: (context, index) {
@@ -509,7 +512,7 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
             child: Text(
               '$value',
               style: TextStyle(
-                fontSize: 32,
+                fontSize: MediaQuery.of(context).size.width * 0.07,
                 fontWeight: FontWeight.bold,
                 color: Colors.green.shade800,
               ),

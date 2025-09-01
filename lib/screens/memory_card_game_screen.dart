@@ -409,11 +409,11 @@ class _MemoryCardGameScreenState extends State<MemoryCardGameScreen>
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 0.8,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 4, // Daha fazla sütun
+                    crossAxisSpacing: 8, // Sabit boşluk
+                    mainAxisSpacing: 8, // Sabit boşluk
+                    childAspectRatio: 0.8, // Daha küçük kartlar
                   ),
                   itemCount: _cards.length,
                   itemBuilder: (context, index) {
@@ -583,7 +583,7 @@ class _MemoryCardGameScreenState extends State<MemoryCardGameScreen>
         child: Text(
           card.symbol,
           style: const TextStyle(
-            fontSize: 32,
+            fontSize: 28,
             color: Colors.white,
           ),
         ),

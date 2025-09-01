@@ -676,12 +676,16 @@ class _PatternMatchingGameScreenState extends State<PatternMatchingGameScreen>
   }
 
   Widget _buildColorGrid() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final crossAxisCount =
+        screenWidth > 400 ? 4 : 3; // Küçük ekranlarda 3 sütun
+
     return GridView.builder(
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 1.2,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        crossAxisSpacing: screenWidth * 0.02,
+        mainAxisSpacing: screenWidth * 0.02,
+        childAspectRatio: 1.0, // Daha kare butonlar
       ),
       itemCount: _colors.length,
       itemBuilder: (context, index) {
@@ -720,7 +724,7 @@ class _PatternMatchingGameScreenState extends State<PatternMatchingGameScreen>
               ? const Icon(
                   Icons.touch_app,
                   color: Colors.white,
-                  size: 32,
+                  size: 28,
                 )
               : null,
         ),

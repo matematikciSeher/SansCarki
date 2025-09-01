@@ -1,51 +1,24 @@
 import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
+import 'screens/carkigo_splash_screen.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const CarkiGoApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class CarkiGoApp extends StatelessWidget {
+  const CarkiGoApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Sans Çarkı',
-      debugShowCheckedModeBanner: false,
+      title: 'ÇarkıGO!',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.orange,
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-        fontFamily: 'Roboto',
-        appBarTheme: const AppBarTheme(
-          elevation: 0,
-          centerTitle: true,
-          backgroundColor: Colors.orange,
-          foregroundColor: Colors.white,
-          titleTextStyle: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            elevation: 4,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
-        cardTheme: CardThemeData(
-          elevation: 4,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
+        primarySwatch: Colors.deepPurple,
+        fontFamily: 'Montserrat',
       ),
-      home: const HomeScreen(),
+      debugShowCheckedModeBanner: false,
+      home: const CarkiGoSplashScreen(),
     );
   }
 }

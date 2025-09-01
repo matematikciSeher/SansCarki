@@ -339,7 +339,7 @@ class _SudokuGameScreenState extends State<SudokuGameScreen> {
 
   Widget _buildGrid() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       child: AspectRatio(
         aspectRatio: 1,
         child: Container(

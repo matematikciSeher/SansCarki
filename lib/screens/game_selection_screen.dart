@@ -6,16 +6,17 @@ import 'puzzle_game_screen.dart';
 import 'word_scramble_game_screen.dart';
 import 'math_challenge_game_screen.dart';
 import 'pattern_matching_game_screen.dart';
-// import 'quiz_arena_screen.dart';
-// import 'avatar_adventure_screen.dart';
-import '../widgets/profile_page.dart';
+import 'quiz_game_screen.dart';
+import 'quiz_arena_screen.dart';
+import 'avatar_adventure_screen.dart';
+
+import 'balloon_pop_game_screen.dart';
+import 'target_shooter_game_screen.dart';
+import 'logic_gates_puzzle_screen.dart';
 import 'maze_game_screen.dart';
 import 'sudoku_game_screen.dart';
 // import 'shape_shift_game_screen.dart';
 // import 'ice_breaker_game_screen.dart';
-import 'balloon_pop_game_screen.dart';
-import 'target_shooter_game_screen.dart';
-import 'logic_gates_puzzle_screen.dart';
 
 class GameSelectionScreen extends StatefulWidget {
   final UserProfile profile;
@@ -56,11 +57,11 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
     ),
     GameInfo(
       id: 'word',
-      name: 'Kelime Karıştır',
-      description: 'Karışık harflerden anlamlı kelimeler oluştur!',
-      emoji: '📝',
-      color: Colors.orange,
-      estimatedTime: '4-6 dk',
+      name: '💣 Word Bomb',
+      description: 'İngilizce kelimeleri öğren, bombadan kaç!',
+      emoji: '💣',
+      color: Colors.red,
+      estimatedTime: '2-4 dk',
     ),
     GameInfo(
       id: 'math',
@@ -183,7 +184,7 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
         result = await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => WordScrambleGameScreen(profile: _profile),
+            builder: (context) => WordBombGameScreen(profile: _profile),
           ),
         );
         break;
@@ -600,13 +601,40 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
   }
 
   void _showProfile(BuildContext context) {
-    showModalBottomSheet(
+    // Profil sayfası henüz mevcut değil, sadece profil bilgilerini göster
+    showDialog(
       context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => ProfilePage(
-        profile: _profile,
-        completedTasks: const [], // Boş liste olarak geçiyoruz
+      builder: (context) => AlertDialog(
+        title: const Text('👤 Profil Bilgileri'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildProfileInfo('⭐ Puan', '${_profile.points}'),
+            _buildProfileInfo(
+                '🏆 En Yüksek Quiz', '${_profile.highestQuizScore ?? 0}'),
+            _buildProfileInfo(
+                '🎯 Tamamlanan Görev', '${_profile.completedTasks ?? 0}'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Kapat'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileInfo(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+        ],
       ),
     );
   }

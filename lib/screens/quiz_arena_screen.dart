@@ -102,7 +102,7 @@ class _QuizArenaScreenState extends State<QuizArenaScreen>
                   child: SlideTransition(
                     position: _slideAnimation,
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(12),
                       child: Column(
                         children: [
                           // Hoş geldin kartı
@@ -137,7 +137,7 @@ class _QuizArenaScreenState extends State<QuizArenaScreen>
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
           Container(
@@ -147,7 +147,7 @@ class _QuizArenaScreenState extends State<QuizArenaScreen>
             ),
             child: IconButton(
               onPressed: () => Navigator.pop(context),
-              icon: const Icon(Icons.arrow_back, color: Colors.white, size: 24),
+              icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
             ),
           ),
           const Expanded(
@@ -156,7 +156,7 @@ class _QuizArenaScreenState extends State<QuizArenaScreen>
                 Text(
                   '🏆 Quiz Arena',
                   style: TextStyle(
-                    fontSize: 28,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
@@ -180,7 +180,7 @@ class _QuizArenaScreenState extends State<QuizArenaScreen>
             ),
             child: IconButton(
               onPressed: () => _showProfile(context),
-              icon: const Icon(Icons.person, color: Colors.white, size: 24),
+              icon: const Icon(Icons.person, color: Colors.white, size: 20),
             ),
           ),
         ],
@@ -191,7 +191,7 @@ class _QuizArenaScreenState extends State<QuizArenaScreen>
   Widget _buildWelcomeCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -236,7 +236,7 @@ class _QuizArenaScreenState extends State<QuizArenaScreen>
                   ),
                   child: const Icon(
                     Icons.quiz,
-                    size: 40,
+                    size: 36,
                     color: Colors.white,
                   ),
                 ),
@@ -247,7 +247,7 @@ class _QuizArenaScreenState extends State<QuizArenaScreen>
           const Text(
             '🏆 Quiz Arena\'ya Hoş Geldin!',
             style: TextStyle(
-              fontSize: 22,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
@@ -257,7 +257,7 @@ class _QuizArenaScreenState extends State<QuizArenaScreen>
           Text(
             'Bilgi yarışmasında kendini test et ve puanlarını artır!',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 15,
               color: Colors.white.withOpacity(0.9),
             ),
             textAlign: TextAlign.center,
@@ -278,7 +278,7 @@ class _QuizArenaScreenState extends State<QuizArenaScreen>
             Icons.quiz,
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 8),
         Expanded(
           child: _buildStatCard(
             '🏆 En Yüksek',
@@ -287,7 +287,7 @@ class _QuizArenaScreenState extends State<QuizArenaScreen>
             Icons.emoji_events,
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 8),
         Expanded(
           child: _buildStatCard(
             '⭐ Quiz Puanı',
@@ -303,7 +303,7 @@ class _QuizArenaScreenState extends State<QuizArenaScreen>
   Widget _buildStatCard(
       String label, String value, Color color, IconData icon) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -321,12 +321,12 @@ class _QuizArenaScreenState extends State<QuizArenaScreen>
       ),
       child: Column(
         children: [
-          Icon(icon, color: color, size: 24),
+          Icon(icon, color: color, size: 20),
           const SizedBox(height: 8),
           Text(
             value,
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
               color: color,
             ),
@@ -353,7 +353,7 @@ class _QuizArenaScreenState extends State<QuizArenaScreen>
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.amber.shade600,
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
@@ -362,12 +362,12 @@ class _QuizArenaScreenState extends State<QuizArenaScreen>
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.shuffle, size: 28),
+            const Icon(Icons.shuffle, size: 24),
             const SizedBox(width: 12),
             const Text(
               '🎲 Rastgele Quiz Başlat',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -458,17 +458,9 @@ class _QuizArenaScreenState extends State<QuizArenaScreen>
 
   void _startRandomQuiz() async {
     final allQuestions = QuizData.getAllQuestions();
-    final solvedIds = List<String>.from(widget.profile.solvedQuestionIds);
-    final unsolvedQuestions =
-        allQuestions.where((q) => !solvedIds.contains(q.id)).toList();
-    List<QuizQuestion> quizQuestions;
-    if (unsolvedQuestions.length >= 10) {
-      quizQuestions = List<QuizQuestion>.from(unsolvedQuestions)..shuffle();
-      quizQuestions = quizQuestions.take(10).toList();
-    } else {
-      quizQuestions = List<QuizQuestion>.from(allQuestions)..shuffle();
-      quizQuestions = quizQuestions.take(10).toList();
-    }
+    // Her seferinde tamamen rastgele ve tekrar etmeyen sorular
+    allQuestions.shuffle();
+    final quizQuestions = allQuestions.take(15).toList();
     final updatedProfile = await Navigator.push(
       context,
       MaterialPageRoute(

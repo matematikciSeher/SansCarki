@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
+import 'dart:async';
 import '../models/user_profile.dart';
 
 class Balloon {
@@ -46,6 +47,11 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
   late List<Color> _colorPalette;
   late String _missionText;
   Random _random = Random();
+  int _maxLevel = 5;
+  int _totalPoppedBalloons = 0;
+  int _totalScore = 0;
+  int _timeLeft = 45; // 45 saniye süre
+  Timer? _timer;
 
   @override
   void initState() {
@@ -63,7 +69,7 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
     _startLevel();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 1),
+      duration: const Duration(milliseconds: 50), // Daha sık güncelleme
     )..addListener(_updateBalloons);
   }
 
@@ -71,13 +77,78 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
     setState(() {
       _showInfo = false;
       _isGameActive = true;
+      _timeLeft = 45; // Süreyi sıfırla
       _controller.repeat();
     });
+
+    // Süre sayacını başlat
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_isGameActive) {
+        setState(() {
+          _timeLeft--;
+          if (_timeLeft <= 0) {
+            _showTimeUpDialog();
+            timer.cancel();
+          }
+        });
+      }
+    });
+  }
+
+  void _showTimeUpDialog() {
+    _isGameActive = false;
+    _controller.stop();
+    _timer?.cancel();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('⏰ Süre Doldu!'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Seviye: $_level'),
+            Text('Puan: $_score'),
+            Text('Patlatılan balon: $_poppedTargetCount'),
+            if (_combo > 1) Text('Son kombo: $_combo'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              final updated = widget.profile.copyWith(
+                points: widget.profile.points + _score,
+              );
+              Navigator.pop(context, updated);
+            },
+            child: const Text('Ana Menüye Dön'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              setState(() {
+                _level++;
+                _score = 0;
+                _combo = 0;
+                _timeLeft = 45;
+              });
+              _startLevel();
+              _controller.repeat();
+            },
+            child: const Text('Sonraki Seviye'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _timer?.cancel();
     super.dispose();
   }
 
@@ -111,8 +182,8 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
     return Balloon(
       id: _random.nextInt(1000000),
       color: color,
-      x: _random.nextDouble() * 0.8 + 0.1,
-      y: 1.2 + _random.nextDouble() * 0.2,
+      x: _random.nextDouble(), // 0.0-1.0 arası oran
+      y: 0.9 + _random.nextDouble() * 0.1, // 0.9-1.0 arası oran
       isTarget: isTarget,
       isTrap: isTrap,
     );
@@ -123,21 +194,24 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
     setState(() {
       for (final balloon in _balloons) {
         if (!balloon.isPopped) {
-          // Yavaşlatıldı: 0.01 + 0.003 * _level -> 0.006 + 0.0015 * _level
-          balloon.y -= 0.006 + 0.0015 * _level;
+          double speed = 0.003 + 0.0008 * _level;
+          speed = speed.clamp(0.003, 0.012);
+          balloon.y -= speed;
+          if (balloon.y < 0.0) balloon.y = 0.0;
         }
       }
-      // Remove balloons that are out of screen
-      _balloons.removeWhere((b) => b.y < -0.1);
-      // Spawn new balloons
-      if (_random.nextDouble() < 0.15 + 0.01 * _level) {
+      _balloons.removeWhere((b) => b.y < -0.15);
+      double spawnRate = 0.06 + 0.004 * _level;
+      spawnRate = spawnRate.clamp(0.06, 0.15);
+      if (_random.nextDouble() < spawnRate) {
         _balloons.add(_createBalloon());
       }
-      // Oyun bitiş kontrolü (örnek: 20 hedef balon patlatınca seviye tamam)
-      if (_poppedTargetCount >= 20 + _level * 2) {
+      int targetCount = 15 + _level * 3;
+      if (_poppedTargetCount >= targetCount) {
         _showWinDialog();
       }
-      if (_missedCount > 10) {
+      int missLimit = 8 + _level;
+      if (_missedCount > missLimit) {
         _showGameOverDialog();
       }
     });
@@ -181,11 +255,18 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
     _isGameActive = false;
     _controller.stop();
     final int nonNegativeScore = max(0, _score);
+    final bool finishedAll = _level >= _maxLevel;
+
+    // Toplam istatistikleri güncelle
+    _totalScore += nonNegativeScore;
+    _totalPoppedBalloons += _poppedTargetCount;
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('🎉 Görev Tamam!'),
+        title: Text(
+            finishedAll ? '🎉 Tüm Seviyeler Tamamlandı!' : '🎉 Görev Tamam!'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -194,6 +275,27 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
             Text('Puan: $nonNegativeScore'),
             Text('Patlatılan balon: $_poppedTargetCount'),
             if (_combo > 1) Text('Kombo: $_combo'),
+            if (finishedAll) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green.withOpacity(0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('🏆 Final İstatistikleri:',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text('Toplam Patlatılan Balon: $_totalPoppedBalloons'),
+                    Text('Toplam Puan: $_totalScore'),
+                    Text('Tamamlanan Seviye: $_maxLevel'),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
         actions: [
@@ -201,25 +303,26 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
             onPressed: () {
               Navigator.pop(context);
               final updated = widget.profile.copyWith(
-                points: widget.profile.points + nonNegativeScore,
+                points: widget.profile.points + _totalScore,
               );
               Navigator.pop(context, updated);
             },
             child: const Text('Ana Menüye Dön'),
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              setState(() {
-                _level++;
-                _score = 0;
-                _combo = 0;
-              });
-              _startLevel();
-              _controller.repeat();
-            },
-            child: const Text('Sonraki Seviye'),
-          ),
+          if (!finishedAll)
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                setState(() {
+                  _level++;
+                  _score = 0;
+                  _combo = 0;
+                });
+                _startLevel();
+                _controller.repeat();
+              },
+              child: const Text('Sonraki Seviye'),
+            ),
         ],
       ),
     );
@@ -339,7 +442,7 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
                     padding: const EdgeInsets.symmetric(
                         horizontal: 32, vertical: 16),
                   ),
-                  child: const Text('Başla', style: TextStyle(fontSize: 22)),
+                  child: const Text('Başla', style: TextStyle(fontSize: 20)),
                 ),
               ],
             ),
@@ -354,6 +457,7 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
       builder: (context, constraints) {
         final width = constraints.maxWidth;
         final height = constraints.maxHeight;
+        final balloonSize = (width * 0.12).clamp(32.0, 64.0);
         return Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -366,33 +470,40 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
             ),
           ),
           child: SafeArea(
-            child: Stack(
+            child: Column(
               children: [
-                // Balonlar
-                ..._balloons.map((balloon) {
-                  // Balonun ekranda kalmasını sağla
-                  final bx = (balloon.x * width).clamp(24.0, width - 48.0);
-                  final by =
-                      (balloon.y * height - 80).clamp(0.0, height - 80.0);
-                  return Positioned(
-                    left: bx,
-                    top: by,
-                    child: GestureDetector(
-                      onTap: () => _popBalloon(balloon),
-                      child: AnimatedOpacity(
-                        opacity: balloon.isPopped ? 0.0 : 1.0,
-                        duration: const Duration(milliseconds: 200),
-                        child: _buildBalloonWidget(balloon),
-                      ),
-                    ),
-                  );
-                }),
-                // Üst panel
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  child: _buildHeader(),
+                // Üst panel - sabit
+                _buildHeader(),
+
+                // Oyun alanı - scroll edilebilir
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final width = constraints.maxWidth;
+                      final height = constraints.maxHeight;
+                      final balloonSize = (width * 0.12).clamp(32.0, 64.0);
+                      return Stack(
+                        children: [
+                          // Balonlar
+                          ..._balloons.map((balloon) {
+                            final left = (balloon.x * (width - balloonSize))
+                                .clamp(0.0, width - balloonSize);
+                            final top = (balloon.y * (height - balloonSize))
+                                .clamp(0.0, height - balloonSize);
+                            return Positioned(
+                              left: left,
+                              top: top,
+                              child: GestureDetector(
+                                onTap: () => _popBalloon(balloon),
+                                child:
+                                    _buildBalloonWidget(balloon, balloonSize),
+                              ),
+                            );
+                          }),
+                        ],
+                      );
+                    },
+                  ),
                 ),
               ],
             ),
@@ -404,8 +515,17 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.all(16),
-      color: Colors.white.withOpacity(0.2),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Row(
         children: [
           IconButton(
@@ -418,7 +538,7 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
                 const Text(
                   '🎈 Balon Patlat',
                   style: TextStyle(
-                    fontSize: 24,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
@@ -426,52 +546,68 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
                 Text(
                   'Seviye: $_level | Puan: $_score',
                   style: const TextStyle(
-                    fontSize: 16,
+                    fontSize: 14,
                     color: Colors.white70,
                   ),
                 ),
                 Text(
                   _missionText,
                   style: const TextStyle(
-                    fontSize: 16,
+                    fontSize: 14,
                     color: Colors.white,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 48),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: _timeLeft <= 10
+                  ? Colors.red.withOpacity(0.8)
+                  : Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              '⏰ $_timeLeft',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: _timeLeft <= 10 ? Colors.white : Colors.white,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildBalloonWidget(Balloon balloon) {
+  Widget _buildBalloonWidget(Balloon balloon, double size) {
     return Stack(
       alignment: Alignment.center,
       children: [
         Container(
-          width: 72,
-          height: 96,
+          width: size,
+          height: size,
           decoration: BoxDecoration(
             color: balloon.color,
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: balloon.color.withOpacity(0.5),
-                blurRadius: 16,
-                offset: const Offset(0, 12),
+                color: balloon.color.withOpacity(0.3),
+                blurRadius: size * 0.15,
+                offset: Offset(0, size * 0.08),
               ),
             ],
             border: Border.all(
               color:
                   balloon.isTrap ? Colors.black : Colors.white.withOpacity(0.5),
-              width: balloon.isTrap ? 3 : 2,
+              width: 1,
             ),
           ),
         ),
         if (balloon.isTrap)
-          const Icon(Icons.warning, color: Colors.black, size: 32),
+          Icon(Icons.warning, color: Colors.black, size: size * 0.4),
       ],
     );
   }

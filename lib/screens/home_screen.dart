@@ -301,18 +301,19 @@ class _HomeScreenState extends State<HomeScreen> {
       SnackBar(
         content: Row(
           children: [
-            Text(badge.emoji, style: const TextStyle(fontSize: 20)),
+            Text(badge.emoji, style: const TextStyle(fontSize: 18)),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
+                  const Text(
                     'Yeni Rozet!',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
+                      fontSize: 14,
                     ),
                   ),
                   Text(

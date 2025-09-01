@@ -101,10 +101,10 @@ class _TargetShooterGameScreenState extends State<TargetShooterGameScreen>
   Target _createTarget() {
     final isFake = _level > 3 && _random.nextDouble() < 0.2;
     final color = isFake ? Colors.grey : Colors.redAccent;
-    final radius = 32.0 + _random.nextDouble() * 16.0;
-    final x = _random.nextDouble() * 0.7 + 0.15;
-    final y = _random.nextDouble() * 0.5 + 0.2;
-    // Hedefler daha yavaş hareket etsin
+    // radius: 0.10 * ekran genişliği, min 24, max 56 px (ekran boyutuna göre ayarlanacak)
+    final radiusRatio = 0.10;
+    final x = _random.nextDouble(); // 0.0-1.0 arası oran
+    final y = _random.nextDouble(); // 0.0-1.0 arası oran
     final speed = 0.0015 + 0.001 * _level + _random.nextDouble() * 0.0015;
     final angle = _random.nextDouble() * 2 * pi;
     return Target(
@@ -113,7 +113,7 @@ class _TargetShooterGameScreenState extends State<TargetShooterGameScreen>
       y: y,
       dx: cos(angle) * speed,
       dy: sin(angle) * speed,
-      radius: radius,
+      radius: radiusRatio, // oran olarak tut
       color: color,
       isFake: isFake,
     );
@@ -126,12 +126,14 @@ class _TargetShooterGameScreenState extends State<TargetShooterGameScreen>
         if (!target.isHit) {
           target.x += target.dx;
           target.y += target.dy;
+          // Oranları sınırla
+          target.x = target.x.clamp(0.0, 1.0);
+          target.y = target.y.clamp(0.0, 1.0);
           // Duvara çarpınca yön değiştir
-          if (target.x < 0.05 || target.x > 0.95) target.dx = -target.dx;
-          if (target.y < 0.1 || target.y > 0.8) target.dy = -target.dy;
+          if (target.x <= 0.0 || target.x >= 1.0) target.dx = -target.dx;
+          if (target.y <= 0.0 || target.y >= 1.0) target.dy = -target.dy;
         }
       }
-      // Zaman kontrolü
       final elapsed = DateTime.now().difference(_startTime).inSeconds;
       _timeLeft = max(0, _levelTimeSeconds() - elapsed).toInt();
       if (_timeLeft <= 0 || _shots >= _maxShots) {
@@ -344,17 +346,27 @@ class _TargetShooterGameScreenState extends State<TargetShooterGameScreen>
           child: Stack(
             children: [
               // Hedefler
-              ..._targets.map((target) => AnimatedPositioned(
-                    duration: const Duration(milliseconds: 16),
-                    left: MediaQuery.of(context).size.width * target.x -
-                        target.radius,
-                    top: MediaQuery.of(context).size.height * target.y -
-                        target.radius,
-                    child: Opacity(
-                      opacity: target.isHit ? 0.3 : 1.0,
-                      child: _buildTargetWidget(target),
-                    ),
-                  )),
+              ..._targets.map((target) {
+                return LayoutBuilder(
+                  builder: (context, constraints) {
+                    final width = constraints.maxWidth;
+                    final height = constraints.maxHeight;
+                    final radius = (width * target.radius).clamp(24.0, 56.0);
+                    final left = (target.x * (width - 2 * radius))
+                        .clamp(0.0, width - 2 * radius);
+                    final top = (target.y * (height - 2 * radius))
+                        .clamp(0.0, height - 2 * radius);
+                    return Positioned(
+                      left: left,
+                      top: top,
+                      child: Opacity(
+                        opacity: target.isHit ? 0.3 : 1.0,
+                        child: _buildTargetWidget(target, radius),
+                      ),
+                    );
+                  },
+                );
+              }),
               // Üst panel
               Positioned(
                 top: 0,
@@ -412,27 +424,27 @@ class _TargetShooterGameScreenState extends State<TargetShooterGameScreen>
     );
   }
 
-  Widget _buildTargetWidget(Target target) {
+  Widget _buildTargetWidget(Target target, double radius) {
     return Container(
-      width: target.radius * 2,
-      height: target.radius * 2,
+      width: radius * 2,
+      height: radius * 2,
       decoration: BoxDecoration(
         color: target.color,
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: target.color.withOpacity(0.5),
-            blurRadius: 12,
-            offset: const Offset(0, 8),
+            color: target.color.withOpacity(0.3),
+            blurRadius: radius * 0.3,
+            offset: Offset(0, radius * 0.15),
           ),
         ],
         border: Border.all(
           color: target.isFake ? Colors.black : Colors.white,
-          width: target.isFake ? 3 : 2,
+          width: 1,
         ),
       ),
       child: target.isFake
-          ? const Icon(Icons.warning, color: Colors.black, size: 32)
+          ? Icon(Icons.warning, color: Colors.black, size: radius * 0.6)
           : null,
     );
   }

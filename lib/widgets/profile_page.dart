@@ -1121,14 +1121,18 @@ class BadgesPage extends StatelessWidget {
                       color: isEarned ? Colors.green : Colors.grey,
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      isEarned
-                          ? 'Hazır — Kazanıldı'
-                          : 'Bu rozeti henüz kazanamadın',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: isEarned ? Colors.green : Colors.grey,
+                    Flexible(
+                      child: Text(
+                        isEarned
+                            ? 'Hazır — Kazanıldı'
+                            : 'Bu rozeti henüz kazanamadın',
+                        style: TextStyle(
+                          fontSize: isEarned ? 14 : 12,
+                          fontWeight: FontWeight.bold,
+                          color: isEarned ? Colors.green : Colors.grey.shade400,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
