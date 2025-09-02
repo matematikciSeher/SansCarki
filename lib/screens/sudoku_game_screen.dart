@@ -169,8 +169,9 @@ class _SudokuGameScreenState extends State<SudokuGameScreen> {
   }
 
   void _showWinDialog() {
-    final updated =
-        widget.profile.copyWith(points: widget.profile.points + 100);
+    final updated = widget.profile.copyWith(
+        points: widget.profile.points + 100,
+        totalGamePoints: (widget.profile.totalGamePoints ?? 0) + 100);
     showDialog(
       context: context,
       barrierDismissible: false,

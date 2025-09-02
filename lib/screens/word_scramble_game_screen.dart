@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math';
 import '../models/user_profile.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class WordBombGameScreen extends StatefulWidget {
   final UserProfile profile;
@@ -658,7 +660,13 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              Navigator.pop(context);
+              Navigator.pop(
+                  context,
+                  widget.profile.copyWith(
+                    points: widget.profile.points + _score,
+                    totalGamePoints:
+                        (widget.profile.totalGamePoints ?? 0) + _score,
+                  ));
             },
             child: const Text('Ana Menüye Dön'),
           ),
@@ -694,9 +702,18 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
     // Profil güncelleme
     final updatedProfile = widget.profile.copyWith(
       points: widget.profile.points + _score,
+      totalGamePoints: (widget.profile.totalGamePoints ?? 0) + _score,
     );
 
+    // UserProfile'ı SharedPreferences'a kaydet
+    _saveProfile(updatedProfile);
+
     _showGameOverDialog(updatedProfile);
+  }
+
+  Future<void> _saveProfile(UserProfile profile) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_profile', jsonEncode(profile.toJson()));
   }
 
   void _showGameOverDialog(UserProfile updatedProfile) {
@@ -741,7 +758,7 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              Navigator.pop(context);
+              Navigator.pop(context, updatedProfile);
             },
             child: const Text('Ana Menüye Dön'),
           ),

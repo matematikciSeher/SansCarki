@@ -671,8 +671,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _navigateToGameCenter() {
-    Navigator.push(
+  void _navigateToGameCenter() async {
+    final updatedProfile = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => GameSelectionScreen(
@@ -680,6 +680,13 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+    if (updatedProfile != null && updatedProfile is UserProfile) {
+      setState(() {
+        _profile = updatedProfile;
+      });
+    } else {
+      _loadProfile();
+    }
   }
 
   Widget _buildStatCard(String title, String value, Color color) {

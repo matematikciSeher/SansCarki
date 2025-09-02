@@ -144,6 +144,7 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
     // Profil güncelleme
     final updatedProfile = widget.profile.copyWith(
       points: widget.profile.points + _score,
+      totalGamePoints: (widget.profile.totalGamePoints ?? 0) + _score,
     );
 
     _showGameCompleteDialog(updatedProfile);
@@ -191,7 +192,7 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen>
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              Navigator.pop(context);
+              Navigator.pop(context, updatedProfile);
             },
             child: const Text('Ana Menüye Dön'),
           ),

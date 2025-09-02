@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
 import '../models/user_profile.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class Target {
   final int id;
@@ -93,6 +95,7 @@ class _TargetShooterGameScreenState extends State<TargetShooterGameScreen>
   }
 
   void _spawnInitialTargets() {
+    _targets.clear(); // Clear any existing targets
     for (int i = 0; i < 3 + _level; i++) {
       _targets.add(_createTarget());
     }
@@ -103,8 +106,10 @@ class _TargetShooterGameScreenState extends State<TargetShooterGameScreen>
     final color = isFake ? Colors.grey : Colors.redAccent;
     // radius: 0.10 * ekran genişliği, min 24, max 56 px (ekran boyutuna göre ayarlanacak)
     final radiusRatio = 0.10;
-    final x = _random.nextDouble(); // 0.0-1.0 arası oran
-    final y = _random.nextDouble(); // 0.0-1.0 arası oran
+    // Ensure targets don't spawn too close to edges (considering radius)
+    final margin = radiusRatio * 0.5;
+    final x = margin + _random.nextDouble() * (1.0 - 2 * margin);
+    final y = margin + _random.nextDouble() * (1.0 - 2 * margin);
     final speed = 0.0015 + 0.001 * _level + _random.nextDouble() * 0.0015;
     final angle = _random.nextDouble() * 2 * pi;
     return Target(
@@ -120,18 +125,26 @@ class _TargetShooterGameScreenState extends State<TargetShooterGameScreen>
   }
 
   void _updateTargets() {
-    if (!_isGameActive) return;
+    if (!_isGameActive || _targets.isEmpty) return;
     setState(() {
       for (final target in _targets) {
         if (!target.isHit) {
           target.x += target.dx;
           target.y += target.dy;
-          // Oranları sınırla
-          target.x = target.x.clamp(0.0, 1.0);
-          target.y = target.y.clamp(0.0, 1.0);
-          // Duvara çarpınca yön değiştir
-          if (target.x <= 0.0 || target.x >= 1.0) target.dx = -target.dx;
-          if (target.y <= 0.0 || target.y >= 1.0) target.dy = -target.dy;
+
+          // Consider target radius when bouncing off walls
+          final radiusRatio = target.radius;
+          final margin = radiusRatio * 0.5;
+
+          // Bounce off walls with proper boundary checking
+          if (target.x <= margin || target.x >= 1.0 - margin) {
+            target.dx = -target.dx;
+            target.x = target.x.clamp(margin, 1.0 - margin);
+          }
+          if (target.y <= margin || target.y >= 1.0 - margin) {
+            target.dy = -target.dy;
+            target.y = target.y.clamp(margin, 1.0 - margin);
+          }
         }
       }
       final elapsed = DateTime.now().difference(_startTime).inSeconds;
@@ -139,13 +152,14 @@ class _TargetShooterGameScreenState extends State<TargetShooterGameScreen>
       if (_timeLeft <= 0 || _shots >= _maxShots) {
         _isGameActive = false;
         _controller.stop();
-        Future.delayed(const Duration(milliseconds: 300), _showEndDialog);
+        // Add a small delay to show final state before dialog
+        Future.delayed(const Duration(milliseconds: 500), _showEndDialog);
       }
     });
   }
 
   void _shoot(Offset pos, Size size) {
-    if (!_isGameActive || _shots >= _maxShots) return;
+    if (!_isGameActive || _shots >= _maxShots || _targets.isEmpty) return;
     setState(() {
       _shots++;
       bool hit = false;
@@ -154,18 +168,27 @@ class _TargetShooterGameScreenState extends State<TargetShooterGameScreen>
         final tx = target.x * size.width;
         final ty = target.y * size.height;
         final dist = (pos - Offset(tx, ty)).distance;
-        if (dist < target.radius) {
+        // Convert radius ratio to actual pixels
+        final actualRadius = (size.width * target.radius).clamp(24.0, 56.0);
+        if (dist < actualRadius) {
           target.isHit = true;
           if (!target.isFake) {
             _hits++;
-            // Merkeze yakınlık puanı
+            // Seviye zorluğuna göre puanlama + merkeze yakınlık bonusu
+            final baseScore = 10 +
+                (_level * 5); // Seviye 1: 15, Seviye 2: 20, Seviye 3: 25...
             final centerDist = dist;
-            final maxScore = 20;
-            final score =
-                maxScore - (centerDist / target.radius * maxScore).round();
-            _score += max(5, score);
+            final maxBonus = 15;
+            final bonus = (maxBonus - (centerDist / actualRadius * maxBonus))
+                .round()
+                .toInt();
+            final totalScore = (baseScore + max(0, bonus)).toInt();
+            _score += totalScore;
           } else {
-            _score -= 10;
+            // Sahte hedefler için sadece bonus puan yok, temel puan var
+            final baseScore =
+                5 + (_level * 2); // Seviye 1: 7, Seviye 2: 9, Seviye 3: 11...
+            _score += baseScore;
             _fakesHit++;
             _perfect = false;
           }
@@ -174,7 +197,10 @@ class _TargetShooterGameScreenState extends State<TargetShooterGameScreen>
         }
       }
       if (!hit) {
-        _score -= 2;
+        // Kaçan atışlar için minimal puan (negatif değil)
+        final missScore =
+            max(1, _level); // Seviye 1: 1, Seviye 2: 2, Seviye 3: 3...
+        _score += missScore;
         _perfect = false;
       }
     });
@@ -214,6 +240,8 @@ class _TargetShooterGameScreenState extends State<TargetShooterGameScreen>
               Navigator.pop(context);
               final updated = widget.profile.copyWith(
                 points: widget.profile.points + _totalScore,
+                totalGamePoints:
+                    (widget.profile.totalGamePoints ?? 0) + _totalScore,
                 // İstatistikleri UserProfile'a eklemek istersen burada ekle
               );
               Navigator.pop(context, updated);
@@ -244,6 +272,11 @@ class _TargetShooterGameScreenState extends State<TargetShooterGameScreen>
     });
   }
 
+  Future<void> _saveProfile(UserProfile profile) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_profile', jsonEncode(profile.toJson()));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -266,57 +299,70 @@ class _TargetShooterGameScreenState extends State<TargetShooterGameScreen>
         ),
       ),
       child: SafeArea(
-        child: Center(
+        child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const Text(
-                  '🎯 Hedef Avı',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+            padding: const EdgeInsets.all(16),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: MediaQuery.of(context).size.height - 100,
+              ),
+              child: IntrinsicHeight(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: 20),
+                    const Text(
+                      '🎯 Hedef Avı',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Text(
+                        'Kurallar:\n\n• Ekranda hareket eden hedeflere dokunarak/tıklayarak vur.\n• Her oyunda 10 atış hakkın var.\n• Hedefin merkezine ne kadar yakın vurursan, o kadar yüksek bonus alırsın.\n• Tüm atışlar puan kazandırır, seviye arttıkça puanlar artar!',
+                        style: TextStyle(fontSize: 16, color: Colors.white),
+                        textAlign: TextAlign.left,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Text(
+                        'Puanlama:\n\n• Doğru hedef: Seviye bazlı puan + bonus\n• Sahte hedef: Seviye bazlı puan\n• Kaçan atış: Seviye bazlı puan\n• %100 isabet: Ekstra ödül\n• Seviye arttıkça puanlar artar!',
+                        style: TextStyle(fontSize: 16, color: Colors.white),
+                        textAlign: TextAlign.left,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: _startGame,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.deepPurple,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 32, vertical: 16),
+                      ),
+                      child:
+                          const Text('Başla', style: TextStyle(fontSize: 20)),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
                 ),
-                const SizedBox(height: 24),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Text(
-                    'Kurallar:\n\n• Ekranda hareket eden hedeflere dokunarak/tıklayarak vur.\n• Her oyunda 10 atış hakkın var.\n• Hedefin merkezine ne kadar yakın vurursan, o kadar yüksek puan alırsın.\n• Sahte hedeflere veya boşluğa tıklarsan puan kaybedersin.\n',
-                    style: TextStyle(fontSize: 18, color: Colors.white),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Text(
-                    'Puanlama:\n\n• Merkeze yakın isabet: +5 ila +20 puan\n• Sahte hedef: -10 puan\n• Kaçan atış: -2 puan\n• %100 isabet: Ekstra ödül\n',
-                    style: TextStyle(fontSize: 18, color: Colors.white),
-                  ),
-                ),
-                const SizedBox(height: 32),
-                ElevatedButton(
-                  onPressed: _startGame,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.deepPurple,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 32, vertical: 16),
-                  ),
-                  child: const Text('Başla', style: TextStyle(fontSize: 22)),
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -347,24 +393,23 @@ class _TargetShooterGameScreenState extends State<TargetShooterGameScreen>
             children: [
               // Hedefler
               ..._targets.map((target) {
-                return LayoutBuilder(
-                  builder: (context, constraints) {
-                    final width = constraints.maxWidth;
-                    final height = constraints.maxHeight;
-                    final radius = (width * target.radius).clamp(24.0, 56.0);
-                    final left = (target.x * (width - 2 * radius))
-                        .clamp(0.0, width - 2 * radius);
-                    final top = (target.y * (height - 2 * radius))
-                        .clamp(0.0, height - 2 * radius);
-                    return Positioned(
-                      left: left,
-                      top: top,
-                      child: Opacity(
-                        opacity: target.isHit ? 0.3 : 1.0,
-                        child: _buildTargetWidget(target, radius),
-                      ),
-                    );
-                  },
+                final screenWidth = MediaQuery.of(context).size.width;
+                final screenHeight = MediaQuery.of(context).size.height;
+                final radius = (screenWidth * target.radius).clamp(24.0, 56.0);
+
+                // Hedeflerin ekran sınırları içinde kalmasını sağla
+                final maxLeft = screenWidth - 2 * radius;
+                final maxTop = screenHeight - 2 * radius;
+                final left = (target.x * maxLeft).clamp(0.0, maxLeft);
+                final top = (target.y * maxTop).clamp(0.0, maxTop);
+
+                return Positioned(
+                  left: left,
+                  top: top,
+                  child: Opacity(
+                    opacity: target.isHit ? 0.3 : 1.0,
+                    child: _buildTargetWidget(target, radius),
+                  ),
                 );
               }),
               // Üst panel
@@ -380,12 +425,21 @@ class _TargetShooterGameScreenState extends State<TargetShooterGameScreen>
                 left: 0,
                 right: 0,
                 child: Center(
-                  child: Text(
-                    'Atış:  $_shots/$_maxShots | Süre: $_timeLeft sn',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      'Atış: $_shots/$_maxShots | Süre: $_timeLeft sn',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
                   ),
                 ),
@@ -399,26 +453,28 @@ class _TargetShooterGameScreenState extends State<TargetShooterGameScreen>
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       color: Colors.white.withOpacity(0.2),
       child: Row(
         children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
           ),
           const Expanded(
             child: Text(
               '🎯 Hedef Avı',
               style: TextStyle(
-                fontSize: 24,
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
               ),
               textAlign: TextAlign.center,
             ),
           ),
-          const SizedBox(width: 48),
+          const SizedBox(width: 40),
         ],
       ),
     );

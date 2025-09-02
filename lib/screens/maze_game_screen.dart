@@ -127,8 +127,9 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
 
   void _showWin() {
     final earned = 80 + (_rows + _cols); // daha yüksek puan
-    final updated =
-        widget.profile.copyWith(points: widget.profile.points + earned);
+    final updated = widget.profile.copyWith(
+        points: widget.profile.points + earned,
+        totalGamePoints: (widget.profile.totalGamePoints ?? 0) + earned);
     showDialog(
       context: context,
       barrierDismissible: false,

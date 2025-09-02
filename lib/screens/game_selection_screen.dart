@@ -254,53 +254,59 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.indigo.shade900,
-              Colors.purple.shade800,
-              Colors.deepPurple.shade900,
-            ],
+    return WillPopScope(
+      onWillPop: () async {
+        Navigator.pop(context, _profile);
+        return false;
+      },
+      child: Scaffold(
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.indigo.shade900,
+                Colors.purple.shade800,
+                Colors.deepPurple.shade900,
+              ],
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Header
-              _buildHeader(),
+          child: SafeArea(
+            child: Column(
+              children: [
+                // Header
+                _buildHeader(),
 
-              // Ana içerik
-              Expanded(
-                child: FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: SlideTransition(
-                    position: _slideAnimation,
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          // Hoş geldin kartı
-                          _buildWelcomeCard(),
+                // Ana içerik
+                Expanded(
+                  child: FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: SlideTransition(
+                      position: _slideAnimation,
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          children: [
+                            // Hoş geldin kartı
+                            _buildWelcomeCard(),
 
-                          const SizedBox(height: 24),
+                            const SizedBox(height: 24),
 
-                          // Rastgele oyun butonu
+                            // Rastgele oyun butonu
 
-                          const SizedBox(height: 24),
+                            const SizedBox(height: 24),
 
-                          // Oyun listesi
-                          _buildGamesList(),
-                        ],
+                            // Oyun listesi
+                            _buildGamesList(),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

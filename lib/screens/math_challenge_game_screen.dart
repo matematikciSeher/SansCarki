@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math';
 import '../models/user_profile.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class MathChallengeGameScreen extends StatefulWidget {
   final UserProfile profile;
@@ -77,56 +79,82 @@ class _MathChallengeGameScreenState extends State<MathChallengeGameScreen>
   }
 
   MathQuestion _generateRandomQuestion(Random random) {
-    final operation = random.nextInt(4); // 0: +, 1: -, 2: *, 3: /
+    final questionType = random.nextInt(6); // 0-3: 4 işlem, 4-5: problem
     int num1, num2, correctAnswer;
     List<int> options;
+    String questionText;
 
-    switch (operation) {
-      case 0: // Toplama
+    switch (questionType) {
+      case 0: // Toplama - daha büyük sayılar
+        num1 = random.nextInt(200) + 50;
+        num2 = random.nextInt(200) + 50;
+        correctAnswer = num1 + num2;
+        questionText = '$num1 + $num2 = ?';
+        break;
+      case 1: // Çıkarma - daha büyük sayılar
+        num1 = random.nextInt(300) + 100;
+        num2 = random.nextInt(num1 - 50) + 20;
+        correctAnswer = num1 - num2;
+        questionText = '$num1 - $num2 = ?';
+        break;
+      case 2: // Çarpma - daha büyük çarpanlar
+        num1 = random.nextInt(20) + 5;
+        num2 = random.nextInt(20) + 5;
+        correctAnswer = num1 * num2;
+        questionText = '$num1 × $num2 = ?';
+        break;
+      case 3: // Bölme - daha büyük bölünenler
+        num2 = random.nextInt(15) + 3;
+        correctAnswer = random.nextInt(20) + 2;
+        num1 = num2 * correctAnswer;
+        questionText = '$num1 ÷ $num2 = ?';
+        break;
+      case 4: // Basit problem - toplama
         num1 = random.nextInt(50) + 10;
         num2 = random.nextInt(50) + 10;
         correctAnswer = num1 + num2;
+        questionText =
+            'Bir çiftlikte $num1 inek ve $num2 koyun var. Toplam kaç hayvan var?';
         break;
-      case 1: // Çıkarma
-        num1 = random.nextInt(50) + 30;
-        num2 = random.nextInt(num1 - 10) + 5;
-        correctAnswer = num1 - num2;
-        break;
-      case 2: // Çarpma
-        num1 = random.nextInt(12) + 1;
-        num2 = random.nextInt(12) + 1;
+      case 5: // Basit problem - çarpma
+        num1 = random.nextInt(8) + 2;
+        num2 = random.nextInt(8) + 2;
         correctAnswer = num1 * num2;
-        break;
-      case 3: // Bölme
-        num2 = random.nextInt(10) + 2;
-        correctAnswer = random.nextInt(10) + 1;
-        num1 = num2 * correctAnswer;
+        questionText =
+            'Her kutuda $num1 elma var. $num2 kutu varsa toplam kaç elma var?';
         break;
       default:
         num1 = 10;
         num2 = 5;
         correctAnswer = 15;
+        questionText = '$num1 + $num2 = ?';
     }
 
-    // Yanlış seçenekler oluştur
+    // Yanlış seçenekler oluştur - daha zor ve çeşitli
     options = [correctAnswer];
     while (options.length < 4) {
       int wrongAnswer;
-      switch (operation) {
-        case 0: // Toplama
-          wrongAnswer = correctAnswer + random.nextInt(10) - 5;
-          break;
-        case 1: // Çıkarma
-          wrongAnswer = correctAnswer + random.nextInt(10) - 5;
-          break;
-        case 2: // Çarpma
-          wrongAnswer = correctAnswer + random.nextInt(8) - 4;
-          break;
-        case 3: // Bölme
-          wrongAnswer = correctAnswer + random.nextInt(6) - 3;
-          break;
-        default:
-          wrongAnswer = correctAnswer + 1;
+      if (questionType <= 3) {
+        // 4 işlem için
+        switch (questionType) {
+          case 0: // Toplama
+            wrongAnswer = correctAnswer + random.nextInt(20) - 10;
+            break;
+          case 1: // Çıkarma
+            wrongAnswer = correctAnswer + random.nextInt(20) - 10;
+            break;
+          case 2: // Çarpma
+            wrongAnswer = correctAnswer + random.nextInt(16) - 8;
+            break;
+          case 3: // Bölme
+            wrongAnswer = correctAnswer + random.nextInt(12) - 6;
+            break;
+          default:
+            wrongAnswer = correctAnswer + 1;
+        }
+      } else {
+        // Problem için
+        wrongAnswer = correctAnswer + random.nextInt(15) - 7;
       }
 
       if (wrongAnswer != correctAnswer &&
@@ -137,24 +165,6 @@ class _MathChallengeGameScreenState extends State<MathChallengeGameScreen>
     }
 
     options.shuffle(random);
-
-    String questionText;
-    switch (operation) {
-      case 0:
-        questionText = '$num1 + $num2 = ?';
-        break;
-      case 1:
-        questionText = '$num1 - $num2 = ?';
-        break;
-      case 2:
-        questionText = '$num1 × $num2 = ?';
-        break;
-      case 3:
-        questionText = '$num1 ÷ $num2 = ?';
-        break;
-      default:
-        questionText = '$num1 + $num2 = ?';
-    }
 
     return MathQuestion(
       question: questionText,
@@ -278,7 +288,7 @@ class _MathChallengeGameScreenState extends State<MathChallengeGameScreen>
       ),
     );
 
-    Future.delayed(const Duration(seconds: 2), () {
+    Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
         _nextQuestion();
       }
@@ -317,9 +327,18 @@ class _MathChallengeGameScreenState extends State<MathChallengeGameScreen>
     // Profil güncelleme
     final updatedProfile = widget.profile.copyWith(
       points: widget.profile.points + _score,
+      totalGamePoints: (widget.profile.totalGamePoints ?? 0) + _score,
     );
 
+    // UserProfile'ı SharedPreferences'a kaydet
+    _saveProfile(updatedProfile);
+
     _showGameCompleteDialog(updatedProfile, accuracy);
+  }
+
+  Future<void> _saveProfile(UserProfile profile) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_profile', jsonEncode(profile.toJson()));
   }
 
   void _showGameCompleteDialog(UserProfile updatedProfile, double accuracy) {
@@ -365,7 +384,7 @@ class _MathChallengeGameScreenState extends State<MathChallengeGameScreen>
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              Navigator.pop(context);
+              Navigator.pop(context, updatedProfile);
             },
             child: const Text('Ana Menüye Dön'),
           ),

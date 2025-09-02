@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:math';
 import 'dart:async';
 import '../models/user_profile.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class Balloon {
   final int id;
@@ -304,6 +306,8 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
               Navigator.pop(context);
               final updated = widget.profile.copyWith(
                 points: widget.profile.points + _totalScore,
+                totalGamePoints:
+                    (widget.profile.totalGamePoints ?? 0) + _totalScore,
               );
               Navigator.pop(context, updated);
             },
@@ -350,7 +354,14 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              Navigator.pop(context);
+              final updated = widget.profile.copyWith(
+                points: widget.profile.points + nonNegativeScore,
+                totalGamePoints:
+                    (widget.profile.totalGamePoints ?? 0) + nonNegativeScore,
+              );
+              // UserProfile'ı SharedPreferences'a kaydet
+              _saveProfile(updated);
+              Navigator.pop(context, updated);
             },
             child: const Text('Ana Menüye Dön'),
           ),
@@ -370,6 +381,11 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
         ],
       ),
     );
+  }
+
+  Future<void> _saveProfile(UserProfile profile) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_profile', jsonEncode(profile.toJson()));
   }
 
   @override
@@ -394,57 +410,70 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
         ),
       ),
       child: SafeArea(
-        child: Center(
+        child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const Text(
-                  '🎈 Balon Patlat',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+            padding: const EdgeInsets.all(16),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: MediaQuery.of(context).size.height - 100,
+              ),
+              child: IntrinsicHeight(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: 20),
+                    const Text(
+                      '🎈 Balon Patlat',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Text(
+                        'Kurallar:\n\n• Ekranda farklı renklerde balonlar yükselecek.\n• Görevde belirtilen renkteki balonlara dokunarak patlat.\n• Yanlış renge dokunursan puan kaybedersin.\n• Zor seviyede tuzak balonlar ve hız artışı olabilir.',
+                        style: TextStyle(fontSize: 16, color: Colors.white),
+                        textAlign: TextAlign.left,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Text(
+                        'Puanlama:\n\n• Doğru balon: +5 puan (+kombo bonusu)\n• Yanlış balon: -5 puan\n• Tuzak balon: -10 puan\n• 5\'li kombo: +10 bonus',
+                        style: TextStyle(fontSize: 16, color: Colors.white),
+                        textAlign: TextAlign.left,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: _startGame,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.red,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 32, vertical: 16),
+                      ),
+                      child:
+                          const Text('Başla', style: TextStyle(fontSize: 18)),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
                 ),
-                const SizedBox(height: 24),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Text(
-                    'Kurallar:\n\n• Ekranda farklı renklerde balonlar yükselecek.\n• Görevde belirtilen renkteki balonlara dokunarak patlat.\n• Yanlış renge dokunursan puan kaybedersin.\n• Zor seviyede tuzak balonlar ve hız artışı olabilir.\n',
-                    style: TextStyle(fontSize: 18, color: Colors.white),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Text(
-                    'Puanlama:\n\n• Doğru balon: +5 puan (+kombo bonusu)\n• Yanlış balon: -5 puan\n• Tuzak balon: -10 puan\n• 5’li kombo: +10 bonus\n',
-                    style: TextStyle(fontSize: 18, color: Colors.white),
-                  ),
-                ),
-                const SizedBox(height: 32),
-                ElevatedButton(
-                  onPressed: _startGame,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.red,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 32, vertical: 16),
-                  ),
-                  child: const Text('Başla', style: TextStyle(fontSize: 20)),
-                ),
-              ],
+              ),
             ),
           ),
         ),
