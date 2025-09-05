@@ -1,0 +1,14 @@
+[
+  {
+    "id": "zihin_ilk_001",
+    "title": "1’den 20’ye kadar say.",
+    "description": "1’den 20’ye kadar sırayla say.",
+    "categoryId": "zihin",
+    "allowedGrades": [1,2,3,4],
+    "emoji": "🧠",
+    "basePoints": 8,
+    "difficulty": "easy"
+  }
+]
+
+

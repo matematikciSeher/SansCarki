@@ -68,7 +68,6 @@ class _CategoryWheelState extends State<CategoryWheel>
       _isSpinning = true;
     });
 
-    final baseCategories = CategoryData.getAllCategories();
     final categories =
         CategoryData.getAllCategories(); // Sadece 12 kategori, tekrar yok
     _currentSelectedIndex =
@@ -78,9 +77,17 @@ class _CategoryWheelState extends State<CategoryWheel>
 
   @override
   Widget build(BuildContext context) {
-    final baseCategories = CategoryData.getAllCategories();
     final categories =
         CategoryData.getAllCategories(); // Sadece 12 kategori, tekrar yok
+
+    // Ekran boyutuna göre çark boyutu (piksel taşmalarını azaltmak için kısıtla)
+    final screenWidth = MediaQuery.of(context).size.width;
+    final double wheelSize = () {
+      final proposed = screenWidth * 0.8;
+      if (proposed < 220) return 220.0;
+      if (proposed > 340) return 340.0;
+      return proposed.toDouble();
+    }();
 
     return Column(
       children: [
@@ -106,6 +113,7 @@ class _CategoryWheelState extends State<CategoryWheel>
               ),
             ],
           ),
+          clipBehavior: Clip.antiAlias,
           child: Stack(
             alignment: Alignment.center,
             children: [
@@ -113,8 +121,8 @@ class _CategoryWheelState extends State<CategoryWheel>
               Transform.scale(
                 scale: 1.1 + (_glowAnimation.value * 0.1),
                 child: Container(
-                  width: 320,
-                  height: 320,
+                  width: wheelSize + 20,
+                  height: wheelSize + 20,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
@@ -131,67 +139,70 @@ class _CategoryWheelState extends State<CategoryWheel>
               // Ana çark (paket ile)
               Transform.scale(
                 scale: _bounceAnimation.value,
-                child: SizedBox(
-                  width: 300,
-                  height: 300,
-                  child: FortuneWheel(
-                    animateFirst: false,
-                    selected: _selectedController.stream,
-                    onAnimationEnd: () {
-                      setState(() {
-                        _isSpinning = false;
-                      });
-                      final categories = CategoryData.getAllCategories();
-                      widget.onCategorySelected(
-                          categories[_currentSelectedIndex]);
-                      _bounceController
-                          .forward()
-                          .then((_) => _bounceController.reverse());
-                    },
-                    indicators: const <FortuneIndicator>[
-                      FortuneIndicator(
-                        alignment: Alignment.topCenter,
-                        child: TriangleIndicator(color: Colors.white),
-                      ),
-                    ],
-                    items: [
-                      for (final category in categories)
-                        FortuneItem(
-                          style: FortuneItemStyle(
-                            color: category.color,
-                            borderColor: Colors.white,
-                            borderWidth: 2,
-                            textAlign: TextAlign.center,
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(category.emoji,
-                                  style: const TextStyle(fontSize: 20)),
-                              const SizedBox(width: 6),
-                              Flexible(
-                                child: Text(
-                                  category.name,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                    shadows: [
-                                      Shadow(
-                                          color: Colors.black,
-                                          offset: Offset(1, 1),
-                                          blurRadius: 2),
-                                    ],
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(wheelSize / 2),
+                  child: SizedBox(
+                    width: wheelSize,
+                    height: wheelSize,
+                    child: FortuneWheel(
+                      animateFirst: false,
+                      selected: _selectedController.stream,
+                      onAnimationEnd: () {
+                        setState(() {
+                          _isSpinning = false;
+                        });
+                        final categories = CategoryData.getAllCategories();
+                        widget.onCategorySelected(
+                            categories[_currentSelectedIndex]);
+                        _bounceController
+                            .forward()
+                            .then((_) => _bounceController.reverse());
+                      },
+                      indicators: const <FortuneIndicator>[
+                        FortuneIndicator(
+                          alignment: Alignment.topCenter,
+                          child: TriangleIndicator(color: Colors.white),
                         ),
-                    ],
+                      ],
+                      items: [
+                        for (final category in categories)
+                          FortuneItem(
+                            style: FortuneItemStyle(
+                              color: category.color,
+                              borderColor: Colors.white,
+                              borderWidth: 2,
+                              textAlign: TextAlign.center,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(category.emoji,
+                                    style: const TextStyle(fontSize: 20)),
+                                const SizedBox(width: 6),
+                                Flexible(
+                                  child: Text(
+                                    category.name,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                      shadows: [
+                                        Shadow(
+                                            color: Colors.black,
+                                            offset: Offset(1, 1),
+                                            blurRadius: 2),
+                                      ],
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ),

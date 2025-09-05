@@ -29,18 +29,50 @@ class _MathChallengeGameScreenState extends State<MathChallengeGameScreen>
   int _correctAnswers = 0;
   int _score = 0;
   Timer? _gameTimer;
-  int _remainingTime = 30;
+  int _remainingTime = 20;
   bool _isAnswered = false;
   int? _selectedAnswerIndex;
   bool _isGameComplete = false;
   bool _showInfo = true;
 
+  // Grade-based parameters
+  late int _minAdd;
+  late int _maxAdd;
+  late int _minMul;
+  late int _maxMul;
+  late int _startTime;
+
   @override
   void initState() {
     super.initState();
+    _initializeDifficultyByGrade();
     _initializeAnimations();
     _generateQuestions();
     _startTimer();
+  }
+
+  void _initializeDifficultyByGrade() {
+    final g = widget.profile.grade;
+    if (g != null && g >= 1 && g <= 4) {
+      _minAdd = 1;
+      _maxAdd = 50;
+      _minMul = 2;
+      _maxMul = 9;
+      _startTime = 25;
+    } else if (g != null && g >= 5 && g <= 8) {
+      _minAdd = 20;
+      _maxAdd = 150;
+      _minMul = 3;
+      _maxMul = 15;
+      _startTime = 20;
+    } else {
+      _minAdd = 50;
+      _maxAdd = 300;
+      _minMul = 5;
+      _maxMul = 20;
+      _startTime = 18;
+    }
+    _remainingTime = _startTime;
   }
 
   void _initializeAnimations() {
@@ -85,40 +117,45 @@ class _MathChallengeGameScreenState extends State<MathChallengeGameScreen>
     String questionText;
 
     switch (questionType) {
-      case 0: // Toplama - daha büyük sayılar
-        num1 = random.nextInt(200) + 50;
-        num2 = random.nextInt(200) + 50;
+      case 0: // Toplama
+        num1 = random.nextInt(_maxAdd - _minAdd + 1) + _minAdd;
+        num2 = random.nextInt(_maxAdd - _minAdd + 1) + _minAdd;
         correctAnswer = num1 + num2;
         questionText = '$num1 + $num2 = ?';
         break;
-      case 1: // Çıkarma - daha büyük sayılar
-        num1 = random.nextInt(300) + 100;
-        num2 = random.nextInt(num1 - 50) + 20;
+      case 1: // Çıkarma
+        num1 = random.nextInt(_maxAdd - _minAdd + 1) + _minAdd;
+        num2 = random.nextInt(num1 - _minAdd + 1) + _minAdd;
+        if (num2 > num1) {
+          final tmp = num1;
+          num1 = num2;
+          num2 = tmp;
+        }
         correctAnswer = num1 - num2;
         questionText = '$num1 - $num2 = ?';
         break;
-      case 2: // Çarpma - daha büyük çarpanlar
-        num1 = random.nextInt(20) + 5;
-        num2 = random.nextInt(20) + 5;
+      case 2: // Çarpma
+        num1 = random.nextInt(_maxMul - _minMul + 1) + _minMul;
+        num2 = random.nextInt(_maxMul - _minMul + 1) + _minMul;
         correctAnswer = num1 * num2;
         questionText = '$num1 × $num2 = ?';
         break;
-      case 3: // Bölme - daha büyük bölünenler
-        num2 = random.nextInt(15) + 3;
-        correctAnswer = random.nextInt(20) + 2;
+      case 3: // Bölme
+        num2 = random.nextInt((_maxMul - _minMul + 1)) + _minMul;
+        correctAnswer = random.nextInt(_maxMul - _minMul + 1) + _minMul;
         num1 = num2 * correctAnswer;
         questionText = '$num1 ÷ $num2 = ?';
         break;
       case 4: // Basit problem - toplama
-        num1 = random.nextInt(50) + 10;
-        num2 = random.nextInt(50) + 10;
+        num1 = random.nextInt((_maxAdd - _minAdd) ~/ 4 + 1) + _minAdd;
+        num2 = random.nextInt((_maxAdd - _minAdd) ~/ 4 + 1) + _minAdd;
         correctAnswer = num1 + num2;
         questionText =
             'Bir çiftlikte $num1 inek ve $num2 koyun var. Toplam kaç hayvan var?';
         break;
       case 5: // Basit problem - çarpma
-        num1 = random.nextInt(8) + 2;
-        num2 = random.nextInt(8) + 2;
+        num1 = random.nextInt((_maxMul - _minMul) ~/ 2 + 1) + _minMul;
+        num2 = random.nextInt((_maxMul - _minMul) ~/ 2 + 1) + _minMul;
         correctAnswer = num1 * num2;
         questionText =
             'Her kutuda $num1 elma var. $num2 kutu varsa toplam kaç elma var?';
@@ -130,33 +167,16 @@ class _MathChallengeGameScreenState extends State<MathChallengeGameScreen>
         questionText = '$num1 + $num2 = ?';
     }
 
-    // Yanlış seçenekler oluştur - daha zor ve çeşitli
+    // Yanlış seçenekler
     options = [correctAnswer];
     while (options.length < 4) {
       int wrongAnswer;
       if (questionType <= 3) {
-        // 4 işlem için
-        switch (questionType) {
-          case 0: // Toplama
-            wrongAnswer = correctAnswer + random.nextInt(20) - 10;
-            break;
-          case 1: // Çıkarma
-            wrongAnswer = correctAnswer + random.nextInt(20) - 10;
-            break;
-          case 2: // Çarpma
-            wrongAnswer = correctAnswer + random.nextInt(16) - 8;
-            break;
-          case 3: // Bölme
-            wrongAnswer = correctAnswer + random.nextInt(12) - 6;
-            break;
-          default:
-            wrongAnswer = correctAnswer + 1;
-        }
+        wrongAnswer =
+            correctAnswer + random.nextInt((_maxMul + _maxAdd) ~/ 10 + 10) - 5;
       } else {
-        // Problem için
         wrongAnswer = correctAnswer + random.nextInt(15) - 7;
       }
-
       if (wrongAnswer != correctAnswer &&
           wrongAnswer > 0 &&
           !options.contains(wrongAnswer)) {
@@ -205,9 +225,9 @@ class _MathChallengeGameScreenState extends State<MathChallengeGameScreen>
             const Text('Bu soru için süre doldu. Doğru cevap gösteriliyor.'),
         actions: [
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              _nextQuestion();
+              await _nextQuestion();
             },
             child: const Text('Devam Et'),
           ),
@@ -288,31 +308,32 @@ class _MathChallengeGameScreenState extends State<MathChallengeGameScreen>
       ),
     );
 
-    Future.delayed(const Duration(milliseconds: 500), () {
+    Future.delayed(const Duration(milliseconds: 500), () async {
       if (mounted) {
-        _nextQuestion();
+        await _nextQuestion();
       }
     });
   }
 
-  void _nextQuestion() {
+  Future<void> _nextQuestion() async {
     if (_currentQuestionIndex < _questions.length - 1) {
       setState(() {
         _currentQuestionIndex++;
         _isAnswered = false;
         _selectedAnswerIndex = null;
-        _remainingTime = 30;
+        _remainingTime = _startTime;
       });
 
+      // Yeni soru hemen gelsin
       _questionAnimationController.reset();
       _questionAnimationController.forward();
       _startTimer();
     } else {
-      _endGame();
+      await _endGame();
     }
   }
 
-  void _endGame() {
+  Future<void> _endGame() async {
     _gameTimer?.cancel();
     setState(() {
       _isGameComplete = true;
@@ -331,7 +352,7 @@ class _MathChallengeGameScreenState extends State<MathChallengeGameScreen>
     );
 
     // UserProfile'ı SharedPreferences'a kaydet
-    _saveProfile(updatedProfile);
+    await _saveProfile(updatedProfile);
 
     _showGameCompleteDialog(updatedProfile, accuracy);
   }
@@ -382,8 +403,10 @@ class _MathChallengeGameScreenState extends State<MathChallengeGameScreen>
         ),
         actions: [
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
+              // UserProfile'ı SharedPreferences'a kaydet
+              await _saveProfile(updatedProfile);
               Navigator.pop(context, updatedProfile);
             },
             child: const Text('Ana Menüye Dön'),
@@ -418,7 +441,7 @@ class _MathChallengeGameScreenState extends State<MathChallengeGameScreen>
       _currentQuestionIndex = 0;
       _correctAnswers = 0;
       _score = 0;
-      _remainingTime = 30;
+      _remainingTime = _startTime;
       _isAnswered = false;
       _selectedAnswerIndex = null;
       _isGameComplete = false;

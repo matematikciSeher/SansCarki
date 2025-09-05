@@ -478,6 +478,14 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
     return sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
   }
 
+  String _getExplodedWordEnglish(String turkishWord) {
+    final wordPair = _allWords.firstWhere(
+      (word) => word.turkish == turkishWord,
+      orElse: () => WordPair(english: '', turkish: turkishWord, emoji: ''),
+    );
+    return wordPair.english;
+  }
+
   void _onBalloonTap(BalloonAnswer balloon) {
     if (_isExploding) return;
 
@@ -696,7 +704,7 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
     _generateBalloonsInCenterSquare();
   }
 
-  void _endGame() {
+  Future<void> _endGame() async {
     _balloonMovementTimer?.cancel();
 
     // Profil güncelleme
@@ -706,7 +714,7 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
     );
 
     // UserProfile'ı SharedPreferences'a kaydet
-    _saveProfile(updatedProfile);
+    await _saveProfile(updatedProfile);
 
     _showGameOverDialog(updatedProfile);
   }
@@ -756,8 +764,10 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
         ),
         actions: [
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
+              // UserProfile'ı SharedPreferences'a kaydet
+              await _saveProfile(updatedProfile);
               Navigator.pop(context, updatedProfile);
             },
             child: const Text('Ana Menüye Dön'),
@@ -1065,6 +1075,16 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
                                   color: Colors.white,
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                _getExplodedWordEnglish(_explodedWord),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w500,
                                 ),
                                 textAlign: TextAlign.center,
                               ),

@@ -11,6 +11,7 @@ class Task {
   final String emoji;
   final bool isCompleted;
   final DateTime? completedAt;
+  final List<int>? allowedGrades; // 1-12 izinli sınıflar
 
   Task({
     required this.id,
@@ -23,6 +24,7 @@ class Task {
     required this.emoji,
     this.isCompleted = false,
     this.completedAt,
+    this.allowedGrades,
   });
 
   Task copyWith({
@@ -36,6 +38,7 @@ class Task {
     String? emoji,
     bool? isCompleted,
     DateTime? completedAt,
+    List<int>? allowedGrades,
   }) {
     return Task(
       id: id ?? this.id,
@@ -48,6 +51,7 @@ class Task {
       emoji: emoji ?? this.emoji,
       isCompleted: isCompleted ?? this.isCompleted,
       completedAt: completedAt ?? this.completedAt,
+      allowedGrades: allowedGrades ?? this.allowedGrades,
     );
   }
 
@@ -63,6 +67,7 @@ class Task {
       'emoji': emoji,
       'isCompleted': isCompleted,
       'completedAt': completedAt?.toIso8601String(),
+      'allowedGrades': allowedGrades,
     };
   }
 
@@ -85,6 +90,9 @@ class Task {
       isCompleted: json['isCompleted'] ?? false,
       completedAt: json['completedAt'] != null
           ? DateTime.parse(json['completedAt'])
+          : null,
+      allowedGrades: json['allowedGrades'] != null
+          ? List<int>.from(json['allowedGrades'])
           : null,
     );
   }

@@ -6,12 +6,19 @@ import '../models/task.dart';
 import '../models/user_profile.dart';
 import '../models/category.dart';
 import '../models/badge.dart' as app_badge;
-import '../data/task_data.dart';
 import '../widgets/category_wheel.dart';
 import '../widgets/task_card.dart';
 import '../widgets/profile_page.dart';
 import 'quiz_arena_screen.dart';
 import 'game_selection_screen.dart';
+import 'feedback_screen.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
+import 'grade_select_screen.dart';
+import '../data/task_repository.dart';
+import 'carkigo_splash_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -27,12 +34,36 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Task> _completedTasks = [];
   Category? _selectedCategory;
   Task? _selectedTask;
+  List<Task>? _assetTasks;
 
   @override
   void initState() {
     super.initState();
-    _loadProfile();
+    _loadProfile().then((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _ensureGradeSelected();
+      });
+    });
     _loadCompletedTasks();
+    _loadAssetTasks();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Oyunlardan döndüğünde profili yenile
+    _loadProfile();
+  }
+
+  Future<void> _loadAssetTasks() async {
+    try {
+      final combined = await TaskRepository.loadAllCombined();
+      setState(() {
+        _assetTasks = combined;
+      });
+    } catch (e) {
+      // yut - assets yoksa boş kalır
+    }
   }
 
   @override
@@ -50,9 +81,25 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _refreshData() async {
+    await _loadProfile();
+    await _loadCompletedTasks();
+  }
+
   Future<void> _saveProfile() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('user_profile', json.encode(_profile.toJson()));
+  }
+
+  Future<void> _logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('user_profile');
+    if (!mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const CarkiGoSplashScreen()),
+      (route) => false,
+    );
   }
 
   Future<void> _loadCompletedTasks() async {
@@ -64,6 +111,21 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  Future<void> _ensureGradeSelected() async {
+    if (_profile.grade == null && mounted) {
+      final selected = await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const GradeSelectScreen()),
+      );
+      if (selected is int) {
+        setState(() {
+          _profile = _profile.copyWith(grade: selected);
+        });
+        await _saveProfile();
+      }
+    }
+  }
+
   Future<void> _saveCompletedTasks() async {
     final prefs = await SharedPreferences.getInstance();
     final tasksJson =
@@ -71,19 +133,263 @@ class _HomeScreenState extends State<HomeScreen> {
     await prefs.setStringList('completed_tasks', tasksJson);
   }
 
+  Future<void> _saveTaskProof(
+    String taskId, {
+    required String? note,
+    required String? imagePath,
+    String? docPath,
+    required String taskTitle,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final id = DateTime.now().millisecondsSinceEpoch.toString();
+    final proof = {
+      'id': id,
+      'taskId': taskId,
+      'taskTitle': taskTitle,
+      'note': note?.trim(),
+      'imagePath': imagePath?.trim(),
+      'docPath': docPath?.trim(),
+      'createdAt': DateTime.now().toIso8601String(),
+    };
+    // Tekil anahtar (galeri için)
+    await prefs.setString('proof_$id', jsonEncode(proof));
+    // Global log listesi
+    final existingLog = prefs.getStringList('proof_log') ?? [];
+    existingLog.add(jsonEncode(proof));
+    await prefs.setStringList('proof_log', existingLog);
+    // Göreve özel liste
+    final taskListKey = 'proofs_task_$taskId';
+    final existingTask = prefs.getStringList(taskListKey) ?? [];
+    existingTask.add(jsonEncode(proof));
+    await prefs.setStringList(taskListKey, existingTask);
+  }
+
+  Future<void> _showProofDialogAndComplete(Task task) async {
+    final noteController = TextEditingController();
+    String? pickedImagePath;
+    String? pickedDocPath;
+
+    final result = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Kanıt Ekle (Opsiyonel)'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: noteController,
+                  decoration: const InputDecoration(
+                    labelText: 'Not / Açıklama',
+                    hintText: 'Kısa bir not yazabilirsin',
+                  ),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 12),
+                StatefulBuilder(
+                  builder: (context, setInnerState) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (pickedImagePath != null) ...[
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: AspectRatio(
+                              aspectRatio: 16 / 9,
+                              child: Image.file(
+                                File(pickedImagePath!),
+                                fit: BoxFit.cover,
+                                filterQuality: FilterQuality.high,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: () async {
+                              final picker = ImagePicker();
+                              final picked = await picker.pickImage(
+                                source: ImageSource.gallery,
+                                maxWidth: 2000,
+                                imageQuality: 90,
+                              );
+                              if (picked != null) {
+                                setInnerState(() {
+                                  pickedImagePath = picked.path;
+                                });
+                              }
+                            },
+                            icon: const Icon(Icons.photo_library),
+                            label: const Text('Galeriden Seç'),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: () async {
+                              final picker = ImagePicker();
+                              final picked = await picker.pickImage(
+                                source: ImageSource.camera,
+                                maxWidth: 2000,
+                                imageQuality: 90,
+                              );
+                              if (picked != null) {
+                                setInnerState(() {
+                                  pickedImagePath = picked.path;
+                                });
+                              }
+                            },
+                            icon: const Icon(Icons.photo_camera),
+                            label: const Text('Kamerayla Çek'),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: () async {
+                              final result =
+                                  await FilePicker.platform.pickFiles(
+                                allowMultiple: false,
+                                type: FileType.any,
+                              );
+                              if (result != null &&
+                                  result.files.single.path != null) {
+                                setInnerState(() {
+                                  pickedDocPath = result.files.single.path;
+                                });
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content: Text('Belge seçildi.')),
+                                );
+                              }
+                            },
+                            icon: const Icon(Icons.description),
+                            label: const Text('Belge Ekle (PDF/DOC vb.)'),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'cancel'),
+              child: const Text('İptal'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, 'save'),
+              child: const Text('Kaydet ve Tamamla'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result == 'save') {
+      final note = noteController.text.trim();
+      String? finalSavedPath;
+      if (pickedImagePath != null) {
+        // Görseli uygulama belgeler klasörüne kopyala
+        final dir = await getApplicationDocumentsDirectory();
+        final proofsDir = Directory('${dir.path}/proofs');
+        if (!await proofsDir.exists()) {
+          await proofsDir.create(recursive: true);
+        }
+        final fileName =
+            'proof_${task.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        final destPath = '${proofsDir.path}/$fileName';
+        await File(pickedImagePath!).copy(destPath);
+        finalSavedPath = destPath;
+      }
+      String? savedDocPath;
+      if (pickedDocPath != null) {
+        final dir = await getApplicationDocumentsDirectory();
+        final proofsDir = Directory('${dir.path}/proofs');
+        if (!await proofsDir.exists()) {
+          await proofsDir.create(recursive: true);
+        }
+        final extension = pickedDocPath!.split('.').last;
+        final docName =
+            'proof_${task.id}_${DateTime.now().millisecondsSinceEpoch}.$extension';
+        final docDest = '${proofsDir.path}/$docName';
+        await File(pickedDocPath!).copy(docDest);
+        savedDocPath = docDest;
+      }
+      await _saveTaskProof(
+        task.id,
+        note: note,
+        imagePath: finalSavedPath,
+        docPath: savedDocPath,
+        taskTitle: task.title,
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Kanıt kaydedildi ✅'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      _completeTask(task);
+      // Anasayfaya dön (çark ekranına): üst üste navigation varsa ana sayfaya kadar pop
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    } else if (result == 'cancel') {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Görev tamamlanmadı, puan alamadınız.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
   void _onCategorySelected(Category category) {
     // Kategori seçildiğinde o kategoriden rastgele bir görev seç
     List<Task> categoryTasks = [];
     // Kategori ID'sine göre uygun görevleri seç
-    final allTasks = TaskData.getAllTasks();
+    // Tercihen assets üzerinden gelen büyük görev veri setini kullan
+    final List<Task> allTasks = [
+      ...(_assetTasks ?? const <Task>[]),
+    ];
     categoryTasks = allTasks
         .where(
             (task) => task.category.toString().split('.').last == category.id)
         .toList();
     // Tamamlanan görevleri hariç tut
     final completedIds = _completedTasks.map((t) => t.id).toSet();
-    final availableTasks =
-        categoryTasks.where((task) => !completedIds.contains(task.id)).toList();
+    final availableTasks = categoryTasks.where((task) {
+      if (completedIds.contains(task.id)) return false;
+      if (_profile.grade == null)
+        return true; // henüz seçilmemişse kısıtlama yok
+      final grade = _profile.grade!;
+      // Görev allowedGrades yoksa, kademe bazlı kabullere göre geniş filtre
+      if (task.allowedGrades == null || task.allowedGrades!.isEmpty) {
+        if (grade <= 4) {
+          return [1, 2, 3, 4]
+              .any((g) => task.allowedGrades?.contains(g) ?? true);
+        } else if (grade <= 8) {
+          return [5, 6, 7, 8]
+              .any((g) => task.allowedGrades?.contains(g) ?? true);
+        } else {
+          return [9, 10, 11, 12]
+              .any((g) => task.allowedGrades?.contains(g) ?? true);
+        }
+      }
+      // allowedGrades dolu ise direkt sınıf eşleşmesi
+      if (grade <= 4) return task.allowedGrades!.any((g) => g <= 4);
+      if (grade <= 8) return task.allowedGrades!.any((g) => g >= 5 && g <= 8);
+      return task.allowedGrades!.any((g) => g >= 9);
+    }).toList();
     if (availableTasks.isNotEmpty) {
       final random = Random();
       final randomTask = availableTasks[random.nextInt(availableTasks.length)];
@@ -438,14 +744,54 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          '🎯 Şans Çarkı',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+        title: Text(
+          _profile.grade != null
+              ? '🎯 Şans Çarkı — ${_profile.grade}. Sınıf'
+              : '🎯 Şans Çarkı',
+          style:
+              const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         backgroundColor: Colors.orange,
         elevation: 0,
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _refreshData,
+            tooltip: 'Yenile',
+          ),
+          IconButton(
+            icon: const Icon(Icons.feedback_outlined),
+            onPressed: _navigateToFeedback,
+            tooltip: 'Görüş ve Öneriler',
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Çıkış',
+            onPressed: () async {
+              final ok = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Çıkış yap?'),
+                  content: const Text(
+                      'Hesaptan çıkış yapıp giriş ekranına dönülecek.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('İptal'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('Evet'),
+                    ),
+                  ],
+                ),
+              );
+              if (ok == true) {
+                await _logout();
+              }
+            },
+          ),
           if (_selectedCategory != null)
             IconButton(
               icon: const Icon(Icons.arrow_back),
@@ -497,157 +843,162 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildWheelPage() {
     return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Düz metin olarak puan/başlıklar (alt alta)
-            Text('🏆 ${_profile.level}',
-                style:
-                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            Text('⭐ Görev Puanı: ${_profile.points}',
-                style: const TextStyle(fontSize: 14)),
-            Text('🎮 Oyun Puanı: ${_profile.totalGamePoints ?? 0}',
-                style: const TextStyle(fontSize: 14)),
-            Text('🧠 Quiz Puanı: ${_profile.totalQuizPoints ?? 0}',
-                style: const TextStyle(fontSize: 14)),
-            Text('💎 Toplam Puan: ${_profile.totalAllPoints}',
-                style: const TextStyle(fontSize: 14)),
+      child: RefreshIndicator(
+        onRefresh: _refreshData,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Düz metin olarak puan/başlıklar (alt alta)
+              Text('🏆 ${_profile.level}',
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Text('⭐ Görev Puanı: ${_profile.points}',
+                  style: const TextStyle(fontSize: 14)),
+              Text('🎮 Oyun Puanı: ${_profile.totalGamePoints ?? 0}',
+                  style: const TextStyle(fontSize: 14)),
+              Text('🧠 Quiz Puanı: ${_profile.totalQuizPoints ?? 0}',
+                  style: const TextStyle(fontSize: 14)),
+              Text('💎 Toplam Puan: ${_profile.totalAllPoints}',
+                  style: const TextStyle(fontSize: 14)),
 
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            // Seçilen kategori bilgisi
-            if (_selectedCategory != null)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      _selectedCategory!.color,
-                      _selectedCategory!.color.withOpacity(0.7),
+              // Seçilen kategori bilgisi
+              if (_selectedCategory != null)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        _selectedCategory!.color,
+                        _selectedCategory!.color.withOpacity(0.7),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _selectedCategory!.color.withOpacity(0.15),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
                     ],
                   ),
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: _selectedCategory!.color.withOpacity(0.15),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      _selectedCategory!.emoji,
-                      style: const TextStyle(fontSize: 32),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _selectedCategory!.name,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                  child: Column(
+                    children: [
+                      Text(
+                        _selectedCategory!.emoji,
+                        style: const TextStyle(fontSize: 32),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _selectedCategory!.description,
-                      style: const TextStyle(fontSize: 12, color: Colors.white),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
+                      const SizedBox(height: 4),
+                      Text(
+                        _selectedCategory!.name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _selectedCategory!.description,
+                        style:
+                            const TextStyle(fontSize: 12, color: Colors.white),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
 
-            const SizedBox(height: 12),
+              const SizedBox(height: 12),
 
-            // Çark sistemi
-            if (_selectedTask == null)
-              Center(
-                child: CategoryWheel(
-                  onCategorySelected: _onCategorySelected,
-                  canSpin: true,
-                ),
-              )
-            else
-              Column(
-                children: [
-                  // Seçilen görev
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Colors.green,
-                          Colors.green.withOpacity(0.7),
+              // Çark sistemi
+              if (_selectedTask == null)
+                Center(
+                  child: CategoryWheel(
+                    onCategorySelected: _onCategorySelected,
+                    canSpin: true,
+                  ),
+                )
+              else
+                Column(
+                  children: [
+                    // Seçilen görev
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Colors.green,
+                            Colors.green.withOpacity(0.7),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.green.withOpacity(0.15),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
                         ],
                       ),
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.green.withOpacity(0.15),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        const Text(
-                          '🎯 Seçilen Görev',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                      child: Column(
+                        children: [
+                          const Text(
+                            '🎯 Seçilen Görev',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
                           ),
+                          const SizedBox(height: 8),
+                          TaskCard(
+                            task: _selectedTask!,
+                            onComplete: () =>
+                                _showProofDialogAndComplete(_selectedTask!),
+                            showCompleteButton: true,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ElevatedButton.icon(
+                      onPressed: _spinAgain,
+                      icon: const Icon(Icons.refresh,
+                          color: Colors.white, size: 18),
+                      label: const Text(
+                        'Tekrar Çevir',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
                         ),
-                        const SizedBox(height: 8),
-                        TaskCard(
-                          task: _selectedTask!,
-                          onComplete: _completeTask,
-                          showCompleteButton: true,
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  ElevatedButton.icon(
-                    onPressed: _spinAgain,
-                    icon: const Icon(Icons.refresh,
-                        color: Colors.white, size: 18),
-                    label: const Text(
-                      'Tekrar Çevir',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        elevation: 4,
                       ),
                     ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      elevation: 4,
-                    ),
-                  ),
-                ],
-              ),
-          ],
+                  ],
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -666,8 +1017,11 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _profile = updatedProfile;
       });
+      // Güncellenmiş profili kaydet ve yenile
+      await _saveProfile();
+      await _refreshData(); // Profili yenile
     } else {
-      _loadProfile();
+      await _refreshData(); // Profili yenile
     }
   }
 
@@ -684,9 +1038,19 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _profile = updatedProfile;
       });
+      // Güncellenmiş profili kaydet ve yenile
+      await _saveProfile();
+      await _refreshData(); // Profili yenile
     } else {
-      _loadProfile();
+      await _refreshData(); // Profili yenile
     }
+  }
+
+  void _navigateToFeedback() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const FeedbackScreen()),
+    );
   }
 
   Widget _buildStatCard(String title, String value, Color color) {

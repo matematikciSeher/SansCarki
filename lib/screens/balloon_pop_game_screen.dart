@@ -13,6 +13,8 @@ class Balloon {
   bool isTarget;
   bool isTrap;
   bool isPopped;
+  double lifeTime; // Balonun yaşam süresi (saniye)
+  double maxLifeTime; // Balonun maksimum yaşam süresi
 
   Balloon({
     required this.id,
@@ -22,7 +24,8 @@ class Balloon {
     this.isTarget = false,
     this.isTrap = false,
     this.isPopped = false,
-  });
+    required this.maxLifeTime,
+  }) : lifeTime = 0.0;
 }
 
 class BalloonPopGameScreen extends StatefulWidget {
@@ -52,8 +55,10 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
   int _maxLevel = 5;
   int _totalPoppedBalloons = 0;
   int _totalScore = 0;
-  int _timeLeft = 45; // 45 saniye süre
+  int _timeLeft = 40; // 40 saniye süre
   Timer? _timer;
+  Timer? _speedIncreaseTimer;
+  double _currentSpeedMultiplier = 1.0;
 
   @override
   void initState() {
@@ -79,7 +84,8 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
     setState(() {
       _showInfo = false;
       _isGameActive = true;
-      _timeLeft = 45; // Süreyi sıfırla
+      _timeLeft = 40; // Süreyi sıfırla
+      _currentSpeedMultiplier = 1.0; // Hız çarpanını sıfırla
       _controller.repeat();
     });
 
@@ -92,6 +98,15 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
             _showTimeUpDialog();
             timer.cancel();
           }
+        });
+      }
+    });
+
+    // Her 10 saniyede bir hızı artır
+    _speedIncreaseTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+      if (_isGameActive) {
+        setState(() {
+          _currentSpeedMultiplier += 0.1; // Hızı %10 artır
         });
       }
     });
@@ -113,17 +128,19 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
           children: [
             Text('Seviye: $_level'),
             Text('Puan: $_score'),
-            Text('Patlatılan balon: $_poppedTargetCount'),
+            Text('Patlatılan hedef balon: $_poppedTargetCount / 30'),
             if (_combo > 1) Text('Son kombo: $_combo'),
           ],
         ),
         actions: [
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
               final updated = widget.profile.copyWith(
                 points: widget.profile.points + _score,
               );
+              // UserProfile'ı SharedPreferences'a kaydet
+              await _saveProfile(updated);
               Navigator.pop(context, updated);
             },
             child: const Text('Ana Menüye Dön'),
@@ -135,7 +152,7 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
                 _level++;
                 _score = 0;
                 _combo = 0;
-                _timeLeft = 45;
+                _timeLeft = 40;
               });
               _startLevel();
               _controller.repeat();
@@ -151,6 +168,7 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
   void dispose() {
     _controller.dispose();
     _timer?.cancel();
+    _speedIncreaseTimer?.cancel();
     super.dispose();
   }
 
@@ -163,9 +181,9 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
     _targetColorIndex = _random.nextInt(_colorPalette.length);
     _targetColor = _colorPalette[_targetColorIndex];
     if (_level <= 3) {
-      _missionText = 'Tüm ${_colorName(_targetColor)} balonları patlat!';
+      _missionText = '30 tane ${_colorName(_targetColor)} balon patlat!';
     } else {
-      _missionText = 'Sırayla ${_colorName(_targetColor)} balonları patlat!';
+      _missionText = '30 tane ${_colorName(_targetColor)} balon patlat!';
     }
     _spawnInitialBalloons();
   }
@@ -181,6 +199,10 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
     final color = _colorPalette[colorIdx];
     final isTarget = colorIdx == _targetColorIndex;
     final isTrap = _level > 3 && _random.nextDouble() < 0.15 && !isTarget;
+
+    // Balon yaşam süresini belirle (3-8 saniye arası)
+    double maxLifeTime = 3.0 + _random.nextDouble() * 5.0;
+
     return Balloon(
       id: _random.nextInt(1000000),
       color: color,
@@ -188,6 +210,7 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
       y: 0.9 + _random.nextDouble() * 0.1, // 0.9-1.0 arası oran
       isTarget: isTarget,
       isTrap: isTrap,
+      maxLifeTime: maxLifeTime,
     );
   }
 
@@ -196,26 +219,51 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
     setState(() {
       for (final balloon in _balloons) {
         if (!balloon.isPopped) {
-          double speed = 0.003 + 0.0008 * _level;
-          speed = speed.clamp(0.003, 0.012);
+          // Balon yaşam süresini güncelle
+          balloon.lifeTime += 0.05; // 50ms = 0.05 saniye
+
+          // Balon süresi doldu mu kontrol et
+          if (balloon.lifeTime >= balloon.maxLifeTime) {
+            balloon.isPopped = true;
+            if (!balloon.isTarget) {
+              _missedCount++;
+            }
+            continue;
+          }
+
+          double speed =
+              (0.005 + 0.001 * _level) * _currentSpeedMultiplier; // Hızı artır
+          speed = speed.clamp(0.005, 0.018); // Minimum ve maksimum hızı artır
           balloon.y -= speed;
-          if (balloon.y < 0.0) balloon.y = 0.0;
+          // Balonlar yukarıda birikmesin, yukarı doğru akarken kaybolsun
+          if (balloon.y < -0.1) {
+            balloon.isPopped = true;
+            if (!balloon.isTarget) {
+              _missedCount++;
+            }
+          }
         }
       }
-      _balloons.removeWhere((b) => b.y < -0.15);
-      double spawnRate = 0.06 + 0.004 * _level;
-      spawnRate = spawnRate.clamp(0.06, 0.15);
+      _balloons.removeWhere((b) => b.isPopped);
+
+      // Balon sayısını artır - 40 saniyede 30 hedef balon çıkacak şekilde
+      double spawnRate = (0.12 + 0.008 * _level) * 1.5; // %50 artır
+      spawnRate = spawnRate.clamp(0.10, 0.25);
       if (_random.nextDouble() < spawnRate) {
         _balloons.add(_createBalloon());
       }
-      int targetCount = 15 + _level * 3;
-      if (_poppedTargetCount >= targetCount) {
-        _showWinDialog();
-      }
-      int missLimit = 8 + _level;
-      if (_missedCount > missLimit) {
-        _showGameOverDialog();
-      }
+
+      // Hedef balon sayısını kontrol et (sadece bilgi amaçlı)
+      int targetCount = 30;
+      // if (_poppedTargetCount >= targetCount) {
+      //   _showWinDialog(); // Oyun bitmesin, sadece süre dolduğunda bitsin
+      // }
+
+      // Oyun sadece süre dolduğunda bitsin, yanlış balon sayısına göre bitmesin
+      // int missLimit = 15;
+      // if (_missedCount > missLimit) {
+      //   _showGameOverDialog();
+      // }
     });
   }
 
@@ -224,7 +272,7 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
     setState(() {
       balloon.isPopped = true;
       if (balloon.isTrap) {
-        _score -= 10;
+        // Tuzak balon patlatılırsa sadece kombo sıfırlanır, puan düşmez
         _combo = 0;
       } else if (balloon.isTarget) {
         _score += 5 + _combo;
@@ -234,7 +282,7 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
           _score += 10; // Kombo bonusu
         }
       } else {
-        _score -= 5;
+        // Yanlış balon patlatılırsa sadece kombo sıfırlanır, puan düşmez
         _combo = 0;
         _missedCount++;
       }
@@ -302,13 +350,15 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
         ),
         actions: [
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
               final updated = widget.profile.copyWith(
                 points: widget.profile.points + _totalScore,
                 totalGamePoints:
                     (widget.profile.totalGamePoints ?? 0) + _totalScore,
               );
+              // UserProfile'ı SharedPreferences'a kaydet
+              await _saveProfile(updated);
               Navigator.pop(context, updated);
             },
             child: const Text('Ana Menüye Dön'),
@@ -352,7 +402,7 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
         ),
         actions: [
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
               final updated = widget.profile.copyWith(
                 points: widget.profile.points + nonNegativeScore,
@@ -360,7 +410,7 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
                     (widget.profile.totalGamePoints ?? 0) + nonNegativeScore,
               );
               // UserProfile'ı SharedPreferences'a kaydet
-              _saveProfile(updated);
+              await _saveProfile(updated);
               Navigator.pop(context, updated);
             },
             child: const Text('Ana Menüye Dön'),
@@ -486,7 +536,7 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
       builder: (context, constraints) {
         final width = constraints.maxWidth;
         final height = constraints.maxHeight;
-        final balloonSize = (width * 0.12).clamp(32.0, 64.0);
+        final balloonSize = (width * 0.15).clamp(40.0, 72.0); // %25 daha büyük
         return Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -510,7 +560,8 @@ class _BalloonPopGameScreenState extends State<BalloonPopGameScreen>
                     builder: (context, constraints) {
                       final width = constraints.maxWidth;
                       final height = constraints.maxHeight;
-                      final balloonSize = (width * 0.12).clamp(32.0, 64.0);
+                      final balloonSize =
+                          (width * 0.15).clamp(40.0, 72.0); // %25 daha büyük
                       return Stack(
                         children: [
                           // Balonlar

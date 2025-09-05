@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import '../models/user_profile.dart';
 import '../models/task.dart';
 import '../models/badge.dart' as app_badge;
+import '../screens/proof_gallery_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import 'dart:io';
 
 class ProfilePage extends StatelessWidget {
   final UserProfile profile;
@@ -60,6 +64,16 @@ class ProfilePage extends StatelessWidget {
                     color: profile.levelColor,
                   ),
                 ),
+                const SizedBox(height: 4),
+                if (profile.grade != null)
+                  Text(
+                    '${profile.grade}. Sınıf',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 const SizedBox(height: 8),
                 Text(
                   '${profile.points} Puan',
@@ -76,22 +90,42 @@ class ProfilePage extends StatelessWidget {
 
           const SizedBox(height: 24),
 
-          // Rozetler
-          _buildBadgesSection(),
+          // Kanıt Galerisi butonu
+          Center(
+            child: ElevatedButton.icon(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProofGalleryScreen()),
+              ),
+              icon: const Icon(Icons.photo_library, color: Colors.white),
+              label: const Text(
+                'Kanıt Galerisi',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(25)),
+              ),
+            ),
+          ),
 
           const SizedBox(height: 16),
 
-          // Tüm Rozetler butonu
+          // Tüm Rozetleri Gör butonu (Kanıt galerisinin altında)
           Center(
             child: ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => BadgesPage(profile: profile),
-                  ),
-                );
-              },
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => BadgesPage(profile: profile)),
+              ),
               icon: const Icon(Icons.emoji_events, color: Colors.white),
               label: const Text(
                 'Tüm Rozetleri Gör',
@@ -397,6 +431,56 @@ class ProfilePage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildProofGallerySection() {
+    // Artık Profil içinde galeri render etmiyoruz; ayrı sayfaya taşındı
+    return const SizedBox.shrink();
+  }
+
+  Future<List<File>> _loadProofImages() async {
+    final prefs = await SharedPreferences.getInstance();
+    final files = <File>[];
+    final seen = <String>{};
+
+    // Öncelik: global proof_log
+    final log = prefs.getStringList('proof_log') ?? [];
+    if (log.isNotEmpty) {
+      for (final item in log) {
+        try {
+          final data = jsonDecode(item) as Map<String, dynamic>;
+          final path = data['imagePath'] as String?;
+          if (path != null && path.isNotEmpty && !seen.contains(path)) {
+            final f = File(path);
+            if (await f.exists()) {
+              files.add(f);
+              seen.add(path);
+            }
+          }
+        } catch (_) {}
+      }
+      return files;
+    }
+
+    // Geriye dönük uyumluluk: tekil proof_* anahtarlarını tara
+    final keys = prefs.getKeys();
+    final proofKeys = keys.where((k) => k.startsWith('proof_'));
+    for (final key in proofKeys) {
+      final jsonStr = prefs.getString(key);
+      if (jsonStr == null) continue;
+      try {
+        final data = jsonDecode(jsonStr) as Map<String, dynamic>;
+        final path = data['imagePath'] as String?;
+        if (path != null && path.isNotEmpty && !seen.contains(path)) {
+          final f = File(path);
+          if (await f.exists()) {
+            files.add(f);
+            seen.add(path);
+          }
+        }
+      } catch (_) {}
+    }
+    return files;
   }
 
   String _formatDate(DateTime date) {
@@ -1225,4 +1309,217 @@ class NextTierInfo {
     required this.currentCount,
     required this.requiredCount,
   });
+}
+
+// Top-level helpers for proof gallery
+Future<void> _openFullscreen(BuildContext context, File file) async {
+  return showDialog(
+    context: context,
+    builder: (context) => Dialog(
+      insetPadding: const EdgeInsets.all(16),
+      child: Stack(
+        children: [
+          InteractiveViewer(
+            child: Image.file(file, fit: BoxFit.contain),
+          ),
+          Positioned(
+            right: 8,
+            top: 8,
+            child: IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+Future<void> _confirmDelete(BuildContext context, File file) async {
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Fotoğrafı sil?'),
+      content: const Text('Bu fotoğrafı galeriden kaldırmak istiyor musun?'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('İptal'),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: const Text('Sil'),
+        ),
+      ],
+    ),
+  );
+  if (ok == true) {
+    await _deleteProof(file);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Fotoğraf silindi.')),
+      );
+    }
+  }
+}
+
+Future<void> _deleteProof(File file) async {
+  final prefs = await SharedPreferences.getInstance();
+  final keys = prefs.getKeys().where((k) => k.startsWith('proof_'));
+  for (final key in keys) {
+    final jsonStr = prefs.getString(key);
+    if (jsonStr == null) continue;
+    try {
+      final data = jsonDecode(jsonStr) as Map<String, dynamic>;
+      if (data['imagePath'] == file.path) {
+        data['imagePath'] = '';
+        await prefs.setString(key, jsonEncode(data));
+        break;
+      }
+    } catch (_) {}
+  }
+  if (await file.exists()) {
+    try {
+      await file.delete();
+    } catch (_) {}
+  }
+}
+
+Widget _buildProofsByTaskSection() {
+  return FutureBuilder<Map<String, List<Map<String, dynamic>>>>(
+    future: _loadProofsGroupedByTask(),
+    builder: (context, snapshot) {
+      final grouped = snapshot.data ?? {};
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      if (grouped.isEmpty) {
+        return const SizedBox.shrink();
+      }
+      return Card(
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '📑 Görevlere Göre Kanıtlar',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              ...grouped.entries.map((entry) {
+                final taskTitle = entry.key;
+                final proofs = entry.value;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        taskTitle,
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 6),
+                      ...proofs.map((p) {
+                        final imagePath = p['imagePath'] as String?;
+                        final docPath = p['docPath'] as String?;
+                        final note = p['note'] as String?;
+                        final createdAt =
+                            DateTime.tryParse(p['createdAt'] ?? '') ??
+                                DateTime.now();
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withOpacity(0.06),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                                color: Colors.orange.withOpacity(0.2)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.event_note, size: 16),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    '${createdAt.day}.${createdAt.month}.${createdAt.year} ${createdAt.hour.toString().padLeft(2, '0')}:${createdAt.minute.toString().padLeft(2, '0')}',
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                              if (note != null && note.isNotEmpty) ...[
+                                const SizedBox(height: 6),
+                                Text(note,
+                                    style: const TextStyle(fontSize: 13)),
+                              ],
+                              if (imagePath != null &&
+                                  imagePath.isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                GestureDetector(
+                                  onTap: () =>
+                                      _openFullscreen(context, File(imagePath)),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Image.file(
+                                      File(imagePath),
+                                      height: 120,
+                                      width: double.infinity,
+                                      fit: BoxFit.cover,
+                                      filterQuality: FilterQuality.high,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              if (docPath != null && docPath.isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.description, size: 16),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        docPath.split('/').last,
+                                        style: const TextStyle(fontSize: 13),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              ],
+                            ],
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+Future<Map<String, List<Map<String, dynamic>>>>
+    _loadProofsGroupedByTask() async {
+  final prefs = await SharedPreferences.getInstance();
+  final log = prefs.getStringList('proof_log') ?? [];
+  final map = <String, List<Map<String, dynamic>>>{};
+  for (final item in log) {
+    try {
+      final p = jsonDecode(item) as Map<String, dynamic>;
+      final title = (p['taskTitle'] as String?)?.trim();
+      if (title == null || title.isEmpty) continue;
+      map.putIfAbsent(title, () => []).add(p);
+    } catch (_) {}
+  }
+  return map;
 }

@@ -73,10 +73,20 @@ class _SudokuGameScreenState extends State<SudokuGameScreen> {
   }
 
   List<List<int>> _generateSudokuPuzzle(List<List<int>> solution, int size) {
-    // Çözümden rastgele hücreleri silerek puzzle üret
+    // Çözümden rastgele hücreleri silerek puzzle üret (grade tabanlı zorluk)
     List<List<int>> puzzle =
         solution.map((row) => List<int>.from(row)).toList();
-    int holes = 30 + Random().nextInt(7); // 30-36 boşluk (daha kolay)
+
+    final g = widget.profile.grade;
+    int holes;
+    if (g != null && g >= 1 && g <= 4) {
+      holes = 20 + Random().nextInt(7); // 20-26 (daha kolay)
+    } else if (g != null && g >= 5 && g <= 8) {
+      holes = 30 + Random().nextInt(7); // 30-36 (orta)
+    } else {
+      holes = 40 + Random().nextInt(11); // 40-50 (zor)
+    }
+
     while (holes > 0) {
       int i = Random().nextInt(size);
       int j = Random().nextInt(size);

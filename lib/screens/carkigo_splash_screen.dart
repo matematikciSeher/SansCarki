@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
+import 'grade_select_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import '../models/user_profile.dart';
 
 class CarkiGoSplashScreen extends StatefulWidget {
   const CarkiGoSplashScreen({super.key});
@@ -12,13 +16,52 @@ class _CarkiGoSplashScreenState extends State<CarkiGoSplashScreen> {
   final TextEditingController _controller = TextEditingController();
   String? _errorText;
 
-  void _login() {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeAutoEnter());
+  }
+
+  Future<void> _maybeAutoEnter() async {
+    final prefs = await SharedPreferences.getInstance();
+    final profileJson = prefs.getString('user_profile');
+    if (profileJson == null) return;
+    final profile = UserProfile.fromJson(json.decode(profileJson));
+    if (!mounted) return;
+    if (profile.grade != null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+      );
+    }
+  }
+
+  Future<void> _login() async {
     if (_controller.text.trim().isEmpty) {
       setState(() {
         _errorText = 'Lütfen bir kullanıcı adı veya e-posta girin';
       });
       return;
     }
+
+    // Login'den sonra sınıf seçim ekranına REPLACE olarak git
+    if (!mounted) return;
+    final selected = await Navigator.push<int>(
+      context,
+      MaterialPageRoute(builder: (_) => const GradeSelectScreen()),
+    );
+    if (!mounted) return;
+    if (selected == null) return; // kullanıcı geri döndüyse bekle
+    // Seçimi kaydet ve ana sayfaya yönlen
+    final prefs = await SharedPreferences.getInstance();
+    UserProfile profile;
+    final profileJson = prefs.getString('user_profile');
+    profile = profileJson != null
+        ? UserProfile.fromJson(json.decode(profileJson))
+        : UserProfile();
+    profile = profile.copyWith(grade: selected);
+    await prefs.setString('user_profile', json.encode(profile.toJson()));
+
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => const HomeScreen()),

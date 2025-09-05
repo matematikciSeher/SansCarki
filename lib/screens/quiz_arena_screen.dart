@@ -458,9 +458,20 @@ class _QuizArenaScreenState extends State<QuizArenaScreen>
 
   void _startRandomQuiz() async {
     final allQuestions = QuizData.getAllQuestions();
-    // Her seferinde tamamen rastgele ve tekrar etmeyen sorular
-    allQuestions.shuffle();
-    final quizQuestions = allQuestions.take(15).toList();
+    // Sınıfa göre basit seviye filtresi: ilkokul ≤15, ortaokul ≤20, lise tümü
+    List<QuizQuestion> filtered = allQuestions;
+    final grade = widget.profile.grade;
+    if (grade != null) {
+      if (grade >= 1 && grade <= 4) {
+        filtered = allQuestions.where((q) => q.basePoints <= 15).toList();
+      } else if (grade >= 5 && grade <= 8) {
+        filtered = allQuestions.where((q) => q.basePoints <= 20).toList();
+      } else {
+        filtered = allQuestions;
+      }
+    }
+    filtered.shuffle();
+    final quizQuestions = filtered.take(15).toList();
     final updatedProfile = await Navigator.push(
       context,
       MaterialPageRoute(

@@ -279,39 +279,55 @@ class _QuizGameScreenState extends State<QuizGameScreen>
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Quiz Tamamlandı! 🎉'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Doğru Cevap: $_correctAnswers/${_questions.length}'),
-            Text('Doğruluk: ${accuracy.toStringAsFixed(1)}%'),
-            Text('Quiz Puanı: $_totalPoints'),
-            Text('Ana Sisteme Eklenen: $_totalPoints'),
-            Text('Yeni Toplam Puan: ${updatedProfile.points}'),
-            Text('Ortalama Süre: ${averageTime.toStringAsFixed(1)}s'),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.green.withOpacity(0.3)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.star, color: Colors.green),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Quiz puanları ana sisteme eklendi!',
-                    style: TextStyle(
-                      color: Colors.green.shade700,
-                      fontWeight: FontWeight.bold,
-                    ),
+        content: SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text('Doğru Cevap: $_correctAnswers/${_questions.length}',
+                    softWrap: true),
+                Text('Doğruluk: ${accuracy.toStringAsFixed(1)}%',
+                    softWrap: true),
+                Text('Quiz Puanı: $_totalPoints', softWrap: true),
+                Text('Ana Sisteme Eklenen: $_totalPoints', softWrap: true),
+                Text('Yeni Toplam Puan: ${updatedProfile.points}',
+                    softWrap: true),
+                Text('Ortalama Süre: ${averageTime.toStringAsFixed(1)}s',
+                    softWrap: true),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.green.withOpacity(0.3)),
                   ),
-                ],
-              ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.star, color: Colors.green),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Quiz puanları ana sisteme eklendi!',
+                          style: TextStyle(
+                            color: Colors.green.shade700,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          softWrap: true,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
         actions: [
           TextButton(

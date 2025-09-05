@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+enum SchoolStage { ilkokul, ortaokul, lise }
+
 class UserProfile {
   final int points;
   final int completedTasks;
@@ -30,6 +32,9 @@ class UserProfile {
   final List<String> unlockedAbilities; // Açılan yetenekler
   final List<String> solvedQuestionIds;
 
+  // Yeni: Sınıf (1-12)
+  final int? grade;
+
   UserProfile({
     this.points = 0,
     this.completedTasks = 0,
@@ -55,6 +60,7 @@ class UserProfile {
     List<String>? unlockedItems,
     List<String>? unlockedAbilities,
     List<String>? solvedQuestionIds,
+    this.grade,
   })  : lastSpinDate = lastSpinDate ?? DateTime.now(),
         badges = badges ?? [],
         categoryStats = categoryStats ?? {},
@@ -74,6 +80,15 @@ class UserProfile {
       creativityPoints +
       socialPoints +
       techPoints;
+
+  // Sınıfa göre kademe
+  SchoolStage? get stage {
+    if (grade == null) return null;
+    if (grade! >= 1 && grade! <= 4) return SchoolStage.ilkokul;
+    if (grade! >= 5 && grade! <= 8) return SchoolStage.ortaokul;
+    if (grade! >= 9 && grade! <= 12) return SchoolStage.lise;
+    return null;
+  }
 
   UserProfile copyWith({
     int? points,
@@ -100,6 +115,7 @@ class UserProfile {
     List<String>? unlockedAbilities,
     List<String>? solvedQuestionIds,
     int? totalGamePoints,
+    int? grade,
   }) {
     return UserProfile(
       points: points ?? this.points,
@@ -126,6 +142,7 @@ class UserProfile {
       unlockedItems: unlockedItems ?? this.unlockedItems,
       unlockedAbilities: unlockedAbilities ?? this.unlockedAbilities,
       solvedQuestionIds: solvedQuestionIds ?? this.solvedQuestionIds,
+      grade: grade ?? this.grade,
     );
   }
 
@@ -155,6 +172,7 @@ class UserProfile {
       'unlockedItems': unlockedItems,
       'unlockedAbilities': unlockedAbilities,
       'solvedQuestionIds': solvedQuestionIds,
+      'grade': grade,
     };
   }
 
@@ -186,6 +204,7 @@ class UserProfile {
       unlockedItems: List<String>.from(json['unlockedItems'] ?? []),
       unlockedAbilities: List<String>.from(json['unlockedAbilities'] ?? []),
       solvedQuestionIds: List<String>.from(json['solvedQuestionIds'] ?? []),
+      grade: json['grade'],
     );
   }
 
