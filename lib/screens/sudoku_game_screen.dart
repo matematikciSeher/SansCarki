@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
 import '../models/user_profile.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class SudokuGameScreen extends StatefulWidget {
   final UserProfile profile;
@@ -178,6 +180,11 @@ class _SudokuGameScreenState extends State<SudokuGameScreen> {
     return true;
   }
 
+  Future<void> _saveProfile(UserProfile profile) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_profile', jsonEncode(profile.toJson()));
+  }
+
   void _showWinDialog() {
     final updated = widget.profile.copyWith(
         points: widget.profile.points + 100,
@@ -190,8 +197,9 @@ class _SudokuGameScreenState extends State<SudokuGameScreen> {
         content: const Text('Sudoku tamamlandı! Kazanılan Puan: 100'),
         actions: [
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
+              await _saveProfile(updated);
               Navigator.pop(context, updated);
             },
             child: const Text('Ana Menüye Dön'),

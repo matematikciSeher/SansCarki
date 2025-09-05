@@ -746,26 +746,34 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: Text(
           _profile.grade != null
-              ? '🎯 Şans Çarkı — ${_profile.grade}. Sınıf'
+              ? '🎯 Şans Çarkı — ${_profile.grade}'
               : '🎯 Şans Çarkı',
-          style:
-              const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
         backgroundColor: Colors.orange,
         elevation: 0,
         centerTitle: true,
         actions: [
           IconButton(
+            iconSize: 22,
             icon: const Icon(Icons.refresh),
             onPressed: _refreshData,
             tooltip: 'Yenile',
           ),
           IconButton(
+            iconSize: 22,
             icon: const Icon(Icons.feedback_outlined),
             onPressed: _navigateToFeedback,
             tooltip: 'Görüş ve Öneriler',
           ),
           IconButton(
+            iconSize: 22,
             icon: const Icon(Icons.logout),
             tooltip: 'Çıkış',
             onPressed: () async {
@@ -794,6 +802,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           if (_selectedCategory != null)
             IconButton(
+              iconSize: 22,
               icon: const Icon(Icons.arrow_back),
               onPressed: () {
                 setState(() {
