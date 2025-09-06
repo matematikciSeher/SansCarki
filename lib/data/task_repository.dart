@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
 import '../models/task.dart';
+import 'task_data.dart';
 
 class TaskRepository {
   TaskRepository._();
@@ -27,6 +28,10 @@ class TaskRepository {
     // Try RAW parsed list
     try {
       combined.addAll(await loadFromRawText());
+    } catch (_) {}
+    // Include built-in code-defined tasks
+    try {
+      combined.addAll(TaskData.getAllTasks());
     } catch (_) {}
 
     // Deduplicate by id
@@ -88,12 +93,20 @@ class TaskRepository {
       if (text.contains('iyilik')) return TaskCategory.iyilik;
       if (text.contains('matematik')) return TaskCategory.matematik;
       if (text.contains('fen')) return TaskCategory.fen;
-      if (text.contains('kitap') ||
-          text.contains('okuma') ||
-          text.contains('yazma') ||
-          text.contains('günlük')) return TaskCategory.kitap;
-      if (text.contains('ev') || text.contains('günlük yaşam'))
-        return TaskCategory.ev;
+      if (text.contains('oyun') ||
+          text.contains('eğlenceli') ||
+          text.contains('eglenceli')) return TaskCategory.oyun;
+      // Ev & Günlük Yaşam
+      if (text.contains('günlük yaşam') ||
+          text.contains('gunluk yasam') ||
+          text.contains('ev')) return TaskCategory.ev;
+      // Kitap & Okuma
+      if (text.contains('kitap') || text.contains('okuma'))
+        return TaskCategory.kitap;
+      // Yazma & Günlük (tek başına "günlük" yazma kategorisine alınır)
+      if (text.contains('yazma') ||
+          text.contains('günlük') ||
+          text.contains('gunluk')) return TaskCategory.yazma;
       return TaskCategory.other;
     }
 
@@ -236,4 +249,40 @@ class TaskRepository {
 
     return tasks;
   }
+}
+
+// Basit fallback görev havuzu (assets yüklenmezse)
+class TaskRepositoryFallback {
+  static final List<Task> sampleTasks = <Task>[
+    Task(
+      id: 'oyun_ilk_001',
+      title: 'Eğlenceli bir oyun oyna',
+      description: 'Bugün sevdiğin bir oyunu 10 dakika oyna.',
+      category: TaskCategory.oyun,
+      difficulty: TaskDifficulty.easy,
+      basePoints: 10,
+      emoji: '🎲',
+      allowedGrades: const [1, 2, 3, 4],
+    ),
+    Task(
+      id: 'oyun_ort_001',
+      title: 'Arkadaşınla bir oyun paylaş',
+      description: 'Bir arkadaşınla kısa bir oyun oynayın.',
+      category: TaskCategory.oyun,
+      difficulty: TaskDifficulty.medium,
+      basePoints: 18,
+      emoji: '🎯',
+      allowedGrades: const [5, 6, 7, 8],
+    ),
+    Task(
+      id: 'oyun_lis_001',
+      title: 'Zihin açıcı mini oyun dene',
+      description: '5 dakikalık bir zihin egzersizi oyunu oyna.',
+      category: TaskCategory.oyun,
+      difficulty: TaskDifficulty.hard,
+      basePoints: 24,
+      emoji: '🧠',
+      allowedGrades: const [9, 10, 11, 12],
+    ),
+  ];
 }

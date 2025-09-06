@@ -9,6 +9,8 @@ class UserProfile {
   final DateTime lastSpinDate;
   final List<String> badges;
   final Map<String, int> categoryStats;
+  // Son seçildiği tarih (ISO string) per kategori; 12 günlük cooldown için
+  final Map<String, String> categoryLastPicked;
 
   // Quiz sistemi için yeni alanlar
   final int? highestQuizScore;
@@ -42,6 +44,7 @@ class UserProfile {
     DateTime? lastSpinDate,
     List<String>? badges,
     Map<String, int>? categoryStats,
+    Map<String, String>? categoryLastPicked,
     this.highestQuizScore,
     this.fastestQuizTime,
     this.quizAccuracy,
@@ -64,6 +67,7 @@ class UserProfile {
   })  : lastSpinDate = lastSpinDate ?? DateTime.now(),
         badges = badges ?? [],
         categoryStats = categoryStats ?? {},
+        categoryLastPicked = categoryLastPicked ?? {},
         unlockedItems = unlockedItems ?? [],
         unlockedAbilities = unlockedAbilities ?? [],
         solvedQuestionIds = solvedQuestionIds ?? [];
@@ -97,6 +101,7 @@ class UserProfile {
     DateTime? lastSpinDate,
     List<String>? badges,
     Map<String, int>? categoryStats,
+    Map<String, String>? categoryLastPicked,
     int? highestQuizScore,
     int? fastestQuizTime,
     double? quizAccuracy,
@@ -124,6 +129,7 @@ class UserProfile {
       lastSpinDate: lastSpinDate ?? this.lastSpinDate,
       badges: badges ?? this.badges,
       categoryStats: categoryStats ?? this.categoryStats,
+      categoryLastPicked: categoryLastPicked ?? this.categoryLastPicked,
       highestQuizScore: highestQuizScore ?? this.highestQuizScore,
       fastestQuizTime: fastestQuizTime ?? this.fastestQuizTime,
       quizAccuracy: quizAccuracy ?? this.quizAccuracy,
@@ -154,6 +160,7 @@ class UserProfile {
       'lastSpinDate': lastSpinDate.toIso8601String(),
       'badges': badges,
       'categoryStats': categoryStats,
+      'categoryLastPicked': categoryLastPicked,
       'highestQuizScore': highestQuizScore,
       'fastestQuizTime': fastestQuizTime,
       'quizAccuracy': quizAccuracy,
@@ -186,6 +193,8 @@ class UserProfile {
           : DateTime.now(),
       badges: List<String>.from(json['badges'] ?? []),
       categoryStats: Map<String, int>.from(json['categoryStats'] ?? {}),
+      categoryLastPicked:
+          Map<String, String>.from(json['categoryLastPicked'] ?? {}),
       highestQuizScore: json['highestQuizScore'],
       fastestQuizTime: json['fastestQuizTime'],
       quizAccuracy: json['quizAccuracy']?.toDouble(),

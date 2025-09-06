@@ -367,9 +367,35 @@ class _HomeScreenState extends State<HomeScreen> {
     List<Task> categoryTasks = [];
     // Kategori ID'sine göre uygun görevleri seç
     // Tercihen assets üzerinden gelen büyük görev veri setini kullan
+    // Varlıklar yüklenemediyse local sabit veri setinden fallback al
     final List<Task> allTasks = [
       ...(_assetTasks ?? const <Task>[]),
+      if ((_assetTasks == null || _assetTasks!.isEmpty))
+        ...TaskRepositoryFallback.sampleTasks,
     ];
+
+    // 12 günlük kategori cooldown kontrolü
+    final lastPickedIso = _profile.categoryLastPicked[category.id];
+    if (lastPickedIso != null && lastPickedIso.isNotEmpty) {
+      final last = DateTime.tryParse(lastPickedIso);
+      if (last != null) {
+        final diffDays = DateTime.now().difference(last).inDays;
+        if (diffDays < 12) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Farklı bir kategori seç ve çarkı tekrar çevir.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          setState(() {
+            _selectedCategory = null;
+            _selectedTask = null;
+          });
+          return;
+        }
+      }
+    }
+
     categoryTasks = allTasks
         .where(
             (task) => task.category.toString().split('.').last == category.id)
@@ -406,6 +432,11 @@ class _HomeScreenState extends State<HomeScreen> {
         _selectedCategory = category;
         _selectedTask = randomTask;
       });
+      // cooldown başlat: kategori son seçildi zamanı kaydet
+      final map = Map<String, String>.from(_profile.categoryLastPicked);
+      map[category.id] = DateTime.now().toIso8601String();
+      _profile = _profile.copyWith(categoryLastPicked: map);
+      _saveProfile();
     } else {
       setState(() {
         _selectedCategory = category;

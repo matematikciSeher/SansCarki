@@ -147,6 +147,8 @@ class _CategoryWheelState extends State<CategoryWheel>
                     child: FortuneWheel(
                       animateFirst: false,
                       selected: _selectedController.stream,
+                      duration: const Duration(milliseconds: 3600),
+                      curve: Curves.easeOutQuart,
                       onAnimationEnd: () {
                         setState(() {
                           _isSpinning = false;

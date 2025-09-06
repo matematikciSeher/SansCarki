@@ -121,9 +121,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
   late Animation<double> _rotation;
   final Random _random = Random();
   bool _spinning = false;
-  bool _singlePlayer = false;
   List<Map<String, String>> _singleItems = [];
-  List<Map<String, String>> _multiItems = [];
   bool _loading = true;
   final Set<String> _usedWords = {};
   int _lastTickIndex = -1;
@@ -145,6 +143,33 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
     return t.toUpperCase();
   }
 
+  String _lettersOnlyUpper(String input) {
+    final buffer = StringBuffer();
+    for (final ch in input.characters) {
+      if (GameLogic._isLetter(ch)) {
+        buffer.write(GameLogic._normalize(ch));
+      }
+    }
+    return buffer.toString();
+  }
+
+  String _normalizeDifficulty(String? input) {
+    var s = (input ?? '').trim();
+    if (s.isEmpty) return 'medium';
+    // Turkish lowercase nuances
+    s = s.replaceAll('İ', 'i').replaceAll('ı', 'i').toLowerCase();
+    if (s == 'easy' || s == 'kolay' || s == 'ilkokul' || s == '1-4') {
+      return 'easy';
+    }
+    if (s == 'medium' || s == 'orta' || s == 'ortaokul' || s == '5-8') {
+      return 'medium';
+    }
+    if (s == 'hard' || s == 'zor' || s == 'lise' || s == '9-12') {
+      return 'hard';
+    }
+    return 'medium';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -156,7 +181,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
         _hintCategory = '${hints.first['category']}';
         _hintText = '${hints.first['text']}';
         _logic = GameLogic(
-          players: ['Oyuncu 1', 'Oyuncu 2'],
+          players: ['Oyuncu'],
           secretWord: initial['word']!,
         );
         _usedWords.add(initial['word']!);
@@ -165,7 +190,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
     });
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2600),
+      duration: const Duration(milliseconds: 3800),
     );
     _rotation = Tween<double>(begin: 0, end: 0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
@@ -212,33 +237,143 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
     final jsonStr = await DefaultAssetBundle.of(context)
         .loadString('assets/words_hints.json');
     final data = json.decode(jsonStr) as Map<String, dynamic>;
-    _singleItems = (data['single'] as List)
-        .map((e) {
-          final m = e as Map<String, dynamic>;
-          return {
-            'word': '${m['word']}',
-            // Flatten first hint by default; we will also keep full list in memory
-            'hints': json.encode(m['hints']),
-            'difficulty': '${m['difficulty'] ?? 'medium'}'
-          };
-        })
-        .cast<Map<String, String>>()
-        .toList();
-    _multiItems = (data['multi'] as List)
-        .map((e) {
-          final m = e as Map<String, dynamic>;
-          return {
-            'word': '${m['word']}',
-            'hints': json.encode(m['hints']),
-            'difficulty': '${m['difficulty'] ?? 'medium'}'
-          };
-        })
-        .cast<Map<String, String>>()
-        .toList();
+
+    List<Map<String, String>> collect = [];
+
+    String normDiff(String tag) => _normalizeDifficulty(tag);
+    List<Map<String, String>> mapWords(List words, String diffTag) {
+      return words
+          .map((e) {
+            final m = e as Map<String, dynamic>;
+            final raw = (m['word'] ?? m['kelime'] ?? '').toString();
+            final hintText =
+                (m['ipuç'] ?? m['ipucu'] ?? m['hint'] ?? m['hints'] ?? '')
+                    .toString();
+            final word = raw.toString();
+            final hintsList = (m['hints'] is List)
+                ? (m['hints'] as List)
+                : [
+                    {
+                      'category': 'İpucu',
+                      'text': hintText.isNotEmpty
+                          ? hintText
+                          : 'Kelime hakkında ipucu'
+                    },
+                    {'category': 'İpucu', 'text': 'Kategori: Kelime'},
+                    {'category': 'İpucu', 'text': 'Seviye: $diffTag'},
+                  ];
+            return {
+              'word': word.toString().toUpperCase(),
+              'hints': json.encode(hintsList),
+              'difficulty': normDiff(diffTag),
+            };
+          })
+          .cast<Map<String, String>>()
+          .toList();
+    }
+
+    List<Map<String, String>> mapAtasozleri(
+        List<dynamic> list, String diffTag) {
+      return list
+          .map((it) {
+            if (it is String) {
+              return {
+                'word': it.toUpperCase(),
+                'hints': json.encode([
+                  {
+                    'category': 'Atasözü',
+                    'text': 'Geleneksel bir öğüt içerir.'
+                  },
+                  {'category': 'Atasözü', 'text': 'Günlük hayatta kullanılır.'},
+                  {'category': 'Atasözü', 'text': 'Seviye: $diffTag'},
+                ]),
+                'difficulty': normDiff(diffTag),
+              };
+            } else {
+              final m = it as Map<String, dynamic>;
+              return {
+                'word':
+                    (m['word'] ?? m['kelime'] ?? '').toString().toUpperCase(),
+                'hints': json.encode(m['hints'] ??
+                    [
+                      {
+                        'category': 'Atasözü',
+                        'text': 'Geleneksel bir öğüt içerir.'
+                      },
+                      {
+                        'category': 'Atasözü',
+                        'text': 'Günlük hayatta kullanılır.'
+                      },
+                      {'category': 'Atasözü', 'text': 'Seviye: $diffTag'},
+                    ]),
+                'difficulty': normDiff(diffTag),
+              };
+            }
+          })
+          .cast<Map<String, String>>()
+          .toList();
+    }
+
+    if (data.containsKey('single')) {
+      // Old schema
+      _singleItems = (data['single'] as List)
+          .map((e) {
+            final m = e as Map<String, dynamic>;
+            return {
+              'word': '${m['word']}',
+              'hints': json.encode(m['hints']),
+              'difficulty': _normalizeDifficulty(m['difficulty']?.toString()),
+            };
+          })
+          .cast<Map<String, String>>()
+          .toList();
+      final extra =
+          mapAtasozleri((data['atasozleri'] as List?) ?? const [], 'medium');
+      _singleItems.addAll(extra);
+    } else if (data.containsKey('ilkokul') ||
+        data.containsKey('ortaokul') ||
+        data.containsKey('lise')) {
+      // New schema
+      final ilkokul = (data['ilkokul'] as Map<String, dynamic>?);
+      final ortaokul = (data['ortaokul'] as Map<String, dynamic>?);
+      final lise = (data['lise'] as Map<String, dynamic>?);
+
+      if (ilkokul != null) {
+        collect.addAll(
+            mapWords((ilkokul['kelimeler'] as List?) ?? const [], 'easy'));
+        collect.addAll(mapAtasozleri(
+            (ilkokul['atasozleri'] as List?) ?? const [], 'easy'));
+      }
+      if (ortaokul != null) {
+        collect.addAll(
+            mapWords((ortaokul['kelimeler'] as List?) ?? const [], 'medium'));
+        collect.addAll(mapAtasozleri(
+            (ortaokul['atasozleri'] as List?) ?? const [], 'medium'));
+      }
+      if (lise != null) {
+        collect
+            .addAll(mapWords((lise['kelimeler'] as List?) ?? const [], 'hard'));
+        collect.addAll(
+            mapAtasozleri((lise['atasozleri'] as List?) ?? const [], 'hard'));
+      }
+
+      _singleItems = collect;
+    } else {
+      // Fallback minimal
+      _singleItems = [
+        {
+          'word': 'FLUTTER',
+          'hints': json.encode([
+            {'category': 'İpucu', 'text': 'Google’ın UI aracı'}
+          ]),
+          'difficulty': 'medium',
+        }
+      ];
+    }
   }
 
   Map<String, String> _pickFromAssets() {
-    final list = _singlePlayer ? _singleItems : _multiItems;
+    final list = _singleItems;
     String targetDifficulty = 'medium';
     final grade = widget.profile.grade;
     if (grade != null) {
@@ -271,7 +406,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
   void _spinWheel() {
     if (_spinning) return;
     setState(() => _spinning = true);
-    final spins = 5 + _random.nextInt(4); // 5-8 tam tur
+    final spins = 6 + _random.nextInt(5); // 6-10 tam tur, daha uzun
     final targetIndex = _random.nextInt(_segments.length);
     final perSlice = 2 * pi / _segments.length;
     // Pointer üstte olduğu için (pi/2) ofsetini hesaba kat
@@ -280,7 +415,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
     _rotation = Tween<double>(
             begin: _rotation.value % (2 * pi), end: targetAngle)
         .animate(
-            CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
+            CurvedAnimation(parent: _controller, curve: Curves.easeOutQuart));
     _controller.forward(from: 0);
   }
 
@@ -441,7 +576,9 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
       ),
     );
     if (guess == null || guess.isEmpty) return;
-    if (_normalizeTr(guess) == _normalizeTr(_logic.secretWord)) {
+    final g = _lettersOnlyUpper(guess);
+    final target = _lettersOnlyUpper(_logic.secretWord);
+    if (g == target) {
       setState(() {
         for (final ch in _logic.secretWord.characters) {
           if (GameLogic._isLetter(ch))
@@ -653,52 +790,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
                   child: CircularProgressIndicator(),
                 )
               else
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 8,
-                  children: [
-                    ChoiceChip(
-                      selected: _singlePlayer,
-                      label: const Text('Tek Kişilik'),
-                      onSelected: (v) {
-                        if (v) {
-                          setState(() {
-                            _singlePlayer = true;
-                            final p = _pickFromAssets();
-                            final hints =
-                                (json.decode(p['hints']!) as List).cast<Map>();
-                            _hintCategory = '${hints.first['category']}';
-                            _hintText = '${hints.first['text']}';
-                            _logic = GameLogic(
-                              players: ['Oyuncu'],
-                              secretWord: p['word']!,
-                            );
-                          });
-                        }
-                      },
-                    ),
-                    ChoiceChip(
-                      selected: !_singlePlayer,
-                      label: const Text('Çift Kişilik'),
-                      onSelected: (v) {
-                        if (v) {
-                          setState(() {
-                            _singlePlayer = false;
-                            final p = _pickFromAssets();
-                            final hints =
-                                (json.decode(p['hints']!) as List).cast<Map>();
-                            _hintCategory = '${hints.first['category']}';
-                            _hintText = '${hints.first['text']}';
-                            _logic = GameLogic(
-                              players: ['Oyuncu 1', 'Oyuncu 2'],
-                              secretWord: p['word']!,
-                            );
-                          });
-                        }
-                      },
-                    ),
-                  ],
-                ),
+                const SizedBox.shrink(),
               const SizedBox(height: 12),
               wordBoxes,
               const SizedBox(height: 8),
@@ -776,8 +868,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
                           setState(() {
                             _logic.scores[_logic.currentPlayerIndex] -= cost;
                           });
-                          final list =
-                              _singlePlayer ? _singleItems : _multiItems;
+                          final list = _singleItems;
                           final current = list.firstWhere(
                             (e) => e['word'] == _logic.secretWord,
                             orElse: () => {
