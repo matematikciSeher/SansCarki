@@ -4,6 +4,7 @@ import 'grade_select_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../models/user_profile.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class CarkiGoSplashScreen extends StatefulWidget {
   const CarkiGoSplashScreen({super.key});
@@ -19,22 +20,10 @@ class _CarkiGoSplashScreenState extends State<CarkiGoSplashScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeAutoEnter());
+    // Otomatik giriş devre dışı: kullanıcı her zaman giriş ekranını görür
   }
 
-  Future<void> _maybeAutoEnter() async {
-    final prefs = await SharedPreferences.getInstance();
-    final profileJson = prefs.getString('user_profile');
-    if (profileJson == null) return;
-    final profile = UserProfile.fromJson(json.decode(profileJson));
-    if (!mounted) return;
-    if (profile.grade != null) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
-    }
-  }
+  // _maybeAutoEnter() kaldırıldı
 
   Future<void> _login() async {
     if (_controller.text.trim().isEmpty) {
@@ -79,42 +68,13 @@ class _CarkiGoSplashScreenState extends State<CarkiGoSplashScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Logo
-                Container(
-                  width: 140,
-                  height: 140,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [Colors.deepPurple, Colors.purpleAccent],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      '🎡',
-                      style: TextStyle(fontSize: 80, shadows: [
-                        Shadow(color: Colors.purple.shade200, blurRadius: 12)
-                      ]),
-                    ),
-                  ),
+                // Logo (full width, auto-fit)
+                SvgPicture.asset(
+                  'assets/branding/logo.svg',
+                  width: MediaQuery.of(context).size.width * 0.9,
+                  fit: BoxFit.contain,
                 ),
                 const SizedBox(height: 24),
-                // Proje ismi
-                const Text(
-                  'ÇARKIGO!',
-                  style: TextStyle(
-                    fontSize: 38,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.deepPurple,
-                    letterSpacing: 2,
-                    shadows: [
-                      Shadow(color: Colors.purpleAccent, blurRadius: 8)
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
                 // Slogan
                 const Text(
                   'ÇARKI ÇEVİR, EĞLENCEYE GÖMÜL!',

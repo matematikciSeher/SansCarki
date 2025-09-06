@@ -1,0 +1,63 @@
+{
+  "single": [
+    {"word":"ELMA","difficulty":"easy","hints":[{"category":"İpucu","text":"Kırmızı, yeşil veya sarı olabilir."},{"category":"İpucu","text":"Bir meyvedir."},{"category":"Atasözü","text":"Günde bir elma, doktoru uzak tutar denir."}]},
+    {"word":"KALEM","difficulty":"easy","hints":[{"category":"İpucu","text":"Yazı yazmak için kullanılır."},{"category":"İpucu","text":"Ucu sivridir."},{"category":"İpucu","text":"Okul çantasında bulunur."}]},
+    {"word":"KİTAP","difficulty":"easy","hints":[{"category":"İpucu","text":"İçinde yazılar vardır."},{"category":"İpucu","text":"Okumak için kullanılır."},{"category":"İpucu","text":"Kütüphanede bulunur."}]},
+    {"word":"TOP","difficulty":"easy","hints":[{"category":"İpucu","text":"Yuvarlaktır."},{"category":"İpucu","text":"Futbol ve basketbolda kullanılır."},{"category":"İpucu","text":"Çocukların sevdiği oyuncağıdır."}]},
+    {"word":"GÜNEŞ","difficulty":"easy","hints":[{"category":"İpucu","text":"Isı ve ışık verir."},{"category":"İpucu","text":"Gündüz gökyüzünde görünür."},{"category":"İpucu","text":"Yaşam kaynağıdır."}]},
+    {"word":"AY","difficulty":"easy","hints":[{"category":"İpucu","text":"Gece gökyüzünde parlar."},{"category":"İpucu","text":"Hilal, dolunay hâlleri vardır."},{"category":"İpucu","text":"Bayrağımızda bulunur."}]},
+    {"word":"YILDIZ","difficulty":"easy","hints":[{"category":"İpucu","text":"Gökyüzünde parlar."},{"category":"İpucu","text":"Küçük ışık noktaları gibi görünür."},{"category":"İpucu","text":"Güneş de aslında bir yıldızdır."}]},
+    {"word":"KEDİ","difficulty":"easy","hints":[{"category":"İpucu","text":"Miyavlar."},{"category":"İpucu","text":"Süt içmeyi sever."},{"category":"İpucu","text":"Evcil bir hayvandır."}]},
+    {"word":"KÖPEK","difficulty":"easy","hints":[{"category":"İpucu","text":"Havlar."},{"category":"İpucu","text":"Sadık bir hayvandır."},{"category":"İpucu","text":"Bahçeleri korur."}]},
+    {"word":"BALIK","difficulty":"easy","hints":[{"category":"İpucu","text":"Suda yaşar."},{"category":"İpucu","text":"Solungaçları vardır."},{"category":"İpucu","text":"Kılçıkları olabilir."}]},
+    {"word":"ÇİÇEK","difficulty":"easy","hints":[{"category":"İpucu","text":"Renkli yaprakları vardır."},{"category":"İpucu","text":"Kokusuyla bilinir."},{"category":"İpucu","text":"Baharda açar."}]},
+    {"word":"AĞAÇ","difficulty":"easy","hints":[{"category":"İpucu","text":"Kök, gövde, dallardan oluşur."},{"category":"İpucu","text":"Ormanların temelidir."},{"category":"İpucu","text":"Gölge yapar."}]},
+    {"word":"BULUT","difficulty":"easy","hints":[{"category":"İpucu","text":"Gökyüzünde beyaz veya gri görünür."},{"category":"İpucu","text":"Yağmur onlardan yağar."},{"category":"İpucu","text":"Pamuk gibidir."}]},
+    {"word":"YAĞMUR","difficulty":"easy","hints":[{"category":"İpucu","text":"Gökten düşer."},{"category":"İpucu","text":"Su damlalarıdır."},{"category":"İpucu","text":"Bitkilere can verir."}]},
+    {"word":"KAR","difficulty":"easy","hints":[{"category":"İpucu","text":"Kışın yağar."},{"category":"İpucu","text":"Beyazdır."},{"category":"İpucu","text":"Kartopu oynanır."}]},
+    {"word":"EV","difficulty":"easy","hints":[{"category":"İpucu","text":"İnsanların yaşadığı yerdir."},{"category":"İpucu","text":"Odaları vardır."},{"category":"İpucu","text":"Çatısı bulunur."}]},
+    {"word":"OKUL","difficulty":"easy","hints":[{"category":"İpucu","text":"Çocuklar burada ders görür."},{"category":"İpucu","text":"Öğretmen sınıfta ders anlatır."},{"category":"İpucu","text":"Çanta ve defter kullanılır."}]},
+    {"word":"TAHTA","difficulty":"easy","hints":[{"category":"İpucu","text":"Sınıfta yazı yazılır."},{"category":"İpucu","text":"Kara ya da beyaz olabilir."},{"category":"İpucu","text":"Öğretmen kullanır."}]},
+    {"word":"ÇANTA","difficulty":"easy","hints":[{"category":"İpucu","text":"Okula götürülür."},{"category":"İpucu","text":"İçinde defter ve kitap olur."},{"category":"İpucu","text":"Sırta takılır."}]},
+    {"word":"SİLGİ","difficulty":"easy","hints":[{"category":"İpucu","text":"Yanlış yazıyı düzeltir."},{"category":"İpucu","text":"Kurşun kalem izini yok eder."},{"category":"İpucu","text":"Küçük bir okul eşyasıdır."}]},
+    {"word":"MUTFAK","difficulty":"easy","hints":[{"category":"İpucu","text":"Yemek pişirilen yerdir."},{"category":"İpucu","text":"Ocak ve fırın bulunur."},{"category":"İpucu","text":"Evde en çok kullanılan yerlerden biridir."}]},
+    {"word":"SANDALYE","difficulty":"easy","hints":[{"category":"İpucu","text":"Oturmak için kullanılır."},{"category":"İpucu","text":"Dört bacağı vardır."},{"category":"İpucu","text":"Okulda ve evde bulunur."}]},
+    {"word":"MASA","difficulty":"easy","hints":[{"category":"İpucu","text":"Üzerine kitap ve defter konur."},{"category":"İpucu","text":"Dört bacağı vardır."},{"category":"İpucu","text":"Öğrenciler çalışırken kullanır."}]},
+    {"word":"AYI","difficulty":"easy","hints":[{"category":"İpucu","text":"Ormanda yaşar."},{"category":"İpucu","text":"Kış uykusuna yatar."},{"category":"İpucu","text":"Kahverengi veya siyah olabilir."}]},
+    {"word":"KUŞ","difficulty":"easy","hints":[{"category":"İpucu","text":"Uçar."},{"category":"İpucu","text":"Tüyleri vardır."},{"category":"İpucu","text":"Öter."}]},
+    {"word":"ARABA","difficulty":"easy","hints":[{"category":"İpucu","text":"Karada hareket eder."},{"category":"İpucu","text":"Dört tekerleği vardır."},{"category":"İpucu","text":"İçinde insanlar oturur."}]},
+    {"word":"OTOBÜS","difficulty":"easy","hints":[{"category":"İpucu","text":"Toplu taşımada kullanılır."},{"category":"İpucu","text":"Birçok insan taşır."},{"category":"İpucu","text":"Durağa gelir."}]},
+    {"word":"KAPI","difficulty":"easy","hints":[{"category":"İpucu","text":"Odanın girişinde bulunur."},{"category":"İpucu","text":"Açılıp kapanır."},{"category":"İpucu","text":"Anahtarla açılır."}]},
+    {"word":"PENCERE","difficulty":"easy","hints":[{"category":"İpucu","text":"Işık içeri girer."},{"category":"İpucu","text":"Camdan yapılır."},{"category":"İpucu","text":"Açılıp kapanabilir."}]},
+    {"word":"SAAT","difficulty":"easy","hints":[{"category":"İpucu","text":"Zamanı gösterir."},{"category":"İpucu","text":"Kolları vardır."},{"category":"İpucu","text":"Duvara asılabilir."}]},
+    {"word":"ÇORAP","difficulty":"easy","hints":[{"category":"İpucu","text":"Ayağı sıcak tutar."},{"category":"İpucu","text":"Pamuk veya yün olabilir."},{"category":"İpucu","text":"Ayakkabının içinde giyilir."}]},
+    {"word":"BOT","difficulty":"easy","hints":[{"category":"İpucu","text":"Ayağı korur."},{"category":"İpucu","text":"Kışın giyilir."},{"category":"İpucu","text":"Su geçirmez olabilir."}]},
+    {"word":"ŞAPKA","difficulty":"easy","hints":[{"category":"İpucu","text":"Başın üstüne takılır."},{"category":"İpucu","text":"Güneşten korur."},{"category":"İpucu","text":"Farklı renkleri vardır."}]},
+    {"word":"GÖZLÜK","difficulty":"easy","hints":[{"category":"İpucu","text":"Görmeyi kolaylaştırır."},{"category":"İpucu","text":"Camdan yapılır."},{"category":"İpucu","text":"Kullanımı göz sağlığı için önemlidir."}]},
+    {"word":"KİREÇ","difficulty":"easy","hints":[{"category":"İpucu","text":"Tahta yazı tahtasında kullanılırdı."},{"category":"İpucu","text":"Beyazdır."},{"category":"İpucu","text":"Toz halindedir."}]},
+    {"word":"SANDIK","difficulty":"easy","hints":[{"category":"İpucu","text":"Eşya saklamak için kullanılır."},{"category":"İpucu","text":"Ahşaptan yapılır."},{"category":"İpucu","text":"Kapağı vardır."}]},
+    {"word":"BİSİKLET","difficulty":"easy","hints":[{"category":"İpucu","text":"İki tekerleklidir."},{"category":"İpucu","text":"Pedallarla çalışır."},{"category":"İpucu","text":"Çocuklar sever."}]},
+    {"word":"OYUNCAK","difficulty":"easy","hints":[{"category":"İpucu","text":"Oynamak için kullanılır."},{"category":"İpucu","text":"Renkli olabilir."},{"category":"İpucu","text":"Çocuklar için tasarlanmıştır."}]},
+    {"word":"KÜTÜPHANE","difficulty":"easy","hints":[{"category":"İpucu","text":"Kitapların bulunduğu yerdir."},{"category":"İpucu","text":"Sessiz olmalıdır."},{"category":"İpucu","text":"Öğrenciler gelir."}]},
+    {"word":"FIRIN","difficulty":"easy","hints":[{"category":"İpucu","text":"Ekmek pişer."},{"category":"İpucu","text":"Mutfağın bir parçasıdır."},{"category":"İpucu","text":"Sıcak olur."}]}
+  ],
+  "multi": [
+    {"word":"MİKROSKOP","difficulty":"medium","hints":[{"category":"İpucu","text":"Küçük şeyleri büyütür."},{"category":"İpucu","text":"Laboratuvarda bulunur."},{"category":"İpucu","text":"Lenslerle çalışır."}]},
+    {"word":"TELESKOP","difficulty":"medium","hints":[{"category":"İpucu","text":"Gökyüzünü incelemeye yarar."},{"category":"İpucu","text":"Astronomlar kullanır."},{"category":"İpucu","text":"Yıldızları gösterir."}]},
+    {"word":"VOLKAN","difficulty":"medium","hints":[{"category":"İpucu","text":"Lav püskürtebilir."},{"category":"İpucu","text":"Yanardağ olarak bilinir."},{"category":"İpucu","text":"Krateri vardır."}]},
+    {"word":"HARİTA","difficulty":"medium","hints":[{"category":"İpucu","text":"Ülkeleri, şehirleri gösterir."},{"category":"İpucu","text":"Kağıt üzerinde çizilir."},{"category":"İpucu","text":"Yön bulmaya yarar."}]},
+    {"word":"PUSULA","difficulty":"medium","hints":[{"category":"İpucu","text":"Kuzeyi gösterir."},{"category":"İpucu","text":"Yön bulmak için kullanılır."},{"category":"İpucu","text":"İğnesi manyetiktir."}]},
+    {"word":"GÖÇ","difficulty":"medium","hints":[{"category":"İpucu","text":"İnsanların veya hayvanların yer değiştirmesidir."},{"category":"İpucu","text":"Mevsimlerle ilişkilidir."},{"category":"İpucu","text":"Tarihte topluluklar böyle yayılmıştır."}]},
+    {"word":"DENEY","difficulty":"medium","hints":[{"category":"İpucu","text":"Bilimsel bir işlemdir."},{"category":"İpucu","text":"Laboratuvarda yapılır."},{"category":"İpucu","text":"Sonuç gözlemlenir."}]},
+    {"word":"PARAGRAF","difficulty":"medium","hints":[{"category":"İpucu","text":"Metnin bir bölümüdür."},{"category":"İpucu","text":"Cümlelerden oluşur."},{"category":"İpucu","text":"Başında boşluk bırakılır."}]},
+    {"word":"MATEMATİK","difficulty":"medium","hints":[{"category":"İpucu","text":"Sayılarla ilgilidir."},{"category":"İpucu","text":"Dört işlem içerir."},{"category":"İpucu","text":"Geometri bu alanın içindedir."}]},
+    {"word":"GEOMETRİ","difficulty":"medium","hints":[{"category":"İpucu","text":"Üçgen, kare, daire ile ilgilenir."},{"category":"İpucu","text":"Alan ve çevre hesaplanır."},{"category":"İpucu","text":"Matematiğin dalıdır."}]}
+  ],
+  "atasozleri": [
+    {"word":"Ayağını yorganına göre uzat","difficulty":"easy","hints":[{"category":"İpucu","text":"Gelirine göre harcama yap."},{"category":"İpucu","text":"Tasarruf önemlidir."},{"category":"İpucu","text":"İsraf etmeyi önler."}]},
+    {"word":"Acele işe şeytan karışır","difficulty":"easy","hints":[{"category":"İpucu","text":"Acele eden hata yapar."},{"category":"İpucu","text":"Sabırlı ol."},{"category":"İpucu","text":"Dikkat önemlidir."}]},
+    {"word":"Damlaya damlaya göl olur","difficulty":"easy","hints":[{"category":"İpucu","text":"Küçük birikimler zamanla çoğalır."},{"category":"İpucu","text":"Tasarrufla ilgilidir."},{"category":"İpucu","text":"Sabır önemlidir."}]}
+  ]
+}
+
+

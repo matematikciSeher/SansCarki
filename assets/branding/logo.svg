@@ -1,0 +1,55 @@
+<svg width="768" height="768" viewBox="-96 -96 960 960" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ÇARKIGO logo">
+  <defs>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#0F2A44" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Background kept transparent for embedding in splash circle -->
+
+  <!-- Wheel with navy outline -->
+  <g transform="translate(384 300)" filter="url(#softShadow)">
+    <!-- Segments (8 colors) -->
+    <g>
+      <path d="M0 0 L0 -168 A168 168 0 0 1 118.8 -118.8 Z" fill="#F04D3F"/>
+      <path d="M0 0 L118.8 -118.8 A168 168 0 0 1 168 0 Z" fill="#10B9E7"/>
+      <path d="M0 0 L168 0 A168 168 0 0 1 118.8 118.8 Z" fill="#2E87E6"/>
+      <path d="M0 0 L118.8 118.8 A168 168 0 0 1 0 168 Z" fill="#6A49C6"/>
+      <path d="M0 0 L0 168 A168 168 0 0 1 -118.8 118.8 Z" fill="#6FC34A"/>
+      <path d="M0 0 L-118.8 118.8 A168 168 0 0 1 -168 0 Z" fill="#FFD54A"/>
+      <path d="M0 0 L-168 0 A168 168 0 0 1 -118.8 -118.8 Z" fill="#FFB82E"/>
+      <path d="M0 0 L-118.8 -118.8 A168 168 0 0 1 0 -168 Z" fill="#E83A2F"/>
+    </g>
+
+    <!-- Spokes and hub -->
+    <g stroke="#0F2A44" stroke-width="16">
+      <line x1="0" y1="-168" x2="0" y2="168"/>
+      <line x1="-168" y1="0" x2="168" y2="0"/>
+      <line x1="-118.8" y1="-118.8" x2="118.8" y2="118.8"/>
+      <line x1="118.8" y1="-118.8" x2="-118.8" y2="118.8"/>
+      <circle cx="0" cy="0" r="36" fill="#FFC230"/>
+    </g>
+  </g>
+
+  <!-- Pointer at top -->
+  <g transform="translate(384 120)">
+    <path d="M0 0 l26 70 h-52 z" fill="#FF6D2E" stroke="#0F2A44" stroke-width="12" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Wordmark -->
+  <g transform="translate(384 640) skewX(-6)">
+    <!-- soft drop shadow -->
+    <text x="0" y="14" text-anchor="middle" font-family="'Luckiest Guy', 'Bangers', 'Baloo 2', 'Fredoka', 'Nunito', 'Segoe UI', Roboto, Arial, sans-serif" font-size="180" font-weight="900" fill="#0F2A44" opacity="0.22" letter-spacing="2" lengthAdjust="spacingAndGlyphs" textLength="700">ÇARKIGO!</text>
+    <!-- outer bold navy outline -->
+    <text x="0" y="0" text-anchor="middle" font-family="'Luckiest Guy', 'Bangers', 'Baloo 2', 'Fredoka', 'Nunito', 'Segoe UI', Roboto, Arial, sans-serif" font-size="180" font-weight="900" fill="#7C4DFF" stroke="#0F2A44" stroke-width="32" stroke-linejoin="round" paint-order="stroke fill" letter-spacing="2" lengthAdjust="spacingAndGlyphs" textLength="700">ÇARKIGO!</text>
+    <!-- inner white border for sticker vibe -->
+    <text x="0" y="0" text-anchor="middle" font-family="'Luckiest Guy', 'Bangers', 'Baloo 2', 'Fredoka', 'Nunito', 'Segoe UI', Roboto, Arial, sans-serif" font-size="180" font-weight="900" fill="#7C4DFF" stroke="#FFFFFF" stroke-width="12" stroke-linejoin="round" paint-order="stroke fill" letter-spacing="2" lengthAdjust="spacingAndGlyphs" textLength="700">ÇARKIGO!</text>
+    <!-- top layer with purple lettering -->
+    <text x="0" y="0" text-anchor="middle" font-family="'Luckiest Guy', 'Bangers', 'Baloo 2', 'Fredoka', 'Nunito', 'Segoe UI', Roboto, Arial, sans-serif" font-size="180" font-weight="900" letter-spacing="2" lengthAdjust="spacingAndGlyphs" textLength="700">
+      <tspan fill="#7C4DFF">ÇARKIGO!</tspan>
+    </text>
+  </g>
+</svg>
+
+
+

@@ -41,6 +41,7 @@ dependencies:
   image_picker: ^1.0.7
   path_provider: ^2.1.2
   file_picker: ^8.0.3
+  flutter_svg: ^2.0.9
 
 dev_dependencies:
   flutter_test:
@@ -69,6 +70,8 @@ flutter:
     - assets/images/
     - assets/tasks.json
     - assets/tasks_raw.txt
+    - assets/branding/
+    - assets/words_hints.json
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

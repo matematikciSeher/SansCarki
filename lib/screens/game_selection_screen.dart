@@ -10,11 +10,11 @@ import 'quiz_game_screen.dart';
 import 'quiz_arena_screen.dart';
 import 'avatar_adventure_screen.dart';
 
-import 'balloon_pop_game_screen.dart';
 import 'target_shooter_game_screen.dart';
 import 'logic_gates_puzzle_screen.dart';
 import 'maze_game_screen.dart';
 import 'sudoku_game_screen.dart';
+import 'wheel_of_fortune_screen.dart';
 // import 'shape_shift_game_screen.dart';
 // import 'ice_breaker_game_screen.dart';
 
@@ -96,14 +96,6 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
       estimatedTime: '5-15 dk',
     ),
     GameInfo(
-      id: 'balloon_pop',
-      name: 'Balon Patlat',
-      description: 'Görev balonlarını patlat, yanlış renkten kaçın!',
-      emoji: '🎈',
-      color: Colors.redAccent,
-      estimatedTime: '1-3 dk',
-    ),
-    GameInfo(
       id: 'target_shooter',
       name: 'Hedef Avı',
       description: 'Hareketli hedefleri vur, isabetli atışlarla puan topla!',
@@ -118,6 +110,14 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
       emoji: '🔌',
       color: Colors.blueGrey,
       estimatedTime: '2-5 dk',
+    ),
+    GameInfo(
+      id: 'wheel_fortune',
+      name: 'Çarkıfelek',
+      description: 'Çarkı çevir, harf tahmin et, puanları topla!',
+      emoji: '🎡',
+      color: Colors.orange,
+      estimatedTime: '3-6 dk',
     ),
   ];
 
@@ -220,14 +220,6 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
           ),
         );
         break;
-      case 'balloon_pop':
-        result = await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => BalloonPopGameScreen(profile: _profile),
-          ),
-        );
-        break;
       case 'target_shooter':
         result = await Navigator.push(
           context,
@@ -241,6 +233,14 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
           context,
           MaterialPageRoute(
             builder: (context) => LogicGatesPuzzleScreen(profile: _profile),
+          ),
+        );
+        break;
+      case 'wheel_fortune':
+        result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => WheelOfFortuneScreen(profile: _profile),
           ),
         );
         break;
