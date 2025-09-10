@@ -87,12 +87,59 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _profile = UserProfile.fromJson(json.decode(profileJson));
       });
+      // Oyun/quiz/görev toplam puanına göre rozetleri garanti et
+      await _ensurePointBadges();
     }
   }
 
   Future<void> _refreshData() async {
     await _loadProfile();
     await _loadCompletedTasks();
+  }
+
+  Future<void> _ensurePointBadges() async {
+    final current = Set<String>.from(_profile.badges);
+    final newBadges = <String>[];
+
+    void addIfNotHas(String id) {
+      if (!current.contains(id) && !newBadges.contains(id)) {
+        newBadges.add(id);
+      }
+    }
+
+    final total = _profile.totalAllPoints;
+    if (total >= 5000) {
+      final count = total ~/ 5000;
+      for (int i = 1; i <= count; i++) {
+        addIfNotHas('points_bronz_$i');
+      }
+    }
+    if (total >= 20000) {
+      final count = total ~/ 20000;
+      for (int i = 1; i <= count; i++) {
+        addIfNotHas('points_gumus_$i');
+      }
+    }
+    if (total >= 50000) {
+      final count = total ~/ 50000;
+      for (int i = 1; i <= count; i++) {
+        addIfNotHas('points_altin_$i');
+      }
+    }
+    if (total >= 100000) {
+      final count = total ~/ 100000;
+      for (int i = 1; i <= count; i++) {
+        addIfNotHas('points_elmas_$i');
+      }
+    }
+
+    if (newBadges.isNotEmpty) {
+      setState(() {
+        _profile =
+            _profile.copyWith(badges: [..._profile.badges, ...newBadges]);
+      });
+      await _saveProfile();
+    }
   }
 
   Future<void> _saveProfile() async {
@@ -362,6 +409,17 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  /// Bugünün kategorisini hesapla (12 günde bir değişir)
+  Category _getTodaysCategory() {
+    final today = DateTime.now();
+    final startDate = DateTime(2024, 1, 1); // Başlangıç tarihi
+    final daysSinceStart = today.difference(startDate).inDays;
+    final categoryIndex = daysSinceStart % 12; // 12 kategori, 12 günde bir döngü
+    
+    final categories = CategoryData.getAllCategories();
+    return categories[categoryIndex];
+  }
+
   void _onCategorySelected(Category category) {
     // Kategori seçildiğinde o kategoriden rastgele bir görev seç
     List<Task> categoryTasks = [];
@@ -374,26 +432,18 @@ class _HomeScreenState extends State<HomeScreen> {
         ...TaskRepositoryFallback.sampleTasks,
     ];
 
-    // 12 günlük kategori cooldown kontrolü
-    final lastPickedIso = _profile.categoryLastPicked[category.id];
-    if (lastPickedIso != null && lastPickedIso.isNotEmpty) {
-      final last = DateTime.tryParse(lastPickedIso);
-      if (last != null) {
-        final diffDays = DateTime.now().difference(last).inDays;
-        if (diffDays < 12) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Farklı bir kategori seç ve çarkı tekrar çevir.'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-          setState(() {
-            _selectedCategory = null;
-            _selectedTask = null;
-          });
-          return;
-        }
-      }
+    // Bugünün kategorisini kontrol et
+    final todaysCategory = _getTodaysCategory();
+    if (category.id != todaysCategory.id) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Bugünün kategorisi: ${todaysCategory.name} ${todaysCategory.emoji}'),
+          backgroundColor: Colors.blue,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      // Bugünün kategorisini otomatik seç
+      category = todaysCategory;
     }
 
     categoryTasks = allTasks
@@ -432,11 +482,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _selectedCategory = category;
         _selectedTask = randomTask;
       });
-      // cooldown başlat: kategori son seçildi zamanı kaydet
-      final map = Map<String, String>.from(_profile.categoryLastPicked);
-      map[category.id] = DateTime.now().toIso8601String();
-      _profile = _profile.copyWith(categoryLastPicked: map);
-      _saveProfile();
+      // Kategori seçimi kaydedildi (cooldown sistemi kaldırıldı)
     } else {
       setState(() {
         _selectedCategory = category;
@@ -584,6 +630,33 @@ class _HomeScreenState extends State<HomeScreen> {
           break;
       }
       if (earned) newBadges.add(badge.id);
+    }
+
+    // Puan tabanlı rozetler (tek rozet, seviye yükseltmeli):
+    // 5000+ → Bronz; 20000+ → Gümüş; 50000+ → Altın; 100000+ → Elmas
+    final total = _profile.totalAllPoints;
+    String? highestId;
+    if (total >= 100000)
+      highestId = 'points_elmas';
+    else if (total >= 50000)
+      highestId = 'points_altin';
+    else if (total >= 20000)
+      highestId = 'points_gumus';
+    else if (total >= 5000) highestId = 'points_bronz';
+
+    if (highestId != null) {
+      final pointIds = {
+        'points_bronz',
+        'points_gumus',
+        'points_altin',
+        'points_elmas'
+      };
+      final cleaned =
+          _profile.badges.where((b) => !pointIds.contains(b)).toList();
+      if (!cleaned.contains(highestId)) cleaned.add(highestId);
+      setState(() {
+        _profile = _profile.copyWith(badges: cleaned);
+      });
     }
 
     if (newBadges.isNotEmpty) {

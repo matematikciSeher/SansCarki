@@ -587,8 +587,8 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
       }
     }
 
-    // Patlama animasyonu bittikten sonra
-    Timer(const Duration(milliseconds: 800), () {
+    // Patlama animasyonu bittikten sonra (%50 daha uzun süre)
+    Timer(const Duration(milliseconds: 1200), () {
       setState(() {
         _isExploding = false;
       });
@@ -1083,8 +1083,8 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
                                 _getExplodedWordEnglish(_explodedWord),
                                 style: const TextStyle(
                                   color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w500,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
                                 ),
                                 textAlign: TextAlign.center,
                               ),

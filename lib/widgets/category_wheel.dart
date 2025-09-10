@@ -70,8 +70,13 @@ class _CategoryWheelState extends State<CategoryWheel>
 
     final categories =
         CategoryData.getAllCategories(); // Sadece 12 kategori, tekrar yok
-    _currentSelectedIndex =
-        DateTime.now().millisecondsSinceEpoch % categories.length;
+    
+    // Bugünün kategorisini hesapla (12 günde bir değişir)
+    final today = DateTime.now();
+    final startDate = DateTime(2024, 1, 1); // Başlangıç tarihi
+    final daysSinceStart = today.difference(startDate).inDays;
+    _currentSelectedIndex = daysSinceStart % categories.length;
+    
     _selectedController.add(_currentSelectedIndex);
   }
 
@@ -147,8 +152,8 @@ class _CategoryWheelState extends State<CategoryWheel>
                     child: FortuneWheel(
                       animateFirst: false,
                       selected: _selectedController.stream,
-                      duration: const Duration(milliseconds: 3600),
-                      curve: Curves.easeOutQuart,
+                      duration: const Duration(milliseconds: 7000),
+                      curve: Curves.easeOutQuint,
                       onAnimationEnd: () {
                         setState(() {
                           _isSpinning = false;

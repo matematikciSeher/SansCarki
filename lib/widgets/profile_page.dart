@@ -509,8 +509,52 @@ class BadgesPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final allBadges = app_badge.BadgeData.getAllBadges();
+    final allBadges =
+        List<app_badge.Badge>.from(app_badge.BadgeData.getAllBadges());
     final userBadges = Set<String>.from(profile.badges);
+
+    // Dinamik: puan tabanlı rozetleri kullanıcı rozetlerinden üret
+    final List<app_badge.Badge> pointBadges = [];
+    for (final id in userBadges) {
+      if (!id.startsWith('points_')) continue;
+      late app_badge.BadgeTier tier;
+      String name;
+      String emoji;
+      if (id == 'points_bronz') {
+        tier = app_badge.BadgeTier.bronz;
+        name = 'Bronz Puan Rozeti (≥5000)';
+        emoji = tier.emoji;
+      } else if (id == 'points_gumus') {
+        tier = app_badge.BadgeTier.gumus;
+        name = 'Gümüş Puan Rozeti (≥20000)';
+        emoji = tier.emoji;
+      } else if (id == 'points_altin') {
+        tier = app_badge.BadgeTier.altin;
+        name = 'Altın Puan Rozeti (≥50000)';
+        emoji = tier.emoji;
+      } else if (id == 'points_elmas') {
+        tier = app_badge.BadgeTier.elmas;
+        name = 'Elmas Puan Rozeti (≥100000)';
+        emoji = tier.emoji;
+      } else {
+        continue;
+      }
+      pointBadges.add(
+        app_badge.Badge(
+          id: id,
+          name: name,
+          description: 'Toplam puan eşiği ile kazanıldı',
+          emoji: emoji,
+          color: tier.color,
+          type: app_badge.BadgeType.ozel,
+          tier: tier,
+        ),
+      );
+    }
+    // Puan rozetlerini en sona ekle ki listede görünsün
+    if (pointBadges.isNotEmpty) {
+      allBadges.addAll(pointBadges);
+    }
 
     // Rozetleri tipe göre grupla
     final Map<app_badge.BadgeType, List<app_badge.Badge>> groupedBadges = {};
@@ -830,33 +874,28 @@ class BadgesPage extends StatelessWidget {
                     color: isEarned ? Colors.black87 : Colors.grey.shade600,
                   ),
                 ),
-                if (isEarned) ...[
-                  const SizedBox(height: 8),
+                if (badge.id.startsWith('points_')) ...[
+                  const SizedBox(height: 6),
                   Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.green.withValues(alpha: 0.12),
+                      color: Colors.orange.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                          color: Colors.green.withValues(alpha: 0.4)),
+                          color: Colors.orange.withValues(alpha: 0.4)),
                     ),
-                    child: Row(
+                    child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.verified,
-                            color: Colors.green, size: 16),
-                        const SizedBox(width: 6),
-                        Flexible(
-                          child: Text(
-                            'Hazır — Kazanıldı',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.green,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
+                        Icon(Icons.star, color: Colors.orange, size: 16),
+                        SizedBox(width: 6),
+                        Text(
+                          'Puanla kazanıldı',
+                          style: TextStyle(
+                            color: Colors.orange,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
                           ),
                         ),
                       ],

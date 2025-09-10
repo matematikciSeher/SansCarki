@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import '../models/user_profile.dart';
 import 'memory_card_game_screen.dart';
 import 'puzzle_game_screen.dart';
@@ -249,6 +251,17 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
       setState(() {
         _profile = result;
       });
+    } else {
+      // Son profil durumunu tercihlerden çek (oyunlar kendi kendine kaydedebilir)
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final raw = prefs.getString('user_profile');
+        if (raw != null) {
+          setState(() {
+            _profile = UserProfile.fromJson(json.decode(raw));
+          });
+        }
+      } catch (_) {}
     }
   }
 
@@ -432,7 +445,18 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
               _buildStatItem('🎮', 'Toplam Oyun', '${_games.length}'),
               _buildStatItem(
                   '🏆', 'En Yüksek', '${_profile.highestQuizScore ?? 0}'),
-              _buildStatItem('⭐', 'Puan', '${_profile.points}'),
+              _buildStatItem('⭐', 'Görev Puanı', '${_profile.points}'),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildStatItem(
+                  '🎲', 'Oyun Puanı', '${_profile.totalGamePoints ?? 0}'),
+              _buildStatItem(
+                  '🧠', 'Quiz Puanı', '${_profile.totalQuizPoints ?? 0}'),
+              _buildStatItem('💎', 'Toplam', '${_profile.totalAllPoints}'),
             ],
           ),
         ],

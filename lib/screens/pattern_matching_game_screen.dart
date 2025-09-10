@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_profile.dart';
 
 class PatternMatchingGameScreen extends StatefulWidget {
@@ -22,14 +24,14 @@ class _PatternMatchingGameScreenState extends State<PatternMatchingGameScreen>
   late Animation<double> _patternScaleAnimation;
 
   final List<Color> _colors = [
-    Colors.red,
-    Colors.blue,
-    Colors.green,
-    Colors.yellow,
-    Colors.purple,
-    Colors.orange,
-    Colors.pink,
-    Colors.teal,
+    Colors.black, // siyah
+    Colors.white, // beyaz
+    Colors.blue, // mavi
+    Colors.green, // yeşil
+    Colors.yellow, // sarı
+    Colors.orange, // turuncu
+    Colors.purple, // mor
+    Colors.red, // kırmızı
   ];
 
   List<int> _pattern = [];
@@ -203,6 +205,8 @@ class _PatternMatchingGameScreenState extends State<PatternMatchingGameScreen>
               const SizedBox(height: 8),
               Text('Puan: ${_currentLevel * 100}'),
               const SizedBox(height: 8),
+              Text('Toplam Puan: $_score'),
+              const SizedBox(height: 8),
               Text('Sonraki seviye: ${_currentLevel + 1}'),
             ],
           ),
@@ -240,6 +244,9 @@ class _PatternMatchingGameScreenState extends State<PatternMatchingGameScreen>
   }
 
   void _showGameOverDialog() {
+    // Puanları kaydet
+    _saveScore();
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -253,6 +260,29 @@ class _PatternMatchingGameScreenState extends State<PatternMatchingGameScreen>
               const SizedBox(height: 8),
               Text('Seviye: $_currentLevel'),
               Text('Puan: $_score'),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green.withOpacity(0.3)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.star, color: Colors.green, size: 16),
+                    SizedBox(width: 8),
+                    Text(
+                      'Puanlar kaydedildi!',
+                      style: TextStyle(
+                        color: Colors.green,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -277,6 +307,9 @@ class _PatternMatchingGameScreenState extends State<PatternMatchingGameScreen>
   }
 
   void _showGameWonDialog() {
+    // Puanları kaydet
+    _saveScore();
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -302,7 +335,7 @@ class _PatternMatchingGameScreenState extends State<PatternMatchingGameScreen>
                     const Icon(Icons.star, color: Colors.green),
                     const SizedBox(width: 8),
                     Text(
-                      'Puanlar ana sisteme eklendi!',
+                      'Puanlar kaydedildi!',
                       style: TextStyle(
                         color: Colors.green.shade700,
                         fontWeight: FontWeight.bold,
@@ -340,6 +373,24 @@ class _PatternMatchingGameScreenState extends State<PatternMatchingGameScreen>
       _score = 0;
     });
     _startNewLevel();
+  }
+
+  Future<void> _saveScore() async {
+    if (_score <= 0) return;
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString('user_profile');
+      if (raw != null) {
+        final map = json.decode(raw) as Map<String, dynamic>;
+        final profile = UserProfile.fromJson(map);
+        final newTotal = (profile.totalGamePoints ?? 0) + _score;
+        final updated = profile.copyWith(totalGamePoints: newTotal);
+        await prefs.setString('user_profile', json.encode(updated.toJson()));
+      }
+    } catch (e) {
+      // Hata durumunda sessizce devam et
+    }
   }
 
   // Bilgi ekranındaki "Başla" butonu için kısayol

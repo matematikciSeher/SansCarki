@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:characters/characters.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_profile.dart';
 
 class GameLogic {
@@ -37,7 +38,11 @@ class GameLogic {
         'ÇĞİÖŞÜçğıöşü'.contains(ch);
   }
 
-  static String _normalize(String ch) => ch.toUpperCase();
+  static String _normalize(String ch) {
+    if (ch == 'i') return 'İ';
+    if (ch == 'ı') return 'I';
+    return ch.toUpperCase();
+  }
 
   static const Set<String> vowels = {'A', 'E', 'I', 'İ', 'O', 'Ö', 'U', 'Ü'};
   static bool isVowel(String ch) => vowels.contains(_normalize(ch));
@@ -125,22 +130,36 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
   bool _loading = true;
   final Set<String> _usedWords = {};
   int _lastTickIndex = -1;
+  bool _showIntro = true;
+  int? _pendingTargetIndex; // Seçilen dilim indeksi
+  bool _sessionSaved = false;
 
   final List<String> _segments = const [
     '+100',
     '+200',
-    'Pas',
     '+300',
-    '+150',
-    'İflas',
-    '+250',
-    '+400'
+    '+400',
+    '+500',
+    '+700',
+    '+900',
+    '+1200',
+    '+1500',
+    '+2000',
+    'Pas',
+    'İflas'
   ];
 
   String _normalizeTr(String input) {
-    var t = input.trim();
-    t = t.replaceAll('i', 'İ').replaceAll('ı', 'I');
-    return t.toUpperCase();
+    final buffer = StringBuffer();
+    for (final ch in input.trim().characters) {
+      if (ch == 'i')
+        buffer.write('İ');
+      else if (ch == 'ı')
+        buffer.write('I');
+      else
+        buffer.write(ch.toUpperCase());
+    }
+    return buffer.toString();
   }
 
   String _lettersOnlyUpper(String input) {
@@ -190,7 +209,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
     });
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 3800),
+      duration: const Duration(milliseconds: 6500),
     );
     _rotation = Tween<double>(begin: 0, end: 0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
@@ -208,7 +227,10 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
       ..addStatusListener((status) {
         if (status == AnimationStatus.completed) {
           setState(() => _spinning = false);
-          final result = _resultFromAngle(_rotation.value);
+          final result = (_pendingTargetIndex != null)
+              ? _segments[_pendingTargetIndex!]
+              : _resultFromAngle(_rotation.value);
+          _pendingTargetIndex = null;
           _logic.applySpinResult(result);
           if (result == 'İflas' || result == 'Pas') {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -229,6 +251,10 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
 
   @override
   void dispose() {
+    // Eğer Bitir'e basmadan çıkılırsa, puanı kaybetme diye sessizce kaydet
+    if (!_sessionSaved) {
+      _saveSessionGamePoints();
+    }
     _controller.dispose();
     super.dispose();
   }
@@ -263,7 +289,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
                     {'category': 'İpucu', 'text': 'Seviye: $diffTag'},
                   ];
             return {
-              'word': word.toString().toUpperCase(),
+              'word': _normalizeTr(word.toString()),
               'hints': json.encode(hintsList),
               'difficulty': normDiff(diffTag),
             };
@@ -278,7 +304,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
           .map((it) {
             if (it is String) {
               return {
-                'word': it.toUpperCase(),
+                'word': _normalizeTr(it),
                 'hints': json.encode([
                   {
                     'category': 'Atasözü',
@@ -293,7 +319,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
               final m = it as Map<String, dynamic>;
               return {
                 'word':
-                    (m['word'] ?? m['kelime'] ?? '').toString().toUpperCase(),
+                    _normalizeTr((m['word'] ?? m['kelime'] ?? '').toString()),
                 'hints': json.encode(m['hints'] ??
                     [
                       {
@@ -406,12 +432,14 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
   void _spinWheel() {
     if (_spinning) return;
     setState(() => _spinning = true);
-    final spins = 6 + _random.nextInt(5); // 6-10 tam tur, daha uzun
+    final spins = 8 + _random.nextInt(5); // 8-12 tam tur, daha uzun
     final targetIndex = _random.nextInt(_segments.length);
+    _pendingTargetIndex = targetIndex;
     final perSlice = 2 * pi / _segments.length;
-    // Pointer üstte olduğu için (pi/2) ofsetini hesaba kat
+    // Pointer üstte, tepe noktası -pi/2 yönünde. Dilim merkezini oraya hizala:
+    // hedef açı = k*2π - (pi/2 + per/2) - index*per
     final targetAngle =
-        spins * 2 * pi + targetIndex * perSlice - (pi / 2) + perSlice / 2;
+        spins * 2 * pi - (pi / 2 + perSlice / 2) - targetIndex * perSlice;
     _rotation = Tween<double>(
             begin: _rotation.value % (2 * pi), end: targetAngle)
         .animate(
@@ -423,7 +451,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
     // Çarkın tepesindeki göstergeye göre sonuç
     final norm = (angle + pi / 2) % (2 * pi);
     final perSlice = 2 * pi / _segments.length;
-    final index = (norm / perSlice).floor() % _segments.length;
+    final index = ((norm + perSlice / 2) / perSlice).floor() % _segments.length;
     return _segments[index];
   }
 
@@ -449,7 +477,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
     if (count > 0) {
       _logic.rewardForGuess(value, count);
       final total = value * count;
-      final ch = letter[0].toUpperCase();
+      final ch = _normalizeTr(letter[0]);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Doğru: $ch x $count = +$total puan'),
@@ -597,20 +625,51 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Text('🎉 Tebrikler!'),
-        content: Text(
-            '${_logic.players[_logic.currentPlayerIndex]} kelimeyi bildi!\n\nKelime: ${_logic.secretWord}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+                '${_logic.players[_logic.currentPlayerIndex]} kelimeyi bildi!'),
+            const SizedBox(height: 8),
+            Text('Kelime: ${_logic.secretWord}'),
+            const SizedBox(height: 8),
+            Text('Oturum Toplam Puanı: ' +
+                (_logic.scores.isNotEmpty
+                        ? _logic.scores.reduce((a, b) => a + b)
+                        : 0)
+                    .toString()),
+          ],
+        ),
         actions: [
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context); // close dialog
+              // Her kelime tamamlandığında puanları kaydet
+              await _saveSessionGamePoints();
               _startNextWord();
             },
             child: const Text('Devam Et'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context); // close dialog
-              Navigator.pop(context); // exit game screen
+              await _saveSessionGamePoints();
+              try {
+                final prefs = await SharedPreferences.getInstance();
+                final raw = prefs.getString('user_profile');
+                if (raw != null) {
+                  final profile = UserProfile.fromJson(json.decode(raw));
+                  if (context.mounted) {
+                    Navigator.pop(
+                        context, profile); // exit with updated profile
+                  }
+                } else {
+                  if (context.mounted) Navigator.pop(context);
+                }
+              } catch (_) {
+                if (context.mounted) Navigator.pop(context);
+              }
             },
             child: const Text('Bitir'),
           ),
@@ -645,8 +704,8 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
     // Difficulty by grade: choose pool based on user's grade (if provided via route)
     // We expect profile passed into widget; use its grade to bias selection size implicitly via asset lists order.
     final wheel = SizedBox(
-      height: min(300, MediaQuery.of(context).size.width * 0.7),
-      width: min(300, MediaQuery.of(context).size.width * 0.7),
+      height: min(260, MediaQuery.of(context).size.width * 0.6),
+      width: min(260, MediaQuery.of(context).size.width * 0.6),
       child: AnimatedBuilder(
         animation: _rotation,
         builder: (context, child) {
@@ -674,36 +733,91 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
 
     final wordBoxes = SizedBox(
       width: double.infinity,
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        alignment: Alignment.center,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: _logic.secretWord.characters.map((ch) {
-            final isLetter = GameLogic._isLetter(ch);
-            final show =
-                !isLetter || _logic.revealed.contains(GameLogic._normalize(ch));
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Container(
-                width: 36,
-                height: 42,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: Colors.black12),
-                ),
-                child: Text(
-                  show ? ch.toUpperCase() : '_',
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 18),
+      child: Builder(builder: (context) {
+        final hasSpaces = _logic.secretWord.contains(' ');
+        final maxWordWidth =
+            MediaQuery.of(context).size.width - 32; // padding payı
+        if (!hasSpaces) {
+          // Tek kelime: tek satırda ölçekleyerek göster
+          return FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.center,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: _logic.secretWord.characters.map((ch) {
+                final isLetter = GameLogic._isLetter(ch);
+                final show = !isLetter ||
+                    _logic.revealed.contains(GameLogic._normalize(ch));
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Container(
+                    width: 36,
+                    height: 42,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: Colors.black12),
+                    ),
+                    child: Text(
+                      show ? _normalizeTr(ch) : '_',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                          letterSpacing: 1.5),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          );
+        }
+        // Çok kelimeli: kelimelere göre satır başı ile Wrap kullan
+        final words = _logic.secretWord.split(' ');
+        return Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 8,
+          runSpacing: 8,
+          children: words.map((word) {
+            if (word.isEmpty) return const SizedBox(width: 0, height: 0);
+            return ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxWordWidth),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: word.characters.map((ch) {
+                    final isLetter = GameLogic._isLetter(ch);
+                    final show = !isLetter ||
+                        _logic.revealed.contains(GameLogic._normalize(ch));
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 3),
+                      child: Container(
+                        width: 34,
+                        height: 40,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: Colors.black12),
+                        ),
+                        child: Text(
+                          show ? _normalizeTr(ch) : '_',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              letterSpacing: 1.4),
+                        ),
+                      ),
+                    );
+                  }).toList(),
                 ),
               ),
             );
           }).toList(),
-        ),
-      ),
+        );
+      }),
     );
 
     final scoreboard = Column(
@@ -711,11 +825,27 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
       children: [
         const Text('Puan Tablosu',
             style: TextStyle(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
+        FutureBuilder<SharedPreferences>(
+          future: SharedPreferences.getInstance(),
+          builder: (context, snap) {
+            final saved = (snap.data?.getString('user_profile'));
+            int totalGame = 0;
+            if (saved != null) {
+              try {
+                final map = json.decode(saved) as Map<String, dynamic>;
+                totalGame = (map['totalGamePoints'] ?? 0) as int;
+              } catch (_) {}
+            }
+            return Text('Kayıtlı Oyun Puanı: $totalGame',
+                style: const TextStyle(fontSize: 12));
+          },
+        ),
+        const SizedBox(height: 4),
         for (int i = 0; i < _logic.players.length; i++)
           Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(8),
+            margin: const EdgeInsets.only(bottom: 4),
+            padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
               color: i == _logic.currentPlayerIndex
                   ? Colors.orange.withOpacity(0.2)
@@ -774,187 +904,349 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
       appBar: AppBar(
         title: const Text('🎡 ÇARKIGO!'),
         backgroundColor: Colors.deepPurple,
-        actions: const [],
-      ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final isWide = constraints.maxWidth > 700;
-
-          final centerBody = Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const SizedBox(height: 12),
-              if (_loading)
-                const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: CircularProgressIndicator(),
-                )
-              else
-                const SizedBox.shrink(),
-              const SizedBox(height: 12),
-              wordBoxes,
-              const SizedBox(height: 8),
-              if (_hintText != null)
-                Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.symmetric(horizontal: 12),
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.amber.withOpacity(0.4)),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.info_outline),
+            tooltip: 'Bilgi',
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Çarkıfelek Bilgi'),
+                  content: const SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('• Amaç: Gizli kelimeyi bul.'),
+                        SizedBox(height: 6),
+                        Text('• Adımlar:'),
+                        Text('  1) Çarkı çevir. Sayı gelirse harf tahmin et.'),
+                        Text(
+                            '  2) Doğru harf sayısı × çarktaki puan kadar kazanırsın.'),
+                        Text(
+                            '  3) Pas gelirse sıra değişir (tek oyuncuda tur boşa geçer).'),
+                        Text(
+                            '  4) İflas gelirse puanın sıfırlanır ve sıra değişir.'),
+                        SizedBox(height: 8),
+                        Text('• Sesli Harf: 200 puana satın alınır.'),
+                        Text(
+                            '• Joker: Bir gizli harfi açar (her oyuncu 1 kez).'),
+                        SizedBox(height: 8),
+                        Text('• Puan Dilimleri: 100 – 2000 arasında değişir.'),
+                        SizedBox(height: 8),
+                        Text(
+                            '• Çok kelimeli ifadeler (atasözleri) satır kırarak gösterilir.'),
+                      ],
+                    ),
                   ),
-                  child: Column(
-                    children: [
-                      if (_hintCategory != null)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.amber,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            _hintCategory!,
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      const SizedBox(height: 6),
-                      Column(
-                        children: [
-                          Text(
-                            _hintText!,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'İpucu: ${_hintCategory ?? 'Genel'}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.black54,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      TextButton.icon(
-                        onPressed: () {
-                          // Cost for next hint scales with grade: ilkokul 50, ortaokul 100, lise 150
-                          int cost = 100;
-                          final grade = widget.profile.grade;
-                          if (grade != null) {
-                            if (grade <= 4)
-                              cost = 50;
-                            else if (grade <= 8)
-                              cost = 100;
-                            else
-                              cost = 150;
-                          }
-                          // Deduct locally from current player's score if possible; else do nothing
-                          if (_logic.scores[_logic.currentPlayerIndex] < cost) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                  content:
-                                      Text('Yetersiz puan: $cost gerekir')),
-                            );
-                            return;
-                          }
-                          setState(() {
-                            _logic.scores[_logic.currentPlayerIndex] -= cost;
-                          });
-                          final list = _singleItems;
-                          final current = list.firstWhere(
-                            (e) => e['word'] == _logic.secretWord,
-                            orElse: () => {
-                              'word': _logic.secretWord,
-                              'hints':
-                                  '[{"category":"İpucu","text":"İpucu yok"}]'
-                            },
-                          );
-                          final hints = (json.decode(current['hints']!) as List)
-                              .cast<Map>();
-                          // rotate hint
-                          final next = hints.length <= 1
-                              ? hints.first
-                              : hints[(hints.indexWhere(
-                                          (h) => '${h['text']}' == _hintText) +
-                                      1) %
-                                  hints.length];
-                          setState(() {
-                            _hintCategory = '${next['category']}';
-                            _hintText = '${next['text']}';
-                          });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                  'İpucu açıldı (-$cost). Yeni skor: ${_logic.scores[_logic.currentPlayerIndex]}'),
-                              duration: const Duration(seconds: 2),
-                            ),
-                          );
-                        },
-                        icon: const Icon(Icons.tips_and_updates_outlined),
-                        label: const Text('Başka ipucu (puan düşer)'),
-                      ),
-                    ],
-                  ),
-                ),
-              const SizedBox(height: 12),
-              const SizedBox(height: 20),
-              SizedBox(
-                height: min(320, MediaQuery.of(context).size.width * 0.75),
-                child: Stack(
-                  alignment: Alignment.topCenter,
-                  children: [
-                    wheel,
-                    pointer,
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Kapat'),
+                    ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 16),
-              controls,
-              const SizedBox(height: 16),
-              if (_logic.lastSpin != null)
-                Text('Sonuç: ${_logic.lastSpin!}',
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
-            ],
-          );
+              );
+            },
+          ),
+        ],
+      ),
+      body: _showIntro
+          ? _buildInfoPage()
+          : LayoutBuilder(
+              builder: (context, constraints) {
+                final isWide = constraints.maxWidth > 700;
 
-          if (isWide) {
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+                final centerBody = Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: 12),
+                    if (_loading)
+                      const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: CircularProgressIndicator(),
+                      )
+                    else ...[
+                      const SizedBox(height: 12),
+                      wordBoxes,
+                      const SizedBox(height: 8),
+                    ],
+                    if (!_loading && _hintText != null)
+                      Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.symmetric(horizontal: 12),
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(10),
+                          border:
+                              Border.all(color: Colors.amber.withOpacity(0.4)),
+                        ),
+                        child: Column(
+                          children: [
+                            if (_hintCategory != null)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  _hintCategory!,
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            const SizedBox(height: 2),
+                            Column(
+                              children: [
+                                Text(
+                                  _hintText!,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 1),
+                                Text(
+                                  'İpucu: ${_hintCategory ?? 'Genel'}',
+                                  style: const TextStyle(
+                                    fontSize: 9,
+                                    color: Colors.black54,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            TextButton.icon(
+                              onPressed: () {
+                                // Cost for next hint scales with grade: ilkokul 50, ortaokul 100, lise 150
+                                int cost = 100;
+                                final grade = widget.profile.grade;
+                                if (grade != null) {
+                                  if (grade <= 4)
+                                    cost = 50;
+                                  else if (grade <= 8)
+                                    cost = 100;
+                                  else
+                                    cost = 150;
+                                }
+                                // Deduct locally from current player's score if possible; else do nothing
+                                if (_logic.scores[_logic.currentPlayerIndex] <
+                                    cost) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                        content: Text(
+                                            'Yetersiz puan: $cost gerekir')),
+                                  );
+                                  return;
+                                }
+                                setState(() {
+                                  _logic.scores[_logic.currentPlayerIndex] -=
+                                      cost;
+                                });
+                                final list = _singleItems;
+                                final current = list.firstWhere(
+                                  (e) => e['word'] == _logic.secretWord,
+                                  orElse: () => {
+                                    'word': _logic.secretWord,
+                                    'hints':
+                                        '[{"category":"İpucu","text":"İpucu yok"}]'
+                                  },
+                                );
+                                final hints =
+                                    (json.decode(current['hints']!) as List)
+                                        .cast<Map>();
+                                // rotate hint
+                                final next = hints.length <= 1
+                                    ? hints.first
+                                    : hints[(hints.indexWhere((h) =>
+                                                '${h['text']}' == _hintText) +
+                                            1) %
+                                        hints.length];
+                                setState(() {
+                                  _hintCategory = '${next['category']}';
+                                  _hintText = '${next['text']}';
+                                });
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                        'İpucu açıldı (-$cost). Yeni skor: ${_logic.scores[_logic.currentPlayerIndex]}'),
+                                    duration: const Duration(seconds: 2),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.tips_and_updates_outlined),
+                              label: const Text('Başka ipucu (puan düşer)'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
+                    if (!_loading)
+                      SizedBox(
+                        height:
+                            min(280, MediaQuery.of(context).size.width * 0.65),
+                        child: Stack(
+                          alignment: Alignment.topCenter,
+                          children: [
+                            wheel,
+                            pointer,
+                          ],
+                        ),
+                      ),
+                    const SizedBox(height: 8),
+                    if (!_loading) controls,
+                    const SizedBox(height: 8),
+                    if (_logic.lastSpin != null)
+                      Text('Sonuç: ${_logic.lastSpin!}',
+                          style: const TextStyle(fontWeight: FontWeight.w600)),
+                  ],
+                );
+
+                if (isWide) {
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                          child: Center(
+                              child: SingleChildScrollView(child: centerBody))),
+                      Container(
+                        width: 220,
+                        padding: const EdgeInsets.all(12),
+                        child: !_loading ? scoreboard : const SizedBox(),
+                      ),
+                    ],
+                  );
+                }
+                return SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      children: [
+                        if (!_loading) scoreboard,
+                        const SizedBox(height: 8),
+                        centerBody,
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+    );
+  }
+
+  Widget _buildInfoPage() {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.deepPurple.shade900,
+            Colors.deepPurple.shade600,
+          ],
+        ),
+      ),
+      child: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Expanded(
-                    child: Center(
-                        child: SingleChildScrollView(child: centerBody))),
+                const Text(
+                  '🎡 Çarkıfelek',
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 24),
                 Container(
-                  width: 220,
-                  padding: const EdgeInsets.all(12),
-                  child: scoreboard,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Text(
+                    'Kurallar:\n\n• Çarkı çevir; sayı gelirse harf tahmin et.\n• Doğru harf sayısı × çark puanı kadar kazan.\n• Pas: (tek oyuncuda) tur boşa geçer.\n• İflas: puanın sıfırlanır.\n• İstersen tüm kelimeyi tahmin edebilirsin.\n• Sesli harf: 200 puan; Joker: bir harfi açar (1 kez).\n',
+                    style: TextStyle(fontSize: 18, color: Colors.white),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Text(
+                    'Puanlama:\n\n• Dilimler: 100 – 2000\n• İpucu maliyeti: İlkokul 50 / Ortaokul 100 / Lise 150\n• Çok kelimeli ifadeler satır kırılarak gösterilir.\n',
+                    style: TextStyle(fontSize: 18, color: Colors.white),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                ElevatedButton(
+                  onPressed: () => setState(() => _showIntro = false),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.deepPurple,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 32, vertical: 16),
+                  ),
+                  child: const Text('Başla', style: TextStyle(fontSize: 22)),
                 ),
               ],
-            );
-          }
-          return SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                children: [
-                  centerBody,
-                  const SizedBox(height: 12),
-                  scoreboard,
-                ],
-              ),
             ),
-          );
-        },
+          ),
+        ),
       ),
     );
+  }
+
+  Future<void> _saveSessionGamePoints() async {
+    if (_sessionSaved) return;
+    // Tek oyuncu olduğu için tüm skor toplamı oyuncunun skoru
+    final earned =
+        _logic.scores.isNotEmpty ? _logic.scores.reduce((a, b) => a + b) : 0;
+    if (earned <= 0) {
+      _sessionSaved = true;
+      return;
+    }
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString('user_profile');
+      if (raw != null) {
+        final map = json.decode(raw) as Map<String, dynamic>;
+        final profile = UserProfile.fromJson(map);
+        final newTotal = (profile.totalGamePoints ?? 0) + earned;
+        final updated = profile.copyWith(totalGamePoints: newTotal);
+        await prefs.setString('user_profile', json.encode(updated.toJson()));
+
+        // Puan kaydedildiğini bildir
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('+$earned puan kaydedildi! Toplam: $newTotal'),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (_) {
+      // yut
+    }
+    _sessionSaved = true;
   }
 }
 
@@ -988,9 +1280,11 @@ class _WheelPainter extends CustomPainter {
       );
       textPainter.layout();
       canvas.save();
-      canvas.translate(offset.dx - textPainter.width / 2,
-          offset.dy - textPainter.height / 2);
-      textPainter.paint(canvas, Offset.zero);
+      canvas.translate(offset.dx, offset.dy);
+      // Dikey yazı: -90° döndür
+      canvas.rotate(-pi / 2);
+      textPainter.paint(
+          canvas, Offset(-textPainter.width / 2, -textPainter.height / 2));
       canvas.restore();
     }
     // Outer ring

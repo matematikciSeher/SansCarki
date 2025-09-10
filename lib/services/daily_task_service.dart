@@ -5,8 +5,8 @@ import '../models/category.dart' as category_models;
 
 class DailyTaskService {
   static const int _totalCategories = 12;
-  static const int _tasksPerCategory = 40;
-  static const int _totalDays = _totalCategories * _tasksPerCategory; // 480 gün
+  static const int _tasksPerCategory = 1; // Her kategoride 1 görev
+  static const int _totalDays = _totalCategories; // 12 gün
 
   /// Bugünün günlük görevini döndürür
   static DailyTask getDailyTask() {
@@ -16,11 +16,9 @@ class DailyTaskService {
     final currentDay = daysSinceStart % _totalDays;
 
     // 12 gün boyunca her kategori 1 sefer gelsin, sonra başa dönsün
-    final categoryIndex =
-        (currentDay % (_totalCategories * _tasksPerCategory)) ~/
-            _tasksPerCategory;
+    final categoryIndex = currentDay % _totalCategories;
     // Her kategoride farklı görev gelmesi için: görev = gün % 40
-    final taskIndex = currentDay % _tasksPerCategory;
+    final taskIndex = currentDay % 40; // 40 farklı görev seçeneği
 
     // Kategoriyi al
     final categories = category_models.CategoryData.getAllCategories();
@@ -54,11 +52,9 @@ class DailyTaskService {
     final currentDay = daysSinceStart % _totalDays;
 
     // 12 gün boyunca her kategori 1 sefer gelsin, sonra başa dönsün
-    final categoryIndex =
-        (currentDay % (_totalCategories * _tasksPerCategory)) ~/
-            _tasksPerCategory;
+    final categoryIndex = currentDay % _totalCategories;
     // Her kategoride farklı görev gelmesi için: görev = gün % 40
-    final taskIndex = currentDay % _tasksPerCategory;
+    final taskIndex = currentDay % 40; // 40 farklı görev seçeneği
 
     final categories = category_models.CategoryData.getAllCategories();
     final selectedCategory = categories[categoryIndex];
@@ -93,7 +89,7 @@ class DailyTaskService {
     return today.add(Duration(days: daysUntilReset));
   }
 
-  /// Bugünün hangi günü olduğunu döndürür (1-480 arası)
+  /// Bugünün hangi günü olduğunu döndürür (1-12 arası)
   static int getCurrentDayNumber() {
     final today = DateTime.now();
     final startDate = DateTime(2024, 1, 1);

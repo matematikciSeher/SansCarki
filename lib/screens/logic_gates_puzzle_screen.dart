@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:flutter/scheduler.dart' show Ticker;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import '../models/user_profile.dart';
 
 enum LogicDifficulty { easy, medium, hard }
@@ -655,8 +657,9 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
   }
 
   void _showEndDialog() {
-    final updated =
-        widget.profile.copyWith(points: widget.profile.points + _score);
+    final updated = widget.profile.copyWith(
+      totalGamePoints: (widget.profile.totalGamePoints ?? 0) + _score,
+    );
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -668,6 +671,8 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           children: [
             Text('Toplam Skor: $_score'),
             const SizedBox(height: 8),
+            Text('Kayıtlı Oyun Puanı: ${(updated.totalGamePoints ?? 0)}'),
+            const SizedBox(height: 8),
             const Text('Günün en hızlısı bonusu ileride eklenecek.'),
           ],
         ),
@@ -675,7 +680,9 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              Navigator.pop(context, updated);
+              _saveProfile(updated).then((_) {
+                Navigator.pop(context, updated);
+              });
             },
             child: const Text('Ana Menüye Dön'),
           ),
@@ -695,6 +702,13 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
         ],
       ),
     );
+  }
+
+  Future<void> _saveProfile(UserProfile profile) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_profile', json.encode(profile.toJson()));
+    } catch (_) {}
   }
 
   @override
@@ -805,6 +819,21 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
         child: Column(
           children: [
             _buildHeader(),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Oturum Skoru: $_score',
+                      style: const TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.w600)),
+                  Text(
+                      'Kayıtlı Oyun Puanı: ${(widget.profile.totalGamePoints ?? 0)}',
+                      style: const TextStyle(
+                          color: Colors.white70, fontWeight: FontWeight.w500)),
+                ],
+              ),
+            ),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
