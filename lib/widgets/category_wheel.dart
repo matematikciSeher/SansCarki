@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_fortune_wheel/flutter_fortune_wheel.dart';
@@ -7,11 +8,13 @@ import '../models/category.dart';
 class CategoryWheel extends StatefulWidget {
   final Function(Category) onCategorySelected;
   final bool canSpin;
+  final Set<String>? eligibleCategoryIds;
 
   const CategoryWheel({
     super.key,
     required this.onCategorySelected,
     required this.canSpin,
+    this.eligibleCategoryIds,
   });
 
   @override
@@ -68,14 +71,23 @@ class _CategoryWheelState extends State<CategoryWheel>
       _isSpinning = true;
     });
 
-    final categories =
-        CategoryData.getAllCategories(); // Sadece 12 kategori, tekrar yok
+    final categories = CategoryData.getAllCategories(); // 12 kategori
 
-    // Bugünün kategorisini hesapla (12 günde bir değişir)
-    final today = DateTime.now();
-    final startDate = DateTime(2024, 1, 1); // Başlangıç tarihi
-    final daysSinceStart = today.difference(startDate).inDays;
-    _currentSelectedIndex = daysSinceStart % categories.length;
+    // Uygun kategoriler arasından rastgele seçim (cooldown'a saygılı)
+    final eligible = widget.eligibleCategoryIds;
+    List<int> eligibleIndexes = [];
+    for (int i = 0; i < categories.length; i++) {
+      if (eligible == null ||
+          eligible.isEmpty ||
+          eligible.contains(categories[i].id)) {
+        eligibleIndexes.add(i);
+      }
+    }
+    if (eligibleIndexes.isEmpty) {
+      eligibleIndexes = List<int>.generate(categories.length, (i) => i);
+    }
+    _currentSelectedIndex =
+        eligibleIndexes[Random().nextInt(eligibleIndexes.length)];
 
     _selectedController.add(_currentSelectedIndex);
   }

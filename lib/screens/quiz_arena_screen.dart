@@ -17,7 +17,8 @@ class QuizArenaScreen extends StatefulWidget {
   State<QuizArenaScreen> createState() => _QuizArenaScreenState();
 }
 
-class _QuizArenaScreenState extends State<QuizArenaScreen> with TickerProviderStateMixin {
+class _QuizArenaScreenState extends State<QuizArenaScreen>
+    with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -298,7 +299,8 @@ class _QuizArenaScreenState extends State<QuizArenaScreen> with TickerProviderSt
     );
   }
 
-  Widget _buildStatCard(String label, String value, Color color, IconData icon) {
+  Widget _buildStatCard(
+      String label, String value, Color color, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -455,20 +457,32 @@ class _QuizArenaScreenState extends State<QuizArenaScreen> with TickerProviderSt
 
   void _startRandomQuiz() async {
     final all = await QuizRepository.fetchAll();
-    // Sınıfa göre basit seviye filtresi: ilkokul ≤15, ortaokul ≤20, lise tümü
+    // Sınıf seviyesi filtreleri kaldırıldı: tüm sorular havuzda
     List<QuizQuestion> filtered = all;
-    final grade = widget.profile.grade;
-    if (grade != null) {
-      if (grade >= 1 && grade <= 4) {
-        filtered = all.where((q) => q.basePoints <= 15).toList();
-      } else if (grade >= 5 && grade <= 8) {
-        filtered = all.where((q) => q.basePoints <= 20).toList();
-      } else {
-        filtered = all;
-      }
-    }
     filtered.shuffle();
-    final quizQuestions = filtered.take(15).toList();
+    // 5 soru, mümkünse 5 farklı kategoriden gelsin
+    final Map<QuizCategory, List<QuizQuestion>> byCategory = {};
+    for (final q in filtered) {
+      byCategory.putIfAbsent(q.category, () => []).add(q);
+    }
+
+    final List<QuizQuestion> selected = [];
+    final categories = byCategory.keys.toList()..shuffle();
+    for (final cat in categories) {
+      final list = byCategory[cat]!;
+      list.shuffle();
+      selected.add(list.first);
+      if (selected.length == 5) break;
+    }
+
+    if (selected.length < 5) {
+      final usedIds = selected.map((e) => e.id).toSet();
+      final remaining = filtered.where((q) => !usedIds.contains(q.id)).toList()
+        ..shuffle();
+      selected.addAll(remaining.take(5 - selected.length));
+    }
+
+    final quizQuestions = selected;
     final updatedProfile = await Navigator.push(
       context,
       MaterialPageRoute(

@@ -20,11 +20,13 @@ class QuizGameScreen extends StatefulWidget {
   State<QuizGameScreen> createState() => _QuizGameScreenState();
 }
 
-class _QuizGameScreenState extends State<QuizGameScreen> with TickerProviderStateMixin {
+class _QuizGameScreenState extends State<QuizGameScreen>
+    with TickerProviderStateMixin {
   late AnimationController _questionAnimationController;
   late AnimationController _timerAnimationController;
   late Animation<double> _questionFadeAnimation;
   late Animation<Offset> _questionSlideAnimation;
+  bool _slideFromRight = true;
   late Animation<double> _timerScaleAnimation;
 
   List<QuizQuestion> _questions = [];
@@ -65,13 +67,7 @@ class _QuizGameScreenState extends State<QuizGameScreen> with TickerProviderStat
       curve: Curves.easeInOut,
     ));
 
-    _questionSlideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.2),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _questionAnimationController,
-      curve: Curves.easeOutBack,
-    ));
+    _updateSlideAnimation();
 
     _timerScaleAnimation = Tween<double>(
       begin: 1.0,
@@ -82,6 +78,19 @@ class _QuizGameScreenState extends State<QuizGameScreen> with TickerProviderStat
     ));
 
     _questionAnimationController.forward();
+  }
+
+  void _updateSlideAnimation() {
+    // Alternating slide: right->left then left->right
+    final begin =
+        _slideFromRight ? const Offset(0.2, 0) : const Offset(-0.2, 0);
+    _questionSlideAnimation = Tween<Offset>(
+      begin: begin,
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _questionAnimationController,
+      curve: Curves.easeOutBack,
+    ));
   }
 
   void _loadQuestions() {
@@ -117,7 +126,8 @@ class _QuizGameScreenState extends State<QuizGameScreen> with TickerProviderStat
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Text('⏰ Süre Doldu!'),
-        content: const Text('Bu soru için süre doldu. Doğru cevap gösteriliyor.'),
+        content:
+            const Text('Bu soru için süre doldu. Doğru cevap gösteriliyor.'),
         actions: [
           TextButton(
             onPressed: () {
@@ -149,7 +159,15 @@ class _QuizGameScreenState extends State<QuizGameScreen> with TickerProviderStat
       _totalPoints += _calculatePoints(currentQuestion);
     }
 
-    _showAnswerResult(isCorrect, currentQuestion);
+    // Kısa bir parlamadan (150ms) sonra hemen ilerle
+    Future.delayed(const Duration(milliseconds: 150), () {
+      if (!mounted) return;
+      if (isCorrect) {
+        _nextQuestion();
+      } else {
+        _endGame();
+      }
+    });
   }
 
   int _calculatePoints(QuizQuestion question) {
@@ -158,56 +176,7 @@ class _QuizGameScreenState extends State<QuizGameScreen> with TickerProviderStat
     return basePoints + timeBonus;
   }
 
-  void _showAnswerResult(bool isCorrect, QuizQuestion question) {
-    final color = isCorrect ? Colors.green : Colors.red;
-    final icon = isCorrect ? Icons.check_circle : Icons.cancel;
-    final message = isCorrect ? 'Doğru!' : 'Yanlış!';
-    final points = isCorrect ? _calculatePoints(question) : 0;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(icon, color: Colors.white),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    message,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  if (isCorrect)
-                    Text(
-                      '+$points puan',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: color,
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
-
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        _nextQuestion();
-      }
-    });
-  }
+  // Önceden cevap sonrası görsel geri bildirim için kullanılıyordu. Artık anında geçiş yapıldığı için kaldırıldı.
 
   void _nextQuestion() {
     if (_currentQuestionIndex < _questions.length - 1) {
@@ -216,9 +185,11 @@ class _QuizGameScreenState extends State<QuizGameScreen> with TickerProviderStat
         _isAnswered = false;
         _selectedAnswerIndex = null;
         _remainingTime = 30;
+        _slideFromRight = !_slideFromRight;
       });
 
       _questionAnimationController.reset();
+      _updateSlideAnimation();
       _questionAnimationController.forward();
       _startTimer();
     } else {
@@ -252,17 +223,21 @@ class _QuizGameScreenState extends State<QuizGameScreen> with TickerProviderStat
     // Quiz puanlarını UserProfile'a ekle
     final updatedProfile = widget.profile.copyWith(
       totalQuizzes: (widget.profile.totalQuizzes ?? 0) + 1,
-      correctQuizAnswers: (widget.profile.correctQuizAnswers ?? 0) + _correctAnswers,
+      correctQuizAnswers:
+          (widget.profile.correctQuizAnswers ?? 0) + _correctAnswers,
       totalQuizPoints: (widget.profile.totalQuizPoints ?? 0) + _totalPoints,
       points: widget.profile.points + _totalPoints, // Ana puan sistemine ekle
-      highestQuizScore: widget.profile.highestQuizScore == null || _totalPoints > widget.profile.highestQuizScore!
+      highestQuizScore: widget.profile.highestQuizScore == null ||
+              _totalPoints > widget.profile.highestQuizScore!
           ? _totalPoints
           : widget.profile.highestQuizScore,
-      quizAccuracy:
-          widget.profile.quizAccuracy == null ? accuracy / 100 : ((widget.profile.quizAccuracy! + accuracy / 100) / 2),
+      quizAccuracy: widget.profile.quizAccuracy == null
+          ? accuracy / 100
+          : ((widget.profile.quizAccuracy! + accuracy / 100) / 2),
       averageQuizTime: widget.profile.averageQuizTime == null
           ? averageTime.round()
-          : ((widget.profile.averageQuizTime! + averageTime.round()) / 2).round(),
+          : ((widget.profile.averageQuizTime! + averageTime.round()) / 2)
+              .round(),
       solvedQuestionIds: solvedIds,
     );
 
@@ -273,70 +248,155 @@ class _QuizGameScreenState extends State<QuizGameScreen> with TickerProviderStat
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-        clipBehavior: Clip.antiAlias,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Quiz Tamamlandı! 🎉'),
-        content: SingleChildScrollView(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text('Doğru Cevap: $_correctAnswers/${_questions.length}', softWrap: true),
-                Text('Doğruluk: ${accuracy.toStringAsFixed(1)}%', softWrap: true),
-                Text('Quiz Puanı: $_totalPoints', softWrap: true),
-                Text('Ana Sisteme Eklenen: $_totalPoints', softWrap: true),
-                Text('Yeni Toplam Puan: ${updatedProfile.points}', softWrap: true),
-                Text('Ortalama Süre: ${averageTime.toStringAsFixed(1)}s', softWrap: true),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.green.withOpacity(0.3)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.star, color: Colors.green),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Quiz puanları ana sisteme eklendi!',
-                          style: TextStyle(
-                            color: Colors.green.shade700,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          softWrap: true,
-                        ),
-                      ),
+      builder: (context) {
+        return Dialog(
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          backgroundColor: Colors.transparent,
+          child: Stack(
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(20, 28, 20, 16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.purple.shade400,
+                      Colors.pink.shade400,
+                      Colors.orange.shade400,
                     ],
                   ),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 24,
+                      offset: const Offset(0, 12),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(height: 8),
+                    const Text(
+                      '🎉 Quiz Bitti! 🎉',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(16),
+                        border:
+                            Border.all(color: Colors.white.withOpacity(0.3)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text('Doğru: $_correctAnswers/${_questions.length}',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold)),
+                          Text('Doğruluk: ${accuracy.toStringAsFixed(1)}%',
+                              style: const TextStyle(color: Colors.white)),
+                          Text('Quiz Puanı: $_totalPoints',
+                              style: const TextStyle(color: Colors.white)),
+                          Text('Toplam Puan: ${updatedProfile.points}',
+                              style: const TextStyle(color: Colors.white)),
+                          Text(
+                              'Ortalama Süre: ${averageTime.toStringAsFixed(1)}s',
+                              style: const TextStyle(color: Colors.white)),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(
+                                  color: Colors.white.withOpacity(0.8),
+                                  width: 2),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16)),
+                            ),
+                            onPressed: () {
+                              Navigator.pop(context);
+                              Navigator.pop(context, updatedProfile);
+                            },
+                            child: const Text('Ana Menü'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: Colors.purple,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16)),
+                              elevation: 4,
+                            ),
+                            onPressed: () {
+                              Navigator.pop(context);
+                              _restartQuiz();
+                            },
+                            child: const Text('Tekrar Oyna'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.yellow.shade400,
+                          Colors.orange.shade400,
+                        ],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.orange.withOpacity(0.5),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: const Center(
+                      child: Icon(Icons.celebration,
+                          color: Colors.white, size: 34),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context, updatedProfile); // güncel profili dön
-            },
-            child: const Text('Ana Menüye Dön'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _restartQuiz();
-            },
-            child: const Text('Tekrar Oyna'),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -543,24 +603,62 @@ class _QuizGameScreenState extends State<QuizGameScreen> with TickerProviderStat
   }
 
   Widget _buildQuestionCard(QuizQuestion question) {
+    final catColor = question.category.color;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            catColor.withOpacity(0.35),
+            catColor.withOpacity(0.15),
+          ],
+        ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: Colors.white.withOpacity(0.3),
+          color: catColor.withOpacity(0.6),
+          width: 2,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: catColor.withOpacity(0.25),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(
+                      color: Colors.white.withOpacity(0.5), width: 1),
+                ),
+                child: Text(
+                  question.category.emoji,
+                  style: const TextStyle(fontSize: 16),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
           Text(
             question.question,
             style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
               color: Colors.white,
+              height: 1.3,
             ),
             textAlign: TextAlign.center,
             softWrap: true,
@@ -641,8 +739,10 @@ class _QuizGameScreenState extends State<QuizGameScreen> with TickerProviderStat
                     textAlign: TextAlign.left,
                   ),
                 ),
-                if (showResult && isCorrect) const Icon(Icons.check_circle, color: Colors.green),
-                if (showResult && isSelected && !isCorrect) const Icon(Icons.cancel, color: Colors.red),
+                if (showResult && isCorrect)
+                  const Icon(Icons.check_circle, color: Colors.green),
+                if (showResult && isSelected && !isCorrect)
+                  const Icon(Icons.cancel, color: Colors.red),
               ],
             ),
           ),
