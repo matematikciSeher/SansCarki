@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'admin_quiz_panel_screen.dart';
 
 class CarkiGoSplashScreen extends StatefulWidget {
   const CarkiGoSplashScreen({super.key});
@@ -34,6 +35,61 @@ class _CarkiGoSplashScreenState extends State<CarkiGoSplashScreen> {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => const HomeScreen()),
+    );
+  }
+
+  Future<void> _showAdminLogin() async {
+    final TextEditingController passCtrl = TextEditingController();
+    String? error;
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(builder: (context, setStateDialog) {
+          return AlertDialog(
+            title: const Text('Admin Girişi'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: passCtrl,
+                  autofocus: true,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: 'Admin şifresi',
+                    errorText: error,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('İptal'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  final pass = passCtrl.text.trim();
+                  if (pass == 'admin123') {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AdminQuizPanelScreen(),
+                      ),
+                    );
+                  } else {
+                    setStateDialog(() {
+                      error = 'Hatalı şifre';
+                    });
+                  }
+                },
+                child: const Text('Giriş'),
+              ),
+            ],
+          );
+        });
+      },
     );
   }
 
@@ -94,6 +150,12 @@ class _CarkiGoSplashScreenState extends State<CarkiGoSplashScreen> {
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1.2),
                     ),
                   ),
+                ),
+                const SizedBox(height: 12),
+                TextButton.icon(
+                  onPressed: _showAdminLogin,
+                  icon: const Icon(Icons.lock),
+                  label: const Text('Admin olarak giriş yap'),
                 ),
               ],
             ),

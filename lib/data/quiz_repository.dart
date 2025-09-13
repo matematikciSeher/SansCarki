@@ -32,6 +32,14 @@ class QuizRepository {
         .then((s) => s.docs.map(_fromDoc).toList());
   }
 
+  static Stream<List<QuizQuestion>> streamAll() {
+    return FirebaseFirestore.instance
+        .collection(collectionName)
+        .orderBy('id')
+        .snapshots()
+        .map((s) => s.docs.map(_fromDoc).toList());
+  }
+
   static Future<List<QuizQuestion>> fetchRandom({
     QuizCategory? category,
     int count = 10,
@@ -44,5 +52,20 @@ class QuizRepository {
     }
     list.shuffle();
     return list.take(count).toList();
+  }
+
+  static Future<void> addQuestion(QuizQuestion question) async {
+    final ref = FirebaseFirestore.instance.collection(collectionName).doc(question.id);
+    await ref.set(question.toJson(), SetOptions(merge: true));
+  }
+
+  static Future<void> updateQuestion(QuizQuestion question) async {
+    final ref = FirebaseFirestore.instance.collection(collectionName).doc(question.id);
+    await ref.update(question.toJson());
+  }
+
+  static Future<void> deleteQuestion(String id) async {
+    final ref = FirebaseFirestore.instance.collection(collectionName).doc(id);
+    await ref.delete();
   }
 }
