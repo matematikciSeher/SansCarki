@@ -70,13 +70,13 @@ class _CategoryWheelState extends State<CategoryWheel>
 
     final categories =
         CategoryData.getAllCategories(); // Sadece 12 kategori, tekrar yok
-    
+
     // Bugünün kategorisini hesapla (12 günde bir değişir)
     final today = DateTime.now();
     final startDate = DateTime(2024, 1, 1); // Başlangıç tarihi
     final daysSinceStart = today.difference(startDate).inDays;
     _currentSelectedIndex = daysSinceStart % categories.length;
-    
+
     _selectedController.add(_currentSelectedIndex);
   }
 

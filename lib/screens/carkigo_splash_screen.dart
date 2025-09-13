@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
-import 'grade_select_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../models/user_profile.dart';
@@ -33,24 +32,8 @@ class _CarkiGoSplashScreenState extends State<CarkiGoSplashScreen> {
       return;
     }
 
-    // Login'den sonra sınıf seçim ekranına REPLACE olarak git
+    // Sınıf seçim ekranı kaldırıldı; doğrudan ana sayfaya geç
     if (!mounted) return;
-    final selected = await Navigator.push<int>(
-      context,
-      MaterialPageRoute(builder: (_) => const GradeSelectScreen()),
-    );
-    if (!mounted) return;
-    if (selected == null) return; // kullanıcı geri döndüyse bekle
-    // Seçimi kaydet ve ana sayfaya yönlen
-    final prefs = await SharedPreferences.getInstance();
-    UserProfile profile;
-    final profileJson = prefs.getString('user_profile');
-    profile = profileJson != null
-        ? UserProfile.fromJson(json.decode(profileJson))
-        : UserProfile();
-    profile = profile.copyWith(grade: selected);
-    await prefs.setString('user_profile', json.encode(profile.toJson()));
-
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => const HomeScreen()),

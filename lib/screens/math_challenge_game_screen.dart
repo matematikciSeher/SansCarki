@@ -14,10 +14,12 @@ class MathChallengeGameScreen extends StatefulWidget {
   });
 
   @override
-  State<MathChallengeGameScreen> createState() => _MathChallengeGameScreenState();
+  State<MathChallengeGameScreen> createState() =>
+      _MathChallengeGameScreenState();
 }
 
-class _MathChallengeGameScreenState extends State<MathChallengeGameScreen> with TickerProviderStateMixin {
+class _MathChallengeGameScreenState extends State<MathChallengeGameScreen>
+    with TickerProviderStateMixin {
   late AnimationController _questionAnimationController;
   late Animation<double> _questionFadeAnimation;
   late Animation<Offset> _questionSlideAnimation;
@@ -148,13 +150,15 @@ class _MathChallengeGameScreenState extends State<MathChallengeGameScreen> with 
         num1 = random.nextInt((_maxAdd - _minAdd) ~/ 4 + 1) + _minAdd;
         num2 = random.nextInt((_maxAdd - _minAdd) ~/ 4 + 1) + _minAdd;
         correctAnswer = num1 + num2;
-        questionText = 'Bir çiftlikte $num1 inek ve $num2 koyun var. Toplam kaç hayvan var?';
+        questionText =
+            'Bir çiftlikte $num1 inek ve $num2 koyun var. Toplam kaç hayvan var?';
         break;
       case 5: // Basit problem - çarpma
         num1 = random.nextInt((_maxMul - _minMul) ~/ 2 + 1) + _minMul;
         num2 = random.nextInt((_maxMul - _minMul) ~/ 2 + 1) + _minMul;
         correctAnswer = num1 * num2;
-        questionText = 'Her kutuda $num1 elma var. $num2 kutu varsa toplam kaç elma var?';
+        questionText =
+            'Her kutuda $num1 elma var. $num2 kutu varsa toplam kaç elma var?';
         break;
       default:
         num1 = 10;
@@ -168,11 +172,14 @@ class _MathChallengeGameScreenState extends State<MathChallengeGameScreen> with 
     while (options.length < 4) {
       int wrongAnswer;
       if (questionType <= 3) {
-        wrongAnswer = correctAnswer + random.nextInt((_maxMul + _maxAdd) ~/ 10 + 10) - 5;
+        wrongAnswer =
+            correctAnswer + random.nextInt((_maxMul + _maxAdd) ~/ 10 + 10) - 5;
       } else {
         wrongAnswer = correctAnswer + random.nextInt(15) - 7;
       }
-      if (wrongAnswer != correctAnswer && wrongAnswer > 0 && !options.contains(wrongAnswer)) {
+      if (wrongAnswer != correctAnswer &&
+          wrongAnswer > 0 &&
+          !options.contains(wrongAnswer)) {
         options.add(wrongAnswer);
       }
     }
@@ -214,7 +221,8 @@ class _MathChallengeGameScreenState extends State<MathChallengeGameScreen> with 
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Text('⏰ Süre Doldu!'),
-        content: const Text('Bu soru için süre doldu. Doğru cevap gösteriliyor.'),
+        content:
+            const Text('Bu soru için süre doldu. Doğru cevap gösteriliyor.'),
         actions: [
           TextButton(
             onPressed: () async {
@@ -365,7 +373,8 @@ class _MathChallengeGameScreenState extends State<MathChallengeGameScreen> with 
           children: [
             Text('Matematik mücadelesini tamamladın!'),
             const SizedBox(height: 16),
-            _buildResultRow('🎯 Doğru Cevap', '$_correctAnswers/${_questions.length}'),
+            _buildResultRow(
+                '🎯 Doğru Cevap', '$_correctAnswers/${_questions.length}'),
             _buildResultRow('📊 Doğruluk', '${accuracy.toStringAsFixed(1)}%'),
             _buildResultRow('⭐ Puan', '$_score'),
             const SizedBox(height: 16),
@@ -522,7 +531,8 @@ class _MathChallengeGameScreenState extends State<MathChallengeGameScreen> with 
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: Colors.purple,
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 32, vertical: 16),
                   ),
                   child: const Text('Başla', style: TextStyle(fontSize: 22)),
                 ),
@@ -818,8 +828,10 @@ class _MathChallengeGameScreenState extends State<MathChallengeGameScreen> with 
                     textAlign: TextAlign.center,
                   ),
                 ),
-                if (showResult && isCorrect) const Icon(Icons.check_circle, color: Colors.green),
-                if (showResult && isSelected && !isCorrect) const Icon(Icons.cancel, color: Colors.red),
+                if (showResult && isCorrect)
+                  const Icon(Icons.check_circle, color: Colors.green),
+                if (showResult && isSelected && !isCorrect)
+                  const Icon(Icons.cancel, color: Colors.red),
               ],
             ),
           ),

@@ -232,6 +232,10 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
               : _resultFromAngle(_rotation.value);
           _pendingTargetIndex = null;
           _logic.applySpinResult(result);
+
+          // Çark durduktan sonra popup aç
+          _showActionPopup(result);
+
           if (result == 'İflas' || result == 'Pas') {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -1247,6 +1251,143 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
       // yut
     }
     _sessionSaved = true;
+  }
+
+  // Çark durduktan sonra açılacak popup fonksiyonu
+  void _showActionPopup(String result) {
+    // Sadece sayı sonuçları için popup aç (İflas ve Pas için değil)
+    if (result == 'İflas' || result == 'Pas') return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Flexible(
+                child: Text(
+                  '🎯 Çark Sonucu: $result',
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 16),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.green,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  result,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Ne yapmak istiyorsun?',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _guessLetter();
+                  },
+                  icon: const Icon(Icons.font_download),
+                  label: const Text('Harf Tahmin Et'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _guessWord();
+                  },
+                  icon: const Icon(Icons.text_fields),
+                  label: const Text('Kelime Tahmin Et'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.purple,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _buyVowel();
+                  },
+                  icon: const Icon(Icons.volume_up),
+                  label: const Text('Sesli Harf Satın Al (200 puan)'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _useJoker();
+                  },
+                  icon: const Icon(Icons.auto_awesome),
+                  label: const Text('Joker Kullan (1 kez)'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Mevcut Puan: ${_logic.scores[_logic.currentPlayerIndex]}',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('İptal'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }
 

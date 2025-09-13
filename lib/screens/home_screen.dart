@@ -16,7 +16,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
-import 'grade_select_screen.dart';
 import '../data/task_repository.dart';
 import 'carkigo_splash_screen.dart';
 
@@ -168,18 +167,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _ensureGradeSelected() async {
-    if (_profile.grade == null && mounted) {
-      final selected = await Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const GradeSelectScreen()),
-      );
-      if (selected is int) {
-        setState(() {
-          _profile = _profile.copyWith(grade: selected);
-        });
-        await _saveProfile();
-      }
-    }
+    // Sınıf seçimi ekranı kaldırıldı; hiçbir işlem yapma
   }
 
   Future<void> _saveCompletedTasks() async {
@@ -414,8 +402,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final today = DateTime.now();
     final startDate = DateTime(2024, 1, 1); // Başlangıç tarihi
     final daysSinceStart = today.difference(startDate).inDays;
-    final categoryIndex = daysSinceStart % 12; // 12 kategori, 12 günde bir döngü
-    
+    final categoryIndex =
+        daysSinceStart % 12; // 12 kategori, 12 günde bir döngü
+
     final categories = CategoryData.getAllCategories();
     return categories[categoryIndex];
   }
@@ -437,7 +426,8 @@ class _HomeScreenState extends State<HomeScreen> {
     if (category.id != todaysCategory.id) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Bugünün kategorisi: ${todaysCategory.name} ${todaysCategory.emoji}'),
+          content: Text(
+              'Bugünün kategorisi: ${todaysCategory.name} ${todaysCategory.emoji}'),
           backgroundColor: Colors.blue,
           duration: const Duration(seconds: 3),
         ),
