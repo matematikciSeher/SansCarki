@@ -3,7 +3,7 @@ import 'dart:async';
 import 'dart:convert';
 import '../models/user_profile.dart';
 import '../models/quiz.dart';
-import '../data/quiz_data.dart';
+// Quiz questions are now provided by caller (e.g., fetched from Firestore)
 import 'package:shared_preferences/shared_preferences.dart';
 
 class QuizGameScreen extends StatefulWidget {
@@ -20,8 +20,7 @@ class QuizGameScreen extends StatefulWidget {
   State<QuizGameScreen> createState() => _QuizGameScreenState();
 }
 
-class _QuizGameScreenState extends State<QuizGameScreen>
-    with TickerProviderStateMixin {
+class _QuizGameScreenState extends State<QuizGameScreen> with TickerProviderStateMixin {
   late AnimationController _questionAnimationController;
   late AnimationController _timerAnimationController;
   late Animation<double> _questionFadeAnimation;
@@ -118,8 +117,7 @@ class _QuizGameScreenState extends State<QuizGameScreen>
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Text('⏰ Süre Doldu!'),
-        content:
-            const Text('Bu soru için süre doldu. Doğru cevap gösteriliyor.'),
+        content: const Text('Bu soru için süre doldu. Doğru cevap gösteriliyor.'),
         actions: [
           TextButton(
             onPressed: () {
@@ -245,29 +243,26 @@ class _QuizGameScreenState extends State<QuizGameScreen>
       }
     }
     // Eğer tüm sorular çözülmüşse solvedQuestionIds sıfırlanır
-    final allQuestions = QuizData.getAllQuestions();
-    if (solvedIds.length >= allQuestions.length) {
+    // Eğer tüm sorular çözülmüşse solvedQuestionIds sıfırlanır
+    final totalBankCount = _questions.length; // Oyun sırasında kullanılan set
+    if (solvedIds.length >= totalBankCount) {
       solvedIds.clear();
     }
 
     // Quiz puanlarını UserProfile'a ekle
     final updatedProfile = widget.profile.copyWith(
       totalQuizzes: (widget.profile.totalQuizzes ?? 0) + 1,
-      correctQuizAnswers:
-          (widget.profile.correctQuizAnswers ?? 0) + _correctAnswers,
+      correctQuizAnswers: (widget.profile.correctQuizAnswers ?? 0) + _correctAnswers,
       totalQuizPoints: (widget.profile.totalQuizPoints ?? 0) + _totalPoints,
       points: widget.profile.points + _totalPoints, // Ana puan sistemine ekle
-      highestQuizScore: widget.profile.highestQuizScore == null ||
-              _totalPoints > widget.profile.highestQuizScore!
+      highestQuizScore: widget.profile.highestQuizScore == null || _totalPoints > widget.profile.highestQuizScore!
           ? _totalPoints
           : widget.profile.highestQuizScore,
-      quizAccuracy: widget.profile.quizAccuracy == null
-          ? accuracy / 100
-          : ((widget.profile.quizAccuracy! + accuracy / 100) / 2),
+      quizAccuracy:
+          widget.profile.quizAccuracy == null ? accuracy / 100 : ((widget.profile.quizAccuracy! + accuracy / 100) / 2),
       averageQuizTime: widget.profile.averageQuizTime == null
           ? averageTime.round()
-          : ((widget.profile.averageQuizTime! + averageTime.round()) / 2)
-              .round(),
+          : ((widget.profile.averageQuizTime! + averageTime.round()) / 2).round(),
       solvedQuestionIds: solvedIds,
     );
 
@@ -290,16 +285,12 @@ class _QuizGameScreenState extends State<QuizGameScreen>
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('Doğru Cevap: $_correctAnswers/${_questions.length}',
-                    softWrap: true),
-                Text('Doğruluk: ${accuracy.toStringAsFixed(1)}%',
-                    softWrap: true),
+                Text('Doğru Cevap: $_correctAnswers/${_questions.length}', softWrap: true),
+                Text('Doğruluk: ${accuracy.toStringAsFixed(1)}%', softWrap: true),
                 Text('Quiz Puanı: $_totalPoints', softWrap: true),
                 Text('Ana Sisteme Eklenen: $_totalPoints', softWrap: true),
-                Text('Yeni Toplam Puan: ${updatedProfile.points}',
-                    softWrap: true),
-                Text('Ortalama Süre: ${averageTime.toStringAsFixed(1)}s',
-                    softWrap: true),
+                Text('Yeni Toplam Puan: ${updatedProfile.points}', softWrap: true),
+                Text('Ortalama Süre: ${averageTime.toStringAsFixed(1)}s', softWrap: true),
                 const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -650,10 +641,8 @@ class _QuizGameScreenState extends State<QuizGameScreen>
                     textAlign: TextAlign.left,
                   ),
                 ),
-                if (showResult && isCorrect)
-                  const Icon(Icons.check_circle, color: Colors.green),
-                if (showResult && isSelected && !isCorrect)
-                  const Icon(Icons.cancel, color: Colors.red),
+                if (showResult && isCorrect) const Icon(Icons.check_circle, color: Colors.green),
+                if (showResult && isSelected && !isCorrect) const Icon(Icons.cancel, color: Colors.red),
               ],
             ),
           ),

@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
 import '../models/quiz.dart';
 import '../models/user_profile.dart';
-import '../data/quiz_data.dart';
+import '../data/quiz_repository.dart';
 import '../widgets/profile_page.dart';
 import 'quiz_game_screen.dart';
 
@@ -18,8 +17,7 @@ class QuizArenaScreen extends StatefulWidget {
   State<QuizArenaScreen> createState() => _QuizArenaScreenState();
 }
 
-class _QuizArenaScreenState extends State<QuizArenaScreen>
-    with TickerProviderStateMixin {
+class _QuizArenaScreenState extends State<QuizArenaScreen> with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -300,8 +298,7 @@ class _QuizArenaScreenState extends State<QuizArenaScreen>
     );
   }
 
-  Widget _buildStatCard(
-      String label, String value, Color color, IconData icon) {
+  Widget _buildStatCard(String label, String value, Color color, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -457,17 +454,17 @@ class _QuizArenaScreenState extends State<QuizArenaScreen>
   }
 
   void _startRandomQuiz() async {
-    final allQuestions = QuizData.getAllQuestions();
+    final all = await QuizRepository.fetchAll();
     // Sınıfa göre basit seviye filtresi: ilkokul ≤15, ortaokul ≤20, lise tümü
-    List<QuizQuestion> filtered = allQuestions;
+    List<QuizQuestion> filtered = all;
     final grade = widget.profile.grade;
     if (grade != null) {
       if (grade >= 1 && grade <= 4) {
-        filtered = allQuestions.where((q) => q.basePoints <= 15).toList();
+        filtered = all.where((q) => q.basePoints <= 15).toList();
       } else if (grade >= 5 && grade <= 8) {
-        filtered = allQuestions.where((q) => q.basePoints <= 20).toList();
+        filtered = all.where((q) => q.basePoints <= 20).toList();
       } else {
-        filtered = allQuestions;
+        filtered = all;
       }
     }
     filtered.shuffle();

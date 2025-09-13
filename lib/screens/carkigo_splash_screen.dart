@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
-import '../models/user_profile.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class CarkiGoSplashScreen extends StatefulWidget {
@@ -75,8 +72,7 @@ class _CarkiGoSplashScreenState extends State<CarkiGoSplashScreen> {
                   controller: _controller,
                   decoration: InputDecoration(
                     labelText: 'Kullanıcı adı veya e-posta',
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16)),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
                     errorText: _errorText,
                     prefixIcon: const Icon(Icons.person),
                   ),
@@ -90,16 +86,12 @@ class _CarkiGoSplashScreenState extends State<CarkiGoSplashScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.purpleAccent,
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       elevation: 4,
                     ),
                     child: const Text(
                       'GİRİŞ YAP',
-                      style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1.2),
                     ),
                   ),
                 ),
