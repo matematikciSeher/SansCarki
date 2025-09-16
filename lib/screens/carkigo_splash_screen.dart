@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'admin_quiz_panel_screen.dart';
+import 'register_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class CarkiGoSplashScreen extends StatefulWidget {
   const CarkiGoSplashScreen({super.key});
@@ -11,8 +13,10 @@ class CarkiGoSplashScreen extends StatefulWidget {
 }
 
 class _CarkiGoSplashScreenState extends State<CarkiGoSplashScreen> {
-  final TextEditingController _controller = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
   String? _errorText;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -23,19 +27,79 @@ class _CarkiGoSplashScreenState extends State<CarkiGoSplashScreen> {
   // _maybeAutoEnter() kaldırıldı
 
   Future<void> _login() async {
-    if (_controller.text.trim().isEmpty) {
+    final email = _emailController.text.trim();
+    final pass = _passwordController.text.trim();
+    if (email.isEmpty || pass.isEmpty) {
       setState(() {
-        _errorText = 'Lütfen bir kullanıcı adı veya e-posta girin';
+        _errorText = 'E-posta ve şifre zorunludur';
       });
       return;
     }
+    setState(() {
+      _errorText = null;
+      _isLoading = true;
+    });
+    try {
+      await FirebaseAuth.instance
+          .signInWithEmailAndPassword(email: email, password: pass);
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+      );
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        _errorText = _mapAuthError(e);
+      });
+    } catch (_) {
+      setState(() {
+        _errorText = 'Giriş başarısız. Lütfen tekrar deneyin';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
-    // Sınıf seçim ekranı kaldırıldı; doğrudan ana sayfaya geç
-    if (!mounted) return;
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const HomeScreen()),
-    );
+  String _mapAuthError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'invalid-email':
+        return 'Geçersiz e-posta formatı';
+      case 'user-disabled':
+        return 'Hesap devre dışı';
+      case 'user-not-found':
+      case 'wrong-password':
+        return 'E-posta veya şifre hatalı';
+      case 'too-many-requests':
+        return 'Çok fazla deneme. Bir süre sonra tekrar deneyin';
+      default:
+        return 'Hata: ${e.message ?? e.code}';
+    }
+  }
+
+  Future<void> _forgotPassword() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Şifre sıfırlama için e-postayı girin')),
+      );
+      return;
+    }
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Şifre sıfırlama e-postası gönderildi')),
+      );
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_mapAuthError(e))),
+      );
+    }
   }
 
   Future<void> _showAdminLogin() async {
@@ -96,68 +160,132 @@ class _CarkiGoSplashScreenState extends State<CarkiGoSplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.deepPurple.shade50,
-      body: Center(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Logo (full width, auto-fit)
-                SvgPicture.asset(
-                  'assets/branding/logo.svg',
-                  width: MediaQuery.of(context).size.width * 0.9,
-                  fit: BoxFit.contain,
-                ),
-                const SizedBox(height: 24),
-                // Slogan
-                const Text(
-                  'ÇARKI ÇEVİR, EĞLENCEYE GÖMÜL!',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.purple,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 36),
-                // Login alanı
-                TextField(
-                  controller: _controller,
-                  decoration: InputDecoration(
-                    labelText: 'Kullanıcı adı veya e-posta',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-                    errorText: _errorText,
-                    prefixIcon: const Icon(Icons.person),
-                  ),
-                  onSubmitted: (_) => _login(),
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _login,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.purpleAccent,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      elevation: 4,
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFE1BEE7),
+              Color(0xFFB3E5FC),
+              Color(0xFFFFF59D),
+            ],
+          ),
+        ),
+        child: Center(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 16,
+                      offset: const Offset(0, 8),
                     ),
-                    child: const Text(
-                      'GİRİŞ YAP',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1.2),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SvgPicture.asset(
+                      'assets/branding/logo.svg',
+                      width: MediaQuery.of(context).size.width * 0.6,
+                      fit: BoxFit.contain,
                     ),
-                  ),
+                    const SizedBox(height: 16),
+                    const Text('ÇARKI ÇEVİR, EĞLENCEYE GÖMÜL!'),
+                    const SizedBox(height: 20),
+                    TextField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: InputDecoration(
+                        labelText: 'E-posta',
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16)),
+                        errorText: _errorText,
+                        prefixIcon: const Icon(Icons.email_outlined),
+                      ),
+                      onSubmitted: (_) => _login(),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _passwordController,
+                      obscureText: true,
+                      decoration: InputDecoration(
+                        labelText: 'Şifre',
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16)),
+                        prefixIcon: const Icon(Icons.lock_outline),
+                      ),
+                      onSubmitted: (_) => _login(),
+                    ),
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: _forgotPassword,
+                        child: const Text('Şifremi Unuttum'),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _login,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.purpleAccent,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16)),
+                          elevation: 2,
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Text(
+                                'GİRİŞ YAP',
+                                style: TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text('Hesabın yok mu? '),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const RegisterScreen()),
+                            );
+                          },
+                          child: const Text('Üye Ol'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    TextButton.icon(
+                      onPressed: _showAdminLogin,
+                      icon: const Icon(Icons.admin_panel_settings_outlined),
+                      label: const Text('Admin olarak giriş yap'),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                TextButton.icon(
-                  onPressed: _showAdminLogin,
-                  icon: const Icon(Icons.lock),
-                  label: const Text('Admin olarak giriş yap'),
-                ),
-              ],
+              ),
             ),
           ),
         ),
