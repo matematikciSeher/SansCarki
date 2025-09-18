@@ -4,6 +4,7 @@ import '../models/user_profile.dart';
 import '../data/quiz_repository.dart';
 import '../widgets/profile_page.dart';
 import 'quiz_game_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class QuizArenaScreen extends StatefulWidget {
   final UserProfile profile;
@@ -481,6 +482,20 @@ class _QuizArenaScreenState extends State<QuizArenaScreen>
         ..shuffle();
       selected.addAll(remaining.take(5 - selected.length));
     }
+
+    // Son oynanan soruları hariç tutmaya çalış (tek oturumda tekrar ihtimalini azalt)
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final recent = prefs.getStringList('quiz_recent_ids') ?? <String>[];
+      final recentSet = recent.toSet();
+      final filteredSelected =
+          selected.where((q) => !recentSet.contains(q.id)).toList();
+      if (filteredSelected.length >= 5) {
+        selected
+          ..clear()
+          ..addAll(filteredSelected.take(5));
+      }
+    } catch (_) {}
 
     final quizQuestions = selected;
     final updatedProfile = await Navigator.push(

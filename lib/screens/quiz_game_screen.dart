@@ -5,6 +5,7 @@ import '../models/user_profile.dart';
 import '../models/quiz.dart';
 // Quiz questions are now provided by caller (e.g., fetched from Firestore)
 import 'package:shared_preferences/shared_preferences.dart';
+import '../data/quiz_repository.dart';
 
 class QuizGameScreen extends StatefulWidget {
   final List<QuizQuestion> questions;
@@ -94,7 +95,29 @@ class _QuizGameScreenState extends State<QuizGameScreen>
   }
 
   void _loadQuestions() {
-    _questions = List<QuizQuestion>.from(widget.questions);
+    final all = List<QuizQuestion>.from(widget.questions);
+    all.shuffle();
+    final desiredCount = all.length >= 10 ? 10 : all.length;
+    _questions = all.take(desiredCount).toList();
+    _currentQuestionIndex = 0;
+  }
+
+  Future<List<String>> _getRecentQuestionIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList('quiz_recent_ids') ?? <String>[];
+  }
+
+  Future<void> _appendRecentQuestionIds(Iterable<String> ids) async {
+    final prefs = await SharedPreferences.getInstance();
+    final current = prefs.getStringList('quiz_recent_ids') ?? <String>[];
+    final set = <String>{...current};
+    set.addAll(ids);
+    // Son 100 kaydı tut
+    final list = set.toList();
+    if (list.length > 100) {
+      list.removeRange(0, list.length - 100);
+    }
+    await prefs.setStringList('quiz_recent_ids', list);
   }
 
   void _startTimer() {
@@ -159,8 +182,9 @@ class _QuizGameScreenState extends State<QuizGameScreen>
       _totalPoints += _calculatePoints(currentQuestion);
     }
 
-    // Kısa bir parlamadan (150ms) sonra hemen ilerle
-    Future.delayed(const Duration(milliseconds: 150), () {
+    // Doğru cevapta kısa bekleme, yanlışta doğru seçeneği görebilmek için daha uzun bekleme
+    final delayMs = isCorrect ? 800 : 3000;
+    Future.delayed(Duration(milliseconds: delayMs), () {
       if (!mounted) return;
       if (isCorrect) {
         _nextQuestion();
@@ -213,11 +237,18 @@ class _QuizGameScreenState extends State<QuizGameScreen>
         solvedIds.add(q.id);
       }
     }
-    // Eğer tüm sorular çözülmüşse solvedQuestionIds sıfırlanır
-    // Eğer tüm sorular çözülmüşse solvedQuestionIds sıfırlanır
-    final totalBankCount = _questions.length; // Oyun sırasında kullanılan set
-    if (solvedIds.length >= totalBankCount) {
-      solvedIds.clear();
+    // En son oynanan soruları tekrarları azaltmak için sakla
+    await _appendRecentQuestionIds(_questions.map((e) => e.id));
+
+    // Eğer tüm havuz çözülmüşse solvedQuestionIds sıfırlanır
+    try {
+      final all = await QuizRepository.fetchAll();
+      final totalBankCount = all.length;
+      if (totalBankCount > 0 && solvedIds.length >= totalBankCount) {
+        solvedIds.clear();
+      }
+    } catch (_) {
+      // çevrimdışı/erişim hatası: temizleme yapma
     }
 
     // Quiz puanlarını UserProfile'a ekle
@@ -400,7 +431,8 @@ class _QuizGameScreenState extends State<QuizGameScreen>
     );
   }
 
-  void _restartQuiz() {
+  Future<void> _restartQuiz() async {
+    _timer?.cancel();
     setState(() {
       _currentQuestionIndex = 0;
       _correctAnswers = 0;
@@ -409,7 +441,25 @@ class _QuizGameScreenState extends State<QuizGameScreen>
       // _isGameOver = false; // kaldırıldı
       _selectedAnswerIndex = null;
       _isAnswered = false;
+      _remainingTime = 30;
     });
+
+    final desiredCount =
+        widget.questions.isNotEmpty ? widget.questions.length : 10;
+    final recent = await _getRecentQuestionIds();
+    final fresh = await QuizRepository.fetchRandom(
+      count: desiredCount,
+      excludeIds: recent.toSet(),
+    );
+    if (!mounted) return;
+
+    setState(() {
+      _questions = fresh;
+    });
+
+    _questionAnimationController.reset();
+    _updateSlideAnimation();
+    _questionAnimationController.forward();
     _startTimer();
   }
 

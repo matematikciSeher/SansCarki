@@ -58,7 +58,9 @@ class TaskCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Row(
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 6,
                           children: [
                             Container(
                               padding: const EdgeInsets.symmetric(
@@ -79,7 +81,6 @@ class TaskCard extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 8,

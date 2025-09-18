@@ -86,6 +86,7 @@ flutter:
     - assets/tasks_raw.txt
     - assets/branding/
     - assets/words_hints.json
+    - assets/word_bomb_words.json
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

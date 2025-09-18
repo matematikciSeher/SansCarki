@@ -23,7 +23,7 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
   late AnimationController _explosionController;
   late Animation<double> _explosionScaleAnimation;
 
-  final List<WordPair> _allWords = [
+  List<WordPair> _allWords = [
     // Meyveler (15 kelime)
     WordPair(english: 'apple', turkish: 'elma', emoji: '🍎'),
     WordPair(english: 'banana', turkish: 'muz', emoji: '🍌'),
@@ -233,18 +233,73 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
   late List<WordPair> _mediumWords;
   late List<WordPair> _hardWords;
   Set<WordPair> _usedWords = {};
+  int _tickCount = 0;
+
+  double _getBalloonSize() {
+    // Sabit balon boyutu (biraz daha büyük)
+    return 80.0;
+  }
+
+  double _getSeparationDistance(double balloonSize) {
+    return balloonSize * 2.4;
+  }
 
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
+    _recomputePools();
+    // Harici kelime listesi varsa yükle
+    _loadExternalWords();
+    _startNewGame();
+  }
+
+  void _recomputePools() {
     // Kolay: 5 harf ve altı, Orta: 6-7 harf, Zor: 8+ harf
     _easyWords = _allWords.where((w) => w.english.length <= 5).toList();
     _mediumWords = _allWords
         .where((w) => w.english.length > 5 && w.english.length <= 7)
         .toList();
     _hardWords = _allWords.where((w) => w.english.length > 7).toList();
-    _startNewGame();
+  }
+
+  Future<void> _loadExternalWords() async {
+    try {
+      final jsonStr = await DefaultAssetBundle.of(context)
+          .loadString('assets/word_bomb_words.json');
+      final decoded = json.decode(jsonStr);
+      List<dynamic> items;
+      if (decoded is List) {
+        items = decoded;
+      } else if (decoded is Map && decoded['words'] is List) {
+        items = decoded['words'] as List;
+      } else {
+        return;
+      }
+      final loaded = <WordPair>[];
+      for (final it in items) {
+        if (it is Map<String, dynamic>) {
+          final en = (it['english'] ?? it['en'] ?? '').toString().trim();
+          final tr = (it['turkish'] ?? it['tr'] ?? '').toString().trim();
+          if (en.isEmpty || tr.isEmpty) continue;
+          final emoji = (it['emoji'] ?? '🔤').toString();
+          loaded.add(WordPair(english: en, turkish: tr, emoji: emoji));
+        }
+      }
+      if (loaded.isNotEmpty) {
+        setState(() {
+          _allWords = loaded;
+          _usedWords.clear();
+          _recomputePools();
+          if (!_showInfo) {
+            _getRandomWord();
+            _generateBalloonsInCenterSquare();
+          }
+        });
+      }
+    } catch (_) {
+      // yok say
+    }
   }
 
   void _initializeAnimations() {
@@ -302,13 +357,17 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
 
   void _updateBalloonPositions() {
     setState(() {
-      const double balloonSize = 60.0;
+      _tickCount++;
+      final double balloonSize = _getBalloonSize();
+      final double separationDistance = _getSeparationDistance(balloonSize);
       final screenWidth = MediaQuery.of(context).size.width;
       final screenHeight = MediaQuery.of(context).size.height * 0.6;
       final squareSize =
           screenWidth < screenHeight ? screenWidth * 0.6 : screenHeight * 0.6;
       final squareLeft = (screenWidth - squareSize) / 2;
       final squareTop = (screenHeight - squareSize) / 2;
+      const double minSpeed = 1.6;
+      const double maxSpeed = 3.8;
       for (int i = 0; i < _balloons.length; i++) {
         var balloon = _balloons[i];
         double oldX = balloon.x;
@@ -335,8 +394,13 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
         for (int j = 0; j < _balloons.length; j++) {
           if (i == j) continue;
           var other = _balloons[j];
-          double dist = _calculateDistance(newX, newY, other.x, other.y);
-          if (dist < balloonSize + 4) {
+          // merkezler arası mesafe ile kontrol
+          final cx1 = newX + balloonSize / 2;
+          final cy1 = newY + balloonSize / 2;
+          final cx2 = other.x + balloonSize / 2;
+          final cy2 = other.y + balloonSize / 2;
+          double dist = _calculateDistance(cx1, cy1, cx2, cy2);
+          if (dist < separationDistance) {
             hasCollision = true;
             break;
           }
@@ -345,10 +409,89 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
           balloon.x = newX;
           balloon.y = newY;
         } else {
-          balloon.dx = -balloon.dx;
-          balloon.dy = -balloon.dy;
+          // Çarpışmada yönü rastgele değiştir ve bir sonraki turda hareket etsin
+          final r = Random();
+          balloon.dx = (r.nextDouble() - 0.5) * 2.4;
+          balloon.dy = (r.nextDouble() - 0.5) * 2.4;
           balloon.x = oldX;
           balloon.y = oldY;
+        }
+
+        // Periyodik küçük hız pertürbasyonu ekle
+        if (_tickCount % 30 == 0) {
+          final r = Random();
+          balloon.dx += (r.nextDouble() - 0.5) * 0.6;
+          balloon.dy += (r.nextDouble() - 0.5) * 0.6;
+        }
+
+        // Hız sınırlarını uygula (min ve max)
+        final double speed =
+            sqrt(balloon.dx * balloon.dx + balloon.dy * balloon.dy);
+        if (speed < minSpeed) {
+          final r = Random();
+          double ndx = (r.nextDouble() - 0.5);
+          double ndy = (r.nextDouble() - 0.5);
+          double len = sqrt(ndx * ndx + ndy * ndy);
+          if (len == 0) {
+            ndx = 1;
+            ndy = 0;
+            len = 1;
+          }
+          ndx = ndx / len * minSpeed;
+          ndy = ndy / len * minSpeed;
+          balloon.dx = ndx;
+          balloon.dy = ndy;
+        } else if (speed > maxSpeed) {
+          final scale = maxSpeed / speed;
+          balloon.dx *= scale;
+          balloon.dy *= scale;
+        }
+      }
+
+      // Ek ayrıştırma adımı: çifti çiftine itiş uygulayarak kalan çakışmayı gider
+      for (int iter = 0; iter < 7; iter++) {
+        for (int i = 0; i < _balloons.length; i++) {
+          for (int j = i + 1; j < _balloons.length; j++) {
+            final bi = _balloons[i];
+            final bj = _balloons[j];
+            final cx1 = bi.x + balloonSize / 2;
+            final cy1 = bi.y + balloonSize / 2;
+            final cx2 = bj.x + balloonSize / 2;
+            final cy2 = bj.y + balloonSize / 2;
+            double dx = cx2 - cx1;
+            double dy = cy2 - cy1;
+            double dist = sqrt(dx * dx + dy * dy);
+            if (dist < separationDistance) {
+              double nx;
+              double ny;
+              if (dist < 1e-3) {
+                // Tam üst üste ise rastgele bir yön seç
+                final r = Random();
+                nx = (r.nextDouble() - 0.5);
+                ny = (r.nextDouble() - 0.5);
+                final len = sqrt(nx * nx + ny * ny);
+                if (len > 0) {
+                  nx /= len;
+                  ny /= len;
+                } else {
+                  nx = 1.0;
+                  ny = 0.0;
+                }
+              } else {
+                nx = dx / dist;
+                ny = dy / dist;
+              }
+              final double push = (separationDistance - dist) / 2.0;
+              bi.x = (bi.x - nx * push)
+                  .clamp(squareLeft, squareLeft + squareSize - balloonSize);
+              bi.y = (bi.y - ny * push)
+                  .clamp(squareTop, squareTop + squareSize - balloonSize);
+              bj.x = (bj.x + nx * push)
+                  .clamp(squareLeft, squareLeft + squareSize - balloonSize);
+              bj.y = (bj.y + ny * push)
+                  .clamp(squareTop, squareTop + squareSize - balloonSize);
+            }
+          }
         }
       }
     });
@@ -418,6 +561,14 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
       }
       i++;
     }
+    // Doğru balonun konumu her turda değişsin: 0-3 arasında rastgele index
+    final int correctIndex = random.nextInt(4);
+    if (correctIndex != 0) {
+      final temp = balloonWords[correctIndex];
+      balloonWords[correctIndex] = balloonWords[0];
+      balloonWords[0] = temp;
+    }
+
     // Kare alan boyutu
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height * 0.6;
@@ -425,23 +576,50 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
         screenWidth < screenHeight ? screenWidth * 0.6 : screenHeight * 0.6;
     final squareLeft = (screenWidth - squareSize) / 2;
     final squareTop = (screenHeight - squareSize) / 2;
-    const double balloonSize = 60.0;
+    final double balloonSize = _getBalloonSize();
+    final double separationDistance = _getSeparationDistance(balloonSize);
+    final double pad = max(34.0, squareSize * 0.2);
     for (int idx = 0; idx < balloonWords.length; idx++) {
       final wordPair = balloonWords[idx];
       bool placed = false;
       int attempts = 0;
       while (!placed && attempts < 1000) {
         attempts++;
-        double x =
-            squareLeft + random.nextDouble() * (squareSize - balloonSize);
-        double y = squareTop + random.nextDouble() * (squareSize - balloonSize);
-        double dx = (random.nextDouble() - 0.5) * 2.0;
-        double dy = (random.nextDouble() - 0.5) * 2.0;
-        bool isCorrect = idx == 0;
+        double x;
+        double y;
+        // İlk dört balon: kare köşeleri (çok küçük rastgele sapma ile)
+        if (idx < 4) {
+          final corners = [
+            Offset(squareLeft + pad, squareTop + pad),
+            Offset(
+                squareLeft + squareSize - balloonSize - pad, squareTop + pad),
+            Offset(
+                squareLeft + pad, squareTop + squareSize - balloonSize - pad),
+            Offset(squareLeft + squareSize - balloonSize - pad,
+                squareTop + squareSize - balloonSize - pad),
+          ];
+          // Köşeler arası indeks eşlemesini her tur karıştır (köşeler -> 0..3)
+          final List<int> cornerOrder = [0, 1, 2, 3]..shuffle(random);
+          final base = corners[cornerOrder[idx]];
+          x = (base.dx + (random.nextDouble() - 0.5) * 10)
+              .clamp(squareLeft, squareLeft + squareSize - balloonSize);
+          y = (base.dy + (random.nextDouble() - 0.5) * 10)
+              .clamp(squareTop, squareTop + squareSize - balloonSize);
+        } else {
+          x = squareLeft + random.nextDouble() * (squareSize - balloonSize);
+          y = squareTop + random.nextDouble() * (squareSize - balloonSize);
+        }
+        double dx = (random.nextDouble() - 0.5) * 3.2;
+        double dy = (random.nextDouble() - 0.5) * 3.2;
+        bool isCorrect = idx == correctIndex;
         bool hasCollision = false;
         for (var b in newBalloons) {
-          double dist = _calculateDistance(x, y, b.x, b.y);
-          if (dist < balloonSize + 8) {
+          final cx1 = x + balloonSize / 2;
+          final cy1 = y + balloonSize / 2;
+          final cx2 = b.x + balloonSize / 2;
+          final cy2 = b.y + balloonSize / 2;
+          double dist = _calculateDistance(cx1, cy1, cx2, cy2);
+          if (dist < separationDistance) {
             hasCollision = true;
             break;
           }
@@ -460,12 +638,44 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
         }
       }
       if (!placed) {
+        // Grid tabanlı en uzak uygun noktayı bulmaya çalış
+        const int gridN = 6;
+        double bestX = squareLeft;
+        double bestY = squareTop;
+        double bestMinDist = -1;
+        for (int gx = 0; gx < gridN; gx++) {
+          for (int gy = 0; gy < gridN; gy++) {
+            final double x =
+                squareLeft + gx * ((squareSize - balloonSize) / (gridN - 1));
+            final double y =
+                squareTop + gy * ((squareSize - balloonSize) / (gridN - 1));
+            bool hasCollision = false;
+            double minDist = double.infinity;
+            for (var b in newBalloons) {
+              final cx1 = x + balloonSize / 2;
+              final cy1 = y + balloonSize / 2;
+              final cx2 = b.x + balloonSize / 2;
+              final cy2 = b.y + balloonSize / 2;
+              double dist = _calculateDistance(cx1, cy1, cx2, cy2);
+              minDist = min(minDist, dist);
+              if (dist < separationDistance) {
+                hasCollision = true;
+                break;
+              }
+            }
+            if (!hasCollision && minDist > bestMinDist) {
+              bestMinDist = minDist;
+              bestX = x;
+              bestY = y;
+            }
+          }
+        }
         newBalloons.add(BalloonAnswer(
           word: wordPair.turkish,
           emoji: wordPair.emoji,
-          isCorrect: idx == 0,
-          x: squareLeft + random.nextDouble() * (squareSize - balloonSize),
-          y: squareTop + random.nextDouble() * (squareSize - balloonSize),
+          isCorrect: idx == correctIndex,
+          x: bestX,
+          y: bestY,
           dx: (random.nextDouble() - 0.5) * 2.0,
           dy: (random.nextDouble() - 0.5) * 2.0,
         ));
@@ -498,7 +708,7 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
       });
 
       // Etap kontrolü
-      if (_wordsCompleted >= 10) {
+      if (_wordsCompleted >= 5) {
         _showStageCompleteDialog();
       } else {
         // Yeni kelime ve balonlar
@@ -507,6 +717,9 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
       }
     } else {
       // Yanlış cevap - bomba patlar
+      setState(() {
+        _score -= 20; // Yanlış balon için puan düş
+      });
       _explodeBalloon(balloon);
     }
   }
@@ -555,45 +768,316 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
             screenWidth < screenHeight ? screenWidth * 0.6 : screenHeight * 0.6;
         final squareLeft = (screenWidth - squareSize) / 2;
         final squareTop = (screenHeight - squareSize) / 2;
-        const double balloonSize = 60.0;
-        // Çakışmasız pozisyon bul
-        bool placed = false;
-        int attempts = 0;
-        double x = squareLeft;
-        double y = squareTop;
-        while (!placed && attempts < 1000) {
-          attempts++;
-          x = squareLeft + random.nextDouble() * (squareSize - balloonSize);
-          y = squareTop + random.nextDouble() * (squareSize - balloonSize);
-          bool hasCollision = false;
-          for (var b in _balloons) {
-            double dist = _calculateDistance(x, y, b.x, b.y);
-            if (dist < balloonSize + 8) {
-              hasCollision = true;
+        final double balloonSize = _getBalloonSize();
+        final double separationDistance = _getSeparationDistance(balloonSize);
+
+        // Çaprazındaki balonu patlayan yere taşı, yeni yanlış balonu boşalan yere koy
+        final centerX = squareLeft + squareSize / 2;
+        final centerY = squareTop + squareSize / 2;
+        final explodedCenterX = _explosionX + balloonSize / 2;
+        final explodedCenterY = _explosionY + balloonSize / 2;
+        final explodedLeft = explodedCenterX < centerX;
+        final explodedTop = explodedCenterY < centerY;
+
+        int chosenIdx = -1;
+        // Önce yanlış balonlardan çaprazda olanı seç
+        for (int i = 0; i < _balloons.length; i++) {
+          final b = _balloons[i];
+          final bxLeft = b.x + balloonSize / 2 < centerX;
+          final byTop = b.y + balloonSize / 2 < centerY;
+          if ((bxLeft != explodedLeft) &&
+              (byTop != explodedTop) &&
+              !b.isCorrect) {
+            chosenIdx = i;
+            break;
+          }
+        }
+        // Bulunamazsa herhangi bir balon
+        if (chosenIdx == -1) {
+          for (int i = 0; i < _balloons.length; i++) {
+            final b = _balloons[i];
+            final bxLeft = b.x + balloonSize / 2 < centerX;
+            final byTop = b.y + balloonSize / 2 < centerY;
+            if ((bxLeft != explodedLeft) && (byTop != explodedTop)) {
+              chosenIdx = i;
               break;
             }
           }
-          if (!hasCollision) placed = true;
         }
+
+        double spawnX;
+        double spawnY;
+        if (chosenIdx != -1) {
+          final moved = _balloons[chosenIdx];
+          final srcX = moved.x;
+          final srcY = moved.y;
+
+          // Patlayan yere taşı (çakışmasız konum bul: spiral jitter + grid fallback)
+          double targetX = _explosionX;
+          double targetY = _explosionY;
+          bool movedPlaced = false;
+          for (int k = 0; k < 60 && !movedPlaced; k++) {
+            bool hasCollision = false;
+            for (int i2 = 0; i2 < _balloons.length; i2++) {
+              if (i2 == chosenIdx) continue;
+              final b2 = _balloons[i2];
+              final cx1 = targetX + balloonSize / 2;
+              final cy1 = targetY + balloonSize / 2;
+              final cx2 = b2.x + balloonSize / 2;
+              final cy2 = b2.y + balloonSize / 2;
+              double dist = _calculateDistance(cx1, cy1, cx2, cy2);
+              if (dist < separationDistance) {
+                hasCollision = true;
+                break;
+              }
+            }
+            if (!hasCollision) {
+              movedPlaced = true;
+              break;
+            }
+            final angle = (k * pi / 8);
+            final radius = 3.0 + k * 0.8;
+            targetX = (_explosionX + cos(angle) * radius)
+                .clamp(squareLeft, squareLeft + squareSize - balloonSize);
+            targetY = (_explosionY + sin(angle) * radius)
+                .clamp(squareTop, squareTop + squareSize - balloonSize);
+          }
+          if (!movedPlaced) {
+            const int gridNMove = 7;
+            double bestX = _explosionX;
+            double bestY = _explosionY;
+            double bestMinDist = -1;
+            for (int gx = 0; gx < gridNMove; gx++) {
+              for (int gy = 0; gy < gridNMove; gy++) {
+                final double gxPos = squareLeft +
+                    gx * ((squareSize - balloonSize) / (gridNMove - 1));
+                final double gyPos = squareTop +
+                    gy * ((squareSize - balloonSize) / (gridNMove - 1));
+                bool hasCollision = false;
+                double minDist = double.infinity;
+                for (int i2 = 0; i2 < _balloons.length; i2++) {
+                  if (i2 == chosenIdx) continue;
+                  final b2 = _balloons[i2];
+                  final cx1 = gxPos + balloonSize / 2;
+                  final cy1 = gyPos + balloonSize / 2;
+                  final cx2 = b2.x + balloonSize / 2;
+                  final cy2 = b2.y + balloonSize / 2;
+                  double dist = _calculateDistance(cx1, cy1, cx2, cy2);
+                  minDist = min(minDist, dist);
+                  if (dist < separationDistance) {
+                    hasCollision = true;
+                    break;
+                  }
+                }
+                if (!hasCollision && minDist > bestMinDist) {
+                  bestMinDist = minDist;
+                  bestX = gxPos;
+                  bestY = gyPos;
+                }
+              }
+            }
+            targetX = bestX;
+            targetY = bestY;
+          }
+          moved.x = targetX;
+          moved.y = targetY;
+          moved.dx = (random.nextDouble() - 0.5) * 3.0;
+          moved.dy = (random.nextDouble() - 0.5) * 3.0;
+
+          // Yeni yanlış balon boşalan noktaya gelecek
+          spawnX = srcX;
+          spawnY = srcY;
+
+          // Çakışma varsa spiral jitter ve grid fallback
+          bool placed = false;
+          for (int k = 0; k < 60 && !placed; k++) {
+            bool hasCollision = false;
+            for (var b in _balloons) {
+              if (identical(b, moved)) continue;
+              final cx1 = spawnX + balloonSize / 2;
+              final cy1 = spawnY + balloonSize / 2;
+              final cx2 = b.x + balloonSize / 2;
+              final cy2 = b.y + balloonSize / 2;
+              double dist = _calculateDistance(cx1, cy1, cx2, cy2);
+              if (dist < separationDistance) {
+                hasCollision = true;
+                break;
+              }
+            }
+            if (!hasCollision) {
+              placed = true;
+              break;
+            }
+            final angle = (k * pi / 8);
+            final radius = 3.0 + k * 0.8;
+            spawnX = (srcX + cos(angle) * radius)
+                .clamp(squareLeft, squareLeft + squareSize - balloonSize);
+            spawnY = (srcY + sin(angle) * radius)
+                .clamp(squareTop, squareTop + squareSize - balloonSize);
+          }
+          if (!placed) {
+            const int gridN = 7;
+            double bestX = srcX;
+            double bestY = srcY;
+            double bestMinDist = -1;
+            for (int gx = 0; gx < gridN; gx++) {
+              for (int gy = 0; gy < gridN; gy++) {
+                final double gxPos = squareLeft +
+                    gx * ((squareSize - balloonSize) / (gridN - 1));
+                final double gyPos =
+                    squareTop + gy * ((squareSize - balloonSize) / (gridN - 1));
+                bool hasCollision = false;
+                double minDist = double.infinity;
+                for (var b in _balloons) {
+                  final cx1 = gxPos + balloonSize / 2;
+                  final cy1 = gyPos + balloonSize / 2;
+                  final cx2 = b.x + balloonSize / 2;
+                  final cy2 = b.y + balloonSize / 2;
+                  double dist = _calculateDistance(cx1, cy1, cx2, cy2);
+                  minDist = min(minDist, dist);
+                  if (dist < separationDistance) {
+                    hasCollision = true;
+                    break;
+                  }
+                }
+                if (!hasCollision && minDist > bestMinDist) {
+                  bestMinDist = minDist;
+                  bestX = gxPos;
+                  bestY = gyPos;
+                }
+              }
+            }
+            spawnX = bestX;
+            spawnY = bestY;
+          }
+        } else {
+          // Çapraz aday yoksa: rastgele/izdüşüm yerleştirme
+          bool placed = false;
+          int attempts = 0;
+          spawnX = squareLeft;
+          spawnY = squareTop;
+          while (!placed && attempts < 1000) {
+            attempts++;
+            spawnX =
+                squareLeft + random.nextDouble() * (squareSize - balloonSize);
+            spawnY =
+                squareTop + random.nextDouble() * (squareSize - balloonSize);
+            bool hasCollision = false;
+            for (var b in _balloons) {
+              final cx1 = spawnX + balloonSize / 2;
+              final cy1 = spawnY + balloonSize / 2;
+              final cx2 = b.x + balloonSize / 2;
+              final cy2 = b.y + balloonSize / 2;
+              double dist = _calculateDistance(cx1, cy1, cx2, cy2);
+              if (dist < separationDistance) {
+                hasCollision = true;
+                break;
+              }
+            }
+            if (!hasCollision) placed = true;
+          }
+          if (!placed) {
+            const int gridN = 7;
+            double bestX = squareLeft;
+            double bestY = squareTop;
+            double bestMinDist = -1;
+            for (int gx = 0; gx < gridN; gx++) {
+              for (int gy = 0; gy < gridN; gy++) {
+                final double gxPos = squareLeft +
+                    gx * ((squareSize - balloonSize) / (gridN - 1));
+                final double gyPos =
+                    squareTop + gy * ((squareSize - balloonSize) / (gridN - 1));
+                bool hasCollision = false;
+                double minDist = double.infinity;
+                for (var b in _balloons) {
+                  final cx1 = gxPos + balloonSize / 2;
+                  final cy1 = gyPos + balloonSize / 2;
+                  final cx2 = b.x + balloonSize / 2;
+                  final cy2 = b.y + balloonSize / 2;
+                  double dist = _calculateDistance(cx1, cy1, cx2, cy2);
+                  minDist = min(minDist, dist);
+                  if (dist < separationDistance) {
+                    hasCollision = true;
+                    break;
+                  }
+                }
+                if (!hasCollision && minDist > bestMinDist) {
+                  bestMinDist = minDist;
+                  bestX = gxPos;
+                  bestY = gyPos;
+                }
+              }
+            }
+            spawnX = bestX;
+            spawnY = bestY;
+          }
+        }
+
+        // Yeni yanlış balonu ekle
         _balloons.add(BalloonAnswer(
           word: selectedWord.turkish,
           emoji: selectedWord.emoji,
           isCorrect: false,
-          x: x,
-          y: y,
+          x: spawnX,
+          y: spawnY,
           dx: fastDx,
           dy: fastDy,
         ));
       }
     }
 
-    // Patlama animasyonu bittikten sonra (%50 daha uzun süre)
-    Timer(const Duration(milliseconds: 1200), () {
+    // Yanlış patlama sonrası: 3 sola, 2 sağa olacak şekilde döndür (5'lik döngü)
+    _applyCyclicRotationAfterWrongExplosion();
+
+    // Patlama animasyonu bittikten sonra (okunabilirlik için daha uzun süre)
+    Timer(const Duration(milliseconds: 4500), () {
       setState(() {
         _isExploding = false;
       });
       _explosionController.reset();
     });
+  }
+
+  void _applyCyclicRotationAfterWrongExplosion() {
+    if (_balloons.length < 2) return;
+    // 1,2,3 -> sola; 4,0 -> sağa (bombCount mod 5)
+    final int phase = _bombCount % 5;
+    final bool rotateLeft = (phase == 1 || phase == 2 || phase == 3);
+
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height * 0.6;
+    final squareSize =
+        screenWidth < screenHeight ? screenWidth * 0.6 : screenHeight * 0.6;
+    final squareLeft = (screenWidth - squareSize) / 2;
+    final squareTop = (screenHeight - squareSize) / 2;
+    final centerX = squareLeft + squareSize / 2;
+    final centerY = squareTop + squareSize / 2;
+
+    // Açıya göre saat yönünde sıralayıp komşuların pozisyonlarını döndür
+    final List<int> indices = List<int>.generate(_balloons.length, (i) => i);
+    indices.sort((a, b) {
+      final ba = _balloons[a];
+      final bb = _balloons[b];
+      final angleA = atan2((ba.y + _getBalloonSize() / 2) - centerY,
+          (ba.x + _getBalloonSize() / 2) - centerX);
+      final angleB = atan2((bb.y + _getBalloonSize() / 2) - centerY,
+          (bb.x + _getBalloonSize() / 2) - centerX);
+      return angleA.compareTo(angleB);
+    });
+
+    final List<Offset> orderedPositions = indices
+        .map((i) => Offset(_balloons[i].x, _balloons[i].y))
+        .toList(growable: false);
+
+    for (int k = 0; k < indices.length; k++) {
+      final int toIdx = indices[k];
+      final int fromOrder = rotateLeft
+          ? (k + 1) % indices.length
+          : (k - 1 + indices.length) % indices.length;
+      final Offset src = orderedPositions[fromOrder];
+      _balloons[toIdx].x = src.dx;
+      _balloons[toIdx].y = src.dy;
+    }
   }
 
   void _showStageCompleteDialog() {
@@ -610,7 +1094,7 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
           children: [
             Text(finishedAll
                 ? 'Tebrikler! Tüm etapları başarıyla tamamladın.'
-                : 'Tebrikler! 10 kelimeyi başarıyla tamamladın.'),
+                : 'Tebrikler! 5 kelimeyi başarıyla tamamladın.'),
             const SizedBox(height: 16),
             _buildResultRow('⭐ Toplam Puan', '$_score'),
             _buildResultRow('💣 Patlama', '$_bombCount'),
@@ -654,7 +1138,7 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
                   children: [
                     const Text('🏆 Final İstatistikleri:',
                         style: TextStyle(fontWeight: FontWeight.bold)),
-                    Text('Toplam Tamamlanan Kelime: ${_currentStage * 10}'),
+                    Text('Toplam Tamamlanan Kelime: ${_currentStage * 5}'),
                     Text('Toplam Puan: $_score'),
                     Text('Toplam Patlama: $_bombCount'),
                     Text('Tamamlanan Etap: $_currentStage'),
@@ -698,32 +1182,19 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
       _bombCount = 0;
       _round = 1;
     });
-    _usedWords.clear();
     // Yeni kelime ve balonlar
     _getRandomWord();
     _generateBalloonsInCenterSquare();
   }
 
-  Future<void> _endGame() async {
-    _balloonMovementTimer?.cancel();
-
-    // Profil güncelleme
-    final updatedProfile = widget.profile.copyWith(
-      points: widget.profile.points + _score,
-      totalGamePoints: (widget.profile.totalGamePoints ?? 0) + _score,
-    );
-
-    // UserProfile'ı SharedPreferences'a kaydet
-    await _saveProfile(updatedProfile);
-
-    _showGameOverDialog(updatedProfile);
-  }
+  // _endGame kullanılmıyor
 
   Future<void> _saveProfile(UserProfile profile) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('user_profile', jsonEncode(profile.toJson()));
   }
 
+  // _showGameOverDialog şu an kullanılmıyor
   void _showGameOverDialog(UserProfile updatedProfile) {
     showDialog(
       context: context,
@@ -869,8 +1340,9 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
                 '⭐ Puanlama Sistemi',
                 [
                   '• Doğru cevap: +100 puan',
+                  '• Yanlış balon: −20 puan',
+                  '• Her etap 5 sorudan oluşur',
                   '• Her etap bonusu: +200 puan',
-                  '• 10 kelime tamamlayınca etap biter',
                   '• Toplam 10 etap var',
                 ],
               ),
@@ -891,21 +1363,6 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
               const SizedBox(height: 20),
 
               // Kelime Kategorileri
-              _buildInfoSection(
-                '📚 Kelime Kategorileri',
-                [
-                  '• Meyveler ve Yiyecekler',
-                  '• Hayvanlar',
-                  '• Ev ve Ulaşım',
-                  '• Okul ve Eğitim',
-                  '• Renkler ve Sıfatlar',
-                  '• Duygular ve Değerler',
-                  '• Meslekler',
-                  '• Spor ve Oyun',
-                  '• Vücut ve Sağlık',
-                  '• Sayılar ve Matematik',
-                ],
-              ),
 
               const SizedBox(height: 30),
 
@@ -1031,13 +1488,13 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
                   // Patlama efekti
                   if (_isExploding)
                     Positioned(
-                      left: _explosionX - 50,
-                      top: _explosionY - 50,
+                      left: _explosionX - 70,
+                      top: _explosionY - 70,
                       child: ScaleTransition(
                         scale: _explosionScaleAnimation,
                         child: Container(
-                          width: 100,
-                          height: 100,
+                          width: 140,
+                          height: 140,
                           decoration: BoxDecoration(
                             gradient: RadialGradient(
                               colors: [
@@ -1070,23 +1527,27 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                _explodedWord,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
                                 _getExplodedWordEnglish(_explodedWord),
                                 style: const TextStyle(
                                   color: Colors.white,
-                                  fontSize: 14,
+                                  fontSize: 15,
                                   fontWeight: FontWeight.bold,
                                 ),
                                 textAlign: TextAlign.center,
+                                maxLines: 2,
+                                softWrap: true,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                _explodedWord,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                softWrap: true,
                               ),
                             ],
                           ),
@@ -1203,14 +1664,15 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
 
   // 4. Responsive balon konumlandırma:
   Widget _buildBalloon(BalloonAnswer balloon) {
+    final double balloonSize = _getBalloonSize();
     return Positioned(
       left: balloon.x,
       top: balloon.y,
       child: GestureDetector(
         onTap: () => _onBalloonTap(balloon),
         child: Container(
-          width: 60,
-          height: 60,
+          width: balloonSize,
+          height: balloonSize,
           decoration: BoxDecoration(
             gradient: RadialGradient(
               colors: [

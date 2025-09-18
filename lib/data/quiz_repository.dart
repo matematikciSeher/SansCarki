@@ -20,7 +20,8 @@ class QuizRepository {
   }
 
   static Future<List<QuizQuestion>> fetchAll() async {
-    final snap = await FirebaseFirestore.instance.collection(collectionName).get();
+    final snap =
+        await FirebaseFirestore.instance.collection(collectionName).get();
     return snap.docs.map(_fromDoc).toList();
   }
 
@@ -43,6 +44,7 @@ class QuizRepository {
   static Future<List<QuizQuestion>> fetchRandom({
     QuizCategory? category,
     int count = 10,
+    Set<String> excludeIds = const {},
   }) async {
     List<QuizQuestion> list;
     if (category != null) {
@@ -50,17 +52,36 @@ class QuizRepository {
     } else {
       list = await fetchAll();
     }
+    // Hariç tutulanları filtrele
+    if (excludeIds.isNotEmpty) {
+      list = list.where((q) => !excludeIds.contains(q.id)).toList();
+    }
     list.shuffle();
-    return list.take(count).toList();
+    if (list.length >= count) {
+      return list.take(count).toList();
+    }
+    // Havuz yetersizse: eksik kalanları kalanlardan (exclude dahil) doldur
+    final backup = await fetchAll();
+    backup.shuffle();
+    final usedIds = list.map((e) => e.id).toSet();
+    for (final q in backup) {
+      if (usedIds.contains(q.id)) continue;
+      list.add(q);
+      usedIds.add(q.id);
+      if (list.length == count) break;
+    }
+    return list;
   }
 
   static Future<void> addQuestion(QuizQuestion question) async {
-    final ref = FirebaseFirestore.instance.collection(collectionName).doc(question.id);
+    final ref =
+        FirebaseFirestore.instance.collection(collectionName).doc(question.id);
     await ref.set(question.toJson(), SetOptions(merge: true));
   }
 
   static Future<void> updateQuestion(QuizQuestion question) async {
-    final ref = FirebaseFirestore.instance.collection(collectionName).doc(question.id);
+    final ref =
+        FirebaseFirestore.instance.collection(collectionName).doc(question.id);
     await ref.update(question.toJson());
   }
 

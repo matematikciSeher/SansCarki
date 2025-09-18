@@ -15,7 +15,7 @@ import 'avatar_adventure_screen.dart';
 import 'target_shooter_game_screen.dart';
 import 'logic_gates_puzzle_screen.dart';
 import 'maze_game_screen.dart';
-import 'sudoku_game_screen.dart';
+import 'tetris_game_screen.dart';
 import 'wheel_of_fortune_screen.dart';
 // import 'shape_shift_game_screen.dart';
 // import 'ice_breaker_game_screen.dart';
@@ -50,12 +50,12 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
       estimatedTime: '3-5 dk',
     ),
     GameInfo(
-      id: 'puzzle',
-      name: 'Sayı Bulmaca',
-      description: 'Sayıları doğru sıraya diz ve bulmacayı çöz!',
-      emoji: '🧩',
+      id: 'tetris',
+      name: 'Tetris',
+      description: 'Düşen bloklarla satırları tamamla, yüksek skor yap!',
+      emoji: '🧱',
       color: Colors.green,
-      estimatedTime: '5-8 dk',
+      estimatedTime: '5-10 dk',
     ),
     GameInfo(
       id: 'word',
@@ -89,14 +89,7 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
       color: Colors.blueGrey,
       estimatedTime: '3-6 dk',
     ),
-    GameInfo(
-      id: 'sudoku',
-      name: 'Sudoku',
-      description: 'Klasik Sudoku bulmacasını çöz!',
-      emoji: '🧩',
-      color: Colors.indigo,
-      estimatedTime: '5-15 dk',
-    ),
+    
     GameInfo(
       id: 'target_shooter',
       name: 'Hedef Avı',
@@ -174,11 +167,11 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
           ),
         );
         break;
-      case 'puzzle':
+      case 'tetris':
         result = await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => PuzzleGameScreen(profile: _profile),
+            builder: (context) => TetrisGameScreen(profile: _profile),
           ),
         );
         break;
@@ -214,14 +207,7 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
           ),
         );
         break;
-      case 'sudoku':
-        result = await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => SudokuGameScreen(profile: _profile),
-          ),
-        );
-        break;
+      
       case 'target_shooter':
         result = await Navigator.push(
           context,

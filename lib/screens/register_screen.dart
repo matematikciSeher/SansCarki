@@ -36,6 +36,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       setState(() => _errorText = 'Şifreler eşleşmiyor');
       return;
     }
+    if (pass.length < 6) {
+      setState(() => _errorText = 'Şifre en az 6 karakter olmalı');
+      return;
+    }
     setState(() {
       _isLoading = true;
       _errorText = null;
@@ -88,6 +92,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (_errorText != null) ...[
+                  Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFEBEE),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      _errorText!,
+                      style: const TextStyle(color: Color(0xFFC62828)),
+                    ),
+                  ),
+                ],
                 TextField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
@@ -96,7 +115,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16)),
                     prefixIcon: const Icon(Icons.email_outlined),
-                    errorText: _errorText,
                   ),
                 ),
                 const SizedBox(height: 12),

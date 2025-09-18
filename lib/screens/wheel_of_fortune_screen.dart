@@ -587,14 +587,16 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
   }
 
   void _guessWord() async {
+    final isProverb = (_hintCategory ?? '').toLowerCase().contains('atasö');
     final controller = TextEditingController();
     final guess = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Kelime Tahmini'),
+        title: Text(isProverb ? 'Cümle Tahmini' : 'Kelime Tahmini'),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(hintText: 'Tüm kelimeyi yaz'),
+          decoration: InputDecoration(
+              hintText: isProverb ? 'Tüm cümleyi yaz' : 'Tüm kelimeyi yaz'),
         ),
         actions: [
           TextButton(
@@ -616,10 +618,16 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
           if (GameLogic._isLetter(ch))
             _logic.revealed.add(GameLogic._normalize(ch));
         }
+        // Bir sonraki turda serbest spin olsun
+        _logic.lastSpin = null;
       });
       _showWinDialog();
     } else {
-      setState(() => _logic.switchTurn());
+      setState(() {
+        _logic.switchTurn();
+        // Tahmin denendi, tekrar spin serbest
+        _logic.lastSpin = null;
+      });
     }
   }
 
@@ -872,13 +880,17 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
 
     final bool canGuessLetter =
         _logic.lastSpin != null && _logic.lastSpin!.startsWith('+');
+    final bool awaitingGuess =
+        _logic.lastSpin != null && _logic.lastSpin!.startsWith('+');
+    final bool isProverb =
+        (_hintCategory ?? '').toLowerCase().contains('atasö');
     final controls = Wrap(
       alignment: WrapAlignment.center,
       spacing: 12,
       runSpacing: 8,
       children: [
         ElevatedButton.icon(
-          onPressed: _spinning ? null : _spinWheel,
+          onPressed: (_spinning || awaitingGuess) ? null : _spinWheel,
           icon: const Icon(Icons.casino),
           label: const Text('Çarkı Çevir'),
         ),
@@ -889,7 +901,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
         ),
         OutlinedButton(
           onPressed: _guessWord,
-          child: const Text('Kelimeyi Tahmin Et'),
+          child: Text(isProverb ? 'Cümleyi Tahmin Et' : 'Kelimeyi Tahmin Et'),
         ),
         OutlinedButton.icon(
           onPressed: _buyVowel,
@@ -1186,19 +1198,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
                     style: TextStyle(fontSize: 18, color: Colors.white),
                   ),
                 ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Text(
-                    'Puanlama:\n\n• Dilimler: 100 – 2000\n• İpucu maliyeti: İlkokul 50 / Ortaokul 100 / Lise 150\n• Çok kelimeli ifadeler satır kırılarak gösterilir.\n',
-                    style: TextStyle(fontSize: 18, color: Colors.white),
-                  ),
-                ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 86),
                 ElevatedButton(
                   onPressed: () => setState(() => _showIntro = false),
                   style: ElevatedButton.styleFrom(
@@ -1324,7 +1324,10 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
                     _guessWord();
                   },
                   icon: const Icon(Icons.text_fields),
-                  label: const Text('Kelime Tahmin Et'),
+                  label: Text(
+                      ((_hintCategory ?? '').toLowerCase().contains('atasö'))
+                          ? 'Cümle Tahmin Et'
+                          : 'Kelime Tahmin Et'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.purple,
                     foregroundColor: Colors.white,
