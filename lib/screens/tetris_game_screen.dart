@@ -26,46 +26,186 @@ class _TetrisGameScreenState extends State<TetrisGameScreen>
   // Coordinates are (x, y) within a 4x4 box
   final Map<String, List<List<Point<int>>>> _tetrominoes = {
     'I': [
-      [const Point(0, 1), const Point(1, 1), const Point(2, 1), const Point(3, 1)],
-      [const Point(2, 0), const Point(2, 1), const Point(2, 2), const Point(2, 3)],
-      [const Point(0, 2), const Point(1, 2), const Point(2, 2), const Point(3, 2)],
-      [const Point(1, 0), const Point(1, 1), const Point(1, 2), const Point(1, 3)],
+      [
+        const Point(0, 1),
+        const Point(1, 1),
+        const Point(2, 1),
+        const Point(3, 1)
+      ],
+      [
+        const Point(2, 0),
+        const Point(2, 1),
+        const Point(2, 2),
+        const Point(2, 3)
+      ],
+      [
+        const Point(0, 2),
+        const Point(1, 2),
+        const Point(2, 2),
+        const Point(3, 2)
+      ],
+      [
+        const Point(1, 0),
+        const Point(1, 1),
+        const Point(1, 2),
+        const Point(1, 3)
+      ],
     ],
     'O': [
-      [const Point(1, 1), const Point(2, 1), const Point(1, 2), const Point(2, 2)],
-      [const Point(1, 1), const Point(2, 1), const Point(1, 2), const Point(2, 2)],
-      [const Point(1, 1), const Point(2, 1), const Point(1, 2), const Point(2, 2)],
-      [const Point(1, 1), const Point(2, 1), const Point(1, 2), const Point(2, 2)],
+      [
+        const Point(1, 1),
+        const Point(2, 1),
+        const Point(1, 2),
+        const Point(2, 2)
+      ],
+      [
+        const Point(1, 1),
+        const Point(2, 1),
+        const Point(1, 2),
+        const Point(2, 2)
+      ],
+      [
+        const Point(1, 1),
+        const Point(2, 1),
+        const Point(1, 2),
+        const Point(2, 2)
+      ],
+      [
+        const Point(1, 1),
+        const Point(2, 1),
+        const Point(1, 2),
+        const Point(2, 2)
+      ],
     ],
     'T': [
-      [const Point(1, 1), const Point(0, 2), const Point(1, 2), const Point(2, 2)],
-      [const Point(1, 1), const Point(1, 2), const Point(2, 1), const Point(1, 0)],
-      [const Point(0, 1), const Point(1, 1), const Point(2, 1), const Point(1, 2)],
-      [const Point(1, 1), const Point(1, 2), const Point(0, 1), const Point(1, 0)],
+      [
+        const Point(1, 1),
+        const Point(0, 2),
+        const Point(1, 2),
+        const Point(2, 2)
+      ],
+      [
+        const Point(1, 1),
+        const Point(1, 2),
+        const Point(2, 1),
+        const Point(1, 0)
+      ],
+      [
+        const Point(0, 1),
+        const Point(1, 1),
+        const Point(2, 1),
+        const Point(1, 2)
+      ],
+      [
+        const Point(1, 1),
+        const Point(1, 2),
+        const Point(0, 1),
+        const Point(1, 0)
+      ],
     ],
     'S': [
-      [const Point(1, 1), const Point(2, 1), const Point(0, 2), const Point(1, 2)],
-      [const Point(1, 0), const Point(1, 1), const Point(2, 1), const Point(2, 2)],
-      [const Point(1, 1), const Point(2, 1), const Point(0, 2), const Point(1, 2)],
-      [const Point(1, 0), const Point(1, 1), const Point(2, 1), const Point(2, 2)],
+      [
+        const Point(1, 1),
+        const Point(2, 1),
+        const Point(0, 2),
+        const Point(1, 2)
+      ],
+      [
+        const Point(1, 0),
+        const Point(1, 1),
+        const Point(2, 1),
+        const Point(2, 2)
+      ],
+      [
+        const Point(1, 1),
+        const Point(2, 1),
+        const Point(0, 2),
+        const Point(1, 2)
+      ],
+      [
+        const Point(1, 0),
+        const Point(1, 1),
+        const Point(2, 1),
+        const Point(2, 2)
+      ],
     ],
     'Z': [
-      [const Point(0, 1), const Point(1, 1), const Point(1, 2), const Point(2, 2)],
-      [const Point(2, 0), const Point(1, 1), const Point(2, 1), const Point(1, 2)],
-      [const Point(0, 1), const Point(1, 1), const Point(1, 2), const Point(2, 2)],
-      [const Point(2, 0), const Point(1, 1), const Point(2, 1), const Point(1, 2)],
+      [
+        const Point(0, 1),
+        const Point(1, 1),
+        const Point(1, 2),
+        const Point(2, 2)
+      ],
+      [
+        const Point(2, 0),
+        const Point(1, 1),
+        const Point(2, 1),
+        const Point(1, 2)
+      ],
+      [
+        const Point(0, 1),
+        const Point(1, 1),
+        const Point(1, 2),
+        const Point(2, 2)
+      ],
+      [
+        const Point(2, 0),
+        const Point(1, 1),
+        const Point(2, 1),
+        const Point(1, 2)
+      ],
     ],
     'J': [
-      [const Point(0, 1), const Point(0, 2), const Point(1, 2), const Point(2, 2)],
-      [const Point(1, 0), const Point(2, 0), const Point(1, 1), const Point(1, 2)],
-      [const Point(0, 1), const Point(1, 1), const Point(2, 1), const Point(2, 2)],
-      [const Point(1, 0), const Point(1, 1), const Point(0, 2), const Point(1, 2)],
+      [
+        const Point(0, 1),
+        const Point(0, 2),
+        const Point(1, 2),
+        const Point(2, 2)
+      ],
+      [
+        const Point(1, 0),
+        const Point(2, 0),
+        const Point(1, 1),
+        const Point(1, 2)
+      ],
+      [
+        const Point(0, 1),
+        const Point(1, 1),
+        const Point(2, 1),
+        const Point(2, 2)
+      ],
+      [
+        const Point(1, 0),
+        const Point(1, 1),
+        const Point(0, 2),
+        const Point(1, 2)
+      ],
     ],
     'L': [
-      [const Point(2, 1), const Point(0, 2), const Point(1, 2), const Point(2, 2)],
-      [const Point(1, 0), const Point(1, 1), const Point(1, 2), const Point(2, 2)],
-      [const Point(0, 1), const Point(1, 1), const Point(2, 1), const Point(0, 2)],
-      [const Point(0, 0), const Point(1, 0), const Point(1, 1), const Point(1, 2)],
+      [
+        const Point(2, 1),
+        const Point(0, 2),
+        const Point(1, 2),
+        const Point(2, 2)
+      ],
+      [
+        const Point(1, 0),
+        const Point(1, 1),
+        const Point(1, 2),
+        const Point(2, 2)
+      ],
+      [
+        const Point(0, 1),
+        const Point(1, 1),
+        const Point(2, 1),
+        const Point(0, 2)
+      ],
+      [
+        const Point(0, 0),
+        const Point(1, 0),
+        const Point(1, 1),
+        const Point(1, 2)
+      ],
     ],
   };
 
@@ -93,6 +233,8 @@ class _TetrisGameScreenState extends State<TetrisGameScreen>
 
   int _score = 0;
   int _linesCleared = 0;
+  final Random _rng = Random();
+  List<String> _bag = [];
 
   @override
   void initState() {
@@ -141,10 +283,11 @@ class _TetrisGameScreenState extends State<TetrisGameScreen>
   }
 
   void _spawnNewPiece() {
-    final keys = _tetrominoes.keys.toList();
-    keys.shuffle();
-    _currentType = keys.first;
-    _currentRot = 0;
+    if (_bag.isEmpty) {
+      _bag = _tetrominoes.keys.toList()..shuffle(_rng);
+    }
+    _currentType = _bag.removeAt(0);
+    _currentRot = _rng.nextInt(4); // rastgele başlangıç yönü (dikey I dahil)
     _currentX = 3;
     _currentY = -2; // spawn slightly above
     _currentColorIndex = _tetrominoIndex(_currentType);
@@ -650,5 +793,3 @@ class _TetrisPainter extends CustomPainter {
         oldDelegate.ghost != ghost;
   }
 }
-
-

@@ -108,20 +108,52 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
     }
   }
 
-  void _move(int dr, int dc) {
-    final r = _playerR;
-    final c = _playerC;
-    if (dr == -1 && !_maze[r][c].top) {
-      setState(() => _playerR--);
-    } else if (dr == 1 && !_maze[r][c].bottom) {
-      setState(() => _playerR++);
-    } else if (dc == -1 && !_maze[r][c].left) {
-      setState(() => _playerC--);
-    } else if (dc == 1 && !_maze[r][c].right) {
-      setState(() => _playerC++);
+  bool _canStep(int r, int c, int dr, int dc) {
+    if (dr == -1) return !_maze[r][c].top;
+    if (dr == 1) return !_maze[r][c].bottom;
+    if (dc == -1) return !_maze[r][c].left;
+    if (dc == 1) return !_maze[r][c].right;
+    return false;
+  }
+
+  bool _isStraightCorridor(int r, int c, int dr, int dc) {
+    final openUp = !_maze[r][c].top;
+    final openRight = !_maze[r][c].right;
+    final openDown = !_maze[r][c].bottom;
+    final openLeft = !_maze[r][c].left;
+    final degree = (openUp ? 1 : 0) +
+        (openRight ? 1 : 0) +
+        (openDown ? 1 : 0) +
+        (openLeft ? 1 : 0);
+    if (degree != 2) return false;
+    if (dr != 0) {
+      // moving vertically: only up/down should be open
+      return openUp && openDown && !openLeft && !openRight;
+    } else {
+      // moving horizontally: only left/right should be open
+      return openLeft && openRight && !openUp && !openDown;
     }
-    if (_playerR == _goalR && _playerC == _goalC) {
-      _showWin();
+  }
+
+  void _moveAuto(int dr, int dc) {
+    int r = _playerR;
+    int c = _playerC;
+    // first step if possible
+    if (_canStep(r, c, dr, dc)) {
+      r += dr;
+      c += dc;
+      // keep going while corridor is straight and next step is possible
+      while (_isStraightCorridor(r, c, dr, dc) && _canStep(r, c, dr, dc)) {
+        r += dr;
+        c += dc;
+      }
+      setState(() {
+        _playerR = r;
+        _playerC = c;
+      });
+      if (_playerR == _goalR && _playerC == _goalC) {
+        _showWin();
+      }
     }
   }
 
@@ -309,21 +341,21 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
           Column(
             children: [
               IconButton(
-                onPressed: () => _move(-1, 0),
+                onPressed: () => _moveAuto(-1, 0),
                 icon: const Icon(Icons.keyboard_arrow_up, color: Colors.white),
                 iconSize: 48,
               ),
               Row(
                 children: [
                   IconButton(
-                    onPressed: () => _move(0, -1),
+                    onPressed: () => _moveAuto(0, -1),
                     icon: const Icon(Icons.keyboard_arrow_left,
                         color: Colors.white),
                     iconSize: 48,
                   ),
                   const SizedBox(width: 24),
                   IconButton(
-                    onPressed: () => _move(0, 1),
+                    onPressed: () => _moveAuto(0, 1),
                     icon: const Icon(Icons.keyboard_arrow_right,
                         color: Colors.white),
                     iconSize: 48,
@@ -331,7 +363,7 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
                 ],
               ),
               IconButton(
-                onPressed: () => _move(1, 0),
+                onPressed: () => _moveAuto(1, 0),
                 icon:
                     const Icon(Icons.keyboard_arrow_down, color: Colors.white),
                 iconSize: 48,

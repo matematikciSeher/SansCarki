@@ -36,6 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, DateTime> _categoryLastSpin = {};
   int _categoryCooldownDays = 12; // varsayilan
   int _taskCooldownDays = 480; // varsayilan
+  DateTime? _lastCategoryWheelSpin; // günlük global çark spin tarihi
 
   @override
   void initState() {
@@ -50,6 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadAssetTasks();
     _loadCategorySpinDates();
     _loadCooldowns();
+    _loadLastWheelSpin();
   }
 
   Set<String> _buildEligibleCategoryIds() {
@@ -105,6 +107,23 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (_) {}
   }
 
+  Future<void> _loadLastWheelSpin() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString('category_wheel_last_spin');
+      if (raw != null) {
+        setState(() {
+          _lastCategoryWheelSpin = DateTime.tryParse(raw);
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _saveLastWheelSpin(DateTime dt) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('category_wheel_last_spin', dt.toIso8601String());
+  }
+
   Future<void> _saveCategorySpinDates() async {
     final prefs = await SharedPreferences.getInstance();
     final jsonMap = _categoryLastSpin
@@ -116,6 +135,15 @@ class _HomeScreenState extends State<HomeScreen> {
     final last = _categoryLastSpin[categoryId];
     if (last == null) return true;
     return DateTime.now().difference(last).inDays >= _categoryCooldownDays;
+  }
+
+  bool get _canSpinCategoryWheelToday {
+    if (_lastCategoryWheelSpin == null) return true;
+    final now = DateTime.now();
+    final last = _lastCategoryWheelSpin!;
+    return !(now.year == last.year &&
+        now.month == last.month &&
+        now.day == last.day);
   }
 
   @override
@@ -605,11 +633,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _spinAgain() {
-    if (_selectedCategory != null) {
-      _onCategorySelected(_selectedCategory!);
-    }
-  }
+  // Tekrar çevir kaldırıldı (günlük tek hak)
 
   void _checkAndAddBadges() {
     final newBadges = <String>[];
@@ -1067,10 +1091,16 @@ class _HomeScreenState extends State<HomeScreen> {
             // Çark sistemi
             if (_selectedTask == null)
               Center(
-                child: CategoryWheel(
-                  onCategorySelected: _onCategorySelected,
-                  canSpin: true,
-                  eligibleCategoryIds: _buildEligibleCategoryIds(),
+                child: Column(
+                  children: [
+                    CategoryWheel(
+                      onCategorySelected: (c) {
+                        _onCategorySelected(c);
+                      },
+                      canSpin: true,
+                      eligibleCategoryIds: _buildEligibleCategoryIds(),
+                    ),
+                  ],
                 ),
               )
             else
@@ -1119,30 +1149,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  ElevatedButton.icon(
-                    onPressed: _spinAgain,
-                    icon: const Icon(Icons.refresh,
-                        color: Colors.white, size: 18),
-                    label: const Text(
-                      'Tekrar Çevir',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      elevation: 4,
-                    ),
-                  ),
                 ],
               ),
           ],

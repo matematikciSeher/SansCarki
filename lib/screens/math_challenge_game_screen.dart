@@ -29,7 +29,7 @@ class _MathChallengeGameScreenState extends State<MathChallengeGameScreen>
   int _correctAnswers = 0;
   int _score = 0;
   Timer? _gameTimer;
-  int _remainingTime = 15;
+  int _remainingTime = 30;
   bool _isAnswered = false;
   int? _selectedAnswerIndex;
   // bool _isGameComplete = false; // kullanılmıyor
@@ -48,8 +48,8 @@ class _MathChallengeGameScreenState extends State<MathChallengeGameScreen>
   }
 
   void _initializeGameParams() {
-    // Süre: 15 sn
-    _startTime = 15;
+    // Süre: 30 sn
+    _startTime = 30;
     _remainingTime = _startTime;
   }
 
@@ -215,7 +215,7 @@ class _MathChallengeGameScreenState extends State<MathChallengeGameScreen>
       ),
     );
 
-    Future.delayed(const Duration(milliseconds: 500), () async {
+    Future.delayed(const Duration(milliseconds: 3000), () async {
       if (mounted) {
         await _nextQuestion();
       }
@@ -409,7 +409,7 @@ class _MathChallengeGameScreenState extends State<MathChallengeGameScreen>
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: const Text(
-                    'Kurallar:\n\n• Her etap 10 sorudan oluşur.\n• Her soru için 15 saniye süren var.\n• Çoktan seçmeli 4 şık arasından doğruyu işaretle.\n• Her etapta en az 2 zor soru bulunur.\n',
+                    'Kurallar:\n\n• Her etap 10 sorudan oluşur.\n• Her soru için 30 saniye süren var.\n• Çoktan seçmeli 4 şık arasından doğruyu işaretle.\n• Her etapta en az 2 zor soru bulunur.\n',
                     style: TextStyle(fontSize: 18, color: Colors.white),
                   ),
                 ),
