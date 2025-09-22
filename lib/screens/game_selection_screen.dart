@@ -4,19 +4,19 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../models/user_profile.dart';
 import 'memory_card_game_screen.dart';
-import 'puzzle_game_screen.dart';
+// import 'puzzle_game_screen.dart';
 import 'word_scramble_game_screen.dart';
 import 'math_challenge_game_screen.dart';
 import 'pattern_matching_game_screen.dart';
-import 'quiz_game_screen.dart';
-import 'quiz_arena_screen.dart';
-import 'avatar_adventure_screen.dart';
+// import 'quiz_game_screen.dart';
+// import 'quiz_arena_screen.dart';
+// import 'avatar_adventure_screen.dart';
 
-import 'target_shooter_game_screen.dart';
 import 'logic_gates_puzzle_screen.dart';
 import 'maze_game_screen.dart';
 import 'tetris_game_screen.dart';
 import 'wheel_of_fortune_screen.dart';
+import 'twenty48_game_screen.dart';
 // import 'shape_shift_game_screen.dart';
 // import 'ice_breaker_game_screen.dart';
 
@@ -48,6 +48,14 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
       emoji: '🧠',
       color: Colors.blue,
       estimatedTime: '3-5 dk',
+    ),
+    GameInfo(
+      id: 'number_merge',
+      name: 'Sayı Birleştirme',
+      description: 'Aynı sayıları birleştir, 2048’e ulaş!',
+      emoji: '🔢',
+      color: Colors.teal,
+      estimatedTime: 'Süresiz',
     ),
     GameInfo(
       id: 'tetris',
@@ -88,15 +96,6 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
       emoji: '🌀',
       color: Colors.blueGrey,
       estimatedTime: '3-6 dk',
-    ),
-    
-    GameInfo(
-      id: 'target_shooter',
-      name: 'Hedef Avı',
-      description: 'Hareketli hedefleri vur, isabetli atışlarla puan topla!',
-      emoji: '🎯',
-      color: Colors.deepPurple,
-      estimatedTime: '1-2 dk',
     ),
     GameInfo(
       id: 'logic_gates',
@@ -150,11 +149,7 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
     super.dispose();
   }
 
-  void _startRandomGame() {
-    final random = Random();
-    final randomGame = _games[random.nextInt(_games.length)];
-    _navigateToGame(randomGame.id);
-  }
+  // void _startRandomGame() {}
 
   Future<void> _navigateToGame(String gameId) async {
     dynamic result;
@@ -207,15 +202,7 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
           ),
         );
         break;
-      
-      case 'target_shooter':
-        result = await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => TargetShooterGameScreen(profile: _profile),
-          ),
-        );
-        break;
+
       case 'logic_gates':
         result = await Navigator.push(
           context,
@@ -229,6 +216,14 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
           context,
           MaterialPageRoute(
             builder: (context) => WheelOfFortuneScreen(profile: _profile),
+          ),
+        );
+        break;
+      case 'number_merge':
+        result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => Twenty48GameScreen(profile: _profile),
           ),
         );
         break;

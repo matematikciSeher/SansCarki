@@ -673,32 +673,72 @@ class _TetrisGameScreenState extends State<TetrisGameScreen>
 
   Widget _buildControls() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _ctrlBtn(Icons.arrow_left, () => _move(-1)),
-          _ctrlBtn(Icons.rotate_right, _rotate),
-          _ctrlBtn(Icons.arrow_right, () => _move(1)),
-          _ctrlBtn(Icons.arrow_downward, _softDrop),
-          _ctrlBtn(Icons.keyboard_double_arrow_down, _hardDrop),
+          _ctrlBtn(
+            Icons.arrow_left,
+            () => _move(-1),
+            emphasized: true,
+            bgColor: Colors.blueAccent,
+            fgColor: Colors.white,
+          ),
+          _ctrlBtn(
+            Icons.rotate_right,
+            _rotate,
+            emphasized: true,
+            bgColor: Colors.orangeAccent,
+            fgColor: Colors.white,
+          ),
+          _ctrlBtn(
+            Icons.arrow_right,
+            () => _move(1),
+            emphasized: true,
+            bgColor: Colors.green,
+            fgColor: Colors.white,
+          ),
+          _ctrlBtn(
+            Icons.arrow_downward,
+            _softDrop,
+            bgColor: Colors.purpleAccent,
+            fgColor: Colors.white,
+          ),
+          _ctrlBtn(
+            Icons.keyboard_double_arrow_down,
+            _hardDrop,
+            bgColor: Colors.redAccent,
+            fgColor: Colors.white,
+          ),
         ],
       ),
     );
   }
 
-  Widget _ctrlBtn(IconData icon, VoidCallback onTap) {
+  Widget _ctrlBtn(IconData icon, VoidCallback onTap,
+      {bool emphasized = false, Color? bgColor, Color? fgColor}) {
+    final double vPad = emphasized ? 16 : 12;
+    final Color bg =
+        bgColor ?? (emphasized ? Colors.white : Colors.white.withOpacity(0.9));
+    final Color fg =
+        fgColor ?? (emphasized ? Colors.indigo : Colors.indigo.shade700);
+    final double iconSize = emphasized ? 28 : 24;
     return Expanded(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 6),
         child: ElevatedButton(
           onPressed: onTap,
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.white,
-            foregroundColor: Colors.indigo,
-            padding: const EdgeInsets.symmetric(vertical: 12),
+            backgroundColor: bg,
+            foregroundColor: fg,
+            padding: EdgeInsets.symmetric(vertical: vPad),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: BorderSide(color: Colors.white24, width: 1),
+            ),
+            elevation: emphasized ? 4 : 2,
           ),
-          child: Icon(icon),
+          child: Icon(icon, size: iconSize),
         ),
       ),
     );
