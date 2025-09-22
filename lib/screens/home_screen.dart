@@ -429,7 +429,7 @@ class _HomeScreenState extends State<HomeScreen> {
           duration: Duration(seconds: 2),
         ),
       );
-      _completeTask(task);
+      _completeTask();
       // Anasayfaya dön (çark ekranına): üst üste navigation varsa ana sayfaya kadar pop
       Navigator.of(context).popUntil((route) => route.isFirst);
     } else if (result == 'cancel') {
@@ -445,31 +445,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onCategorySelected(Category category) {
-    // 12 gün kategori cooldown ve 480 gün görev cooldown uygula
-    final allCategories = CategoryData.getAllCategories();
+    // 12 gün kategori cooldown ve 480 gün görev cooldown bilgisi korunur
     final now = DateTime.now();
 
-    // Kategori uygun değilse uygun olanlardan seç
-    Category finalCategory = category;
-    if (!_isCategoryEligible(category.id)) {
-      final eligible =
-          allCategories.where((c) => _isCategoryEligible(c.id)).toList();
-      if (eligible.isNotEmpty) {
-        eligible.shuffle();
-        finalCategory = eligible.first;
-      } else {
-        // Hepsi cooldown'daysa en eski kullanılandan başla
-        finalCategory = allCategories.reduce((a, b) {
-          final ad = _categoryLastSpin[a.id];
-          final bd = _categoryLastSpin[b.id];
-          if (ad == null && bd == null) return a;
-          if (ad == null) return a;
-          if (bd == null) return b;
-          return ad.isBefore(bd) ? a : b;
-        });
-      }
-      // Uyarı gösterme: kategori bekleme süresinde mesajı kaldırıldı
-    }
+    // Çarktan gelen kategori aynen kullanılacak
+    final Category finalCategory = category;
 
     // Görev havuzu (assets + fallback)
     final List<Task> allTasks = [
@@ -707,9 +687,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildWheelPage() {
-    return Center(
+    return Align(
+      alignment: Alignment.topCenter,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -727,7 +708,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Text('💎 Toplam Puan: ${_profile.totalAllPoints}',
                 style: const TextStyle(fontSize: 14)),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
 
             // Seçilen kategori bilgisi
             if (_selectedCategory != null)
@@ -777,7 +758,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 6),
 
             // Çark sistemi
             if (_selectedTask == null)

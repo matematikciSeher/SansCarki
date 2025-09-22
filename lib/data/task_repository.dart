@@ -20,25 +20,84 @@ class TaskRepository {
   }
 
   static Future<List<Task>> loadAllCombined() async {
-    final List<Task> combined = [];
+    final List<Task> combinedBase = [];
     // Try JSON list
     try {
-      combined.addAll(await loadFromAssets());
+      combinedBase.addAll(await loadFromAssets());
     } catch (_) {}
     // Try RAW parsed list
     try {
-      combined.addAll(await loadFromRawText());
+      combinedBase.addAll(await loadFromRawText());
     } catch (_) {}
-    // Include built-in code-defined tasks
+    // Include built-in code-defined tasks (genel havuz)
     try {
-      combined.addAll(TaskData.getAllTasks());
+      combinedBase.addAll(TaskData.getAllTasks());
     } catch (_) {}
 
-    // Deduplicate by id
-    final Map<String, Task> byId = {
-      for (final t in combined) t.id: t,
+    // Sınıf seviyesine göre (ilkokul/ortaokul/lise) görevlerini de dahil et
+    // Not: ID çakışmalarını önlemek için benzersizleştirip kategori bazlı serpiştiriyoruz
+    List<Task> gradeAware = [];
+    try {
+      gradeAware = TaskData.getGradeAwareTasks();
+    } catch (_) {}
+
+    // 1) Mevcut ID'leri topla ve gradeAware ID'lerini benzersizleştir
+    final Set<String> existingIds = {
+      for (final t in combinedBase) t.id,
     };
+    final List<Task> gradeAwareUnique = gradeAware.map((t) {
+      String newId = t.id;
+      int attempt = 0;
+      while (existingIds.contains(newId)) {
+        newId = '${t.id}_ga_${attempt++}';
+      }
+      existingIds.add(newId);
+      return t.copyWith(id: newId, allowedGrades: null);
+    }).toList();
+
+    // 2) Kategori bazlı serpiştir (base ve gradeAwareUnique)
+    final List<Task> interleaved =
+        _interleaveByCategory(combinedBase, gradeAwareUnique);
+
+    // 3) Son kez ID bazlı deduplikasyon (güvenlik)
+    final Map<String, Task> byId = {for (final t in interleaved) t.id: t};
     return byId.values.toList();
+  }
+
+  // Base ve ek listeleri kategori bazlı sırayla karıştırır (A,B,A,B ...)
+  static List<Task> _interleaveByCategory(List<Task> base, List<Task> extra) {
+    final Map<TaskCategory, List<Task>> baseByCat = {};
+    final Map<TaskCategory, List<Task>> extraByCat = {};
+
+    for (final t in base) {
+      (baseByCat[t.category] ??= <Task>[]).add(t);
+    }
+    for (final t in extra) {
+      (extraByCat[t.category] ??= <Task>[]).add(t);
+    }
+
+    final List<Task> result = [];
+    // Kategorileri enum sırasıyla dolaş
+    for (final cat in TaskCategory.values) {
+      final List<Task> a = baseByCat[cat] ?? const <Task>[];
+      final List<Task> b = extraByCat[cat] ?? const <Task>[];
+
+      final int maxLen = a.length > b.length ? a.length : b.length;
+      for (int i = 0; i < maxLen; i++) {
+        if (i < a.length) result.add(a[i]);
+        if (i < b.length) result.add(b[i]);
+      }
+    }
+
+    // Base'de olup kategorisi enum'a eklenmemiş (theoretical) ya da other kalanlar
+    final Set<Task> already = result.toSet();
+    for (final t in base) {
+      if (!already.contains(t)) result.add(t);
+    }
+    for (final t in extra) {
+      if (!already.contains(t)) result.add(t);
+    }
+    return result;
   }
 
   static Task _taskFromJsonLoose(Map<String, dynamic> jsonMap) {
@@ -56,9 +115,8 @@ class TaskRepository {
       orElse: () => TaskDifficulty.easy,
     );
 
-    final List<int>? allowedGrades = jsonMap['allowedGrades'] != null
-        ? List<int>.from(jsonMap['allowedGrades'] as List)
-        : null;
+    // Sınıf bilgisi uygulamada kullanılmıyor
+    final List<int>? allowedGrades = null;
 
     return Task(
       id: jsonMap['id'] as String,
@@ -243,7 +301,7 @@ class TaskRepository {
         difficulty: diff,
         basePoints: points,
         emoji: _emojiFor(category),
-        allowedGrades: currentGrades,
+        allowedGrades: null,
       ));
     }
 
@@ -262,7 +320,6 @@ class TaskRepositoryFallback {
       difficulty: TaskDifficulty.easy,
       basePoints: 10,
       emoji: '🎲',
-      allowedGrades: const [1, 2, 3, 4],
     ),
     Task(
       id: 'oyun_ort_001',
@@ -272,7 +329,6 @@ class TaskRepositoryFallback {
       difficulty: TaskDifficulty.medium,
       basePoints: 18,
       emoji: '🎯',
-      allowedGrades: const [5, 6, 7, 8],
     ),
     Task(
       id: 'oyun_lis_001',
@@ -282,7 +338,6 @@ class TaskRepositoryFallback {
       difficulty: TaskDifficulty.hard,
       basePoints: 24,
       emoji: '🧠',
-      allowedGrades: const [9, 10, 11, 12],
     ),
   ];
 }

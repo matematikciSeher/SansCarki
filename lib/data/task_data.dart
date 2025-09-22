@@ -258,7 +258,7 @@ class TaskData {
       ),
       Task(
         id: 'kitap_29',
-        title: 'Kitap okurken çay iç.',
+        title: 'Kitap okurken içecek iç.',
         description: 'Sakin bir ortamda kitap oku!',
         category: TaskCategory.kitap,
         difficulty: TaskDifficulty.easy,
@@ -303,7 +303,8 @@ class TaskData {
       ),
       Task(
         id: 'kitap_34',
-        title: 'Bir kitap yarışmasına katıl.',
+        title:
+            'Bir kitap yarışmasına katıldığını hayal et ve nasıl bir kitap yazacağını düşün.',
         description: 'Kitap bilgi yarışmalarını araştır!',
         category: TaskCategory.kitap,
         difficulty: TaskDifficulty.hard,
@@ -321,7 +322,7 @@ class TaskData {
       ),
       Task(
         id: 'kitap_36',
-        title: 'Bir kitap koleksiyonu başlat.',
+        title: 'Kaç okuma kitabının olduğunu say.',
         description: 'Favori kitaplarını topla!',
         category: TaskCategory.kitap,
         difficulty: TaskDifficulty.medium,
@@ -348,8 +349,8 @@ class TaskData {
       ),
       Task(
         id: 'kitap_39',
-        title: 'Kitap okurken heykel yap.',
-        description: 'Kitaptaki karakterlerden heykel yap!',
+        title: 'Kitap okurken aynı anda başka neler yapabilirsin?',
+        description: 'Aynı anda kaç beceri yapabilirsin?',
         category: TaskCategory.kitap,
         difficulty: TaskDifficulty.hard,
         basePoints: 42,
@@ -357,8 +358,10 @@ class TaskData {
       ),
       Task(
         id: 'kitap_40',
-        title: 'Bir kitap festivaline katıl.',
-        description: 'Yakındaki kitap festivallerini araştır!',
+        title:
+            'Kitap okurken başka bir kişiyle nasıl bir etkinlik yapabilirsin?',
+        description:
+            'Yakındaki arkadaşlarınla nasıl bir etkinlik yapabilirsin?',
         category: TaskCategory.kitap,
         difficulty: TaskDifficulty.hard,
         basePoints: 50,
@@ -403,7 +406,7 @@ class TaskData {
       ),
       Task(
         id: 'yazma_5',
-        title: 'Kendine şiir şiir yaz.',
+        title: 'Kendine şiir yaz.',
         description: 'Duygularını şiirle ifade et!',
         category: TaskCategory.yazma,
         difficulty: TaskDifficulty.medium,
@@ -466,7 +469,7 @@ class TaskData {
       ),
       Task(
         id: 'yazma_12',
-        title: 'Bir günlük tut.',
+        title: 'Bir günlük iyi ve kötü yaşadıklarını yaz.',
         description: 'Bugün yaşadıklarını detaylı yaz!',
         category: TaskCategory.yazma,
         difficulty: TaskDifficulty.medium,
@@ -484,8 +487,8 @@ class TaskData {
       ),
       Task(
         id: 'yazma_14',
-        title: 'Bir film senaryosu yaz.',
-        description: 'Kısa bir film senaryosu yaz!',
+        title: 'Bir yazar olduğunu hayal et ve neler yazardın?',
+        description: 'Kısa bir yazar senaryosu yaz!',
         category: TaskCategory.yazma,
         difficulty: TaskDifficulty.hard,
         basePoints: 45,
@@ -502,7 +505,7 @@ class TaskData {
       ),
       Task(
         id: 'yazma_16',
-        title: 'Bir masal yaz.',
+        title: 'Kısa birir masal yaz.',
         description: 'Çocuklar için masal yaz!',
         category: TaskCategory.yazma,
         difficulty: TaskDifficulty.hard,
@@ -565,7 +568,7 @@ class TaskData {
       ),
       Task(
         id: 'yazma_23',
-        title: 'Bir şiir antolojisi oluştur.',
+        title: 'Komik bir şiir yaz..',
         description: 'Farklı temalarda şiirler yaz!',
         category: TaskCategory.yazma,
         difficulty: TaskDifficulty.hard,
@@ -574,8 +577,8 @@ class TaskData {
       ),
       Task(
         id: 'yazma_24',
-        title: 'Bir roman özeti yaz.',
-        description: 'Okuduğun romanı özetle!',
+        title: 'Sevdiğin birine akrostik şiir yaz.',
+        description: 'Akrostik şiir yaz!',
         category: TaskCategory.yazma,
         difficulty: TaskDifficulty.medium,
         basePoints: 30,
@@ -592,8 +595,8 @@ class TaskData {
       ),
       Task(
         id: 'yazma_26',
-        title: 'Bir röportaj yaz.',
-        description: 'Hayali bir röportaj yaz!',
+        title: 'Bir kişiyle okul ile ilgili röportaj yap ve yaz.',
+        description: 'Bir röportaj yaz!',
         category: TaskCategory.yazma,
         difficulty: TaskDifficulty.medium,
         basePoints: 32,
@@ -845,8 +848,8 @@ class TaskData {
       ),
       Task(
         id: 'matematik_14',
-        title: 'Sıcaklık dönüşümü yap.',
-        description: 'Celsius\'u Fahrenheit\'a çevir!',
+        title: 'Bir zeka sorusu araştır..',
+        description: 'Bir zeka sorusu araştır ve çöz!',
         category: TaskCategory.matematik,
         difficulty: TaskDifficulty.hard,
         basePoints: 32,
@@ -872,7 +875,7 @@ class TaskData {
       ),
       Task(
         id: 'matematik_17',
-        title: 'Ondalık sayı ekle.',
+        title: 'Ondalık sayılarla işlem yap.',
         description: '3.5 + 2.7 işlemini yap!',
         category: TaskCategory.matematik,
         difficulty: TaskDifficulty.medium,
@@ -927,7 +930,8 @@ class TaskData {
       Task(
         id: 'matematik_23',
         title: 'Açı ölç.',
-        description: 'Bir açının kaç derece olduğunu tahmin et!',
+        description:
+            'Analog saat üzerinde saat 11.00 ile 12.00 arasında kaç derece olduğunu hesapla!',
         category: TaskCategory.matematik,
         difficulty: TaskDifficulty.medium,
         basePoints: 23,
@@ -989,8 +993,8 @@ class TaskData {
       ),
       Task(
         id: 'matematik_30',
-        title: 'pi sayısını araştır ve sembolünü öğren.',
-        description: 'pi sayısını araştır ve sembolünü öğren!',
+        title: 'Pİ sayısını araştır ve sembolünü öğren.',
+        description: 'Pİ sayısını araştır ve sembolünü öğren!',
         category: TaskCategory.matematik,
         difficulty: TaskDifficulty.hard,
         basePoints: 42,
@@ -999,7 +1003,7 @@ class TaskData {
       Task(
         id: 'matematik_31',
         title: 'Asal sayı bul.',
-        description: '100\'e kadar olan asal sayıları listele!',
+        description: '50\'e kadar olan asal sayıları listele!',
         category: TaskCategory.matematik,
         difficulty: TaskDifficulty.hard,
         basePoints: 45,
@@ -1008,7 +1012,8 @@ class TaskData {
       Task(
         id: 'matematik_32',
         title: 'Mükemmel sayı bul.',
-        description: '1000\'e kadar olan mükemmel sayıları bul!',
+        description:
+            'Mükemmel sayı ne demek ve nasıl bulunur?Bir tane mükemmel sayı öğren!',
         category: TaskCategory.matematik,
         difficulty: TaskDifficulty.expert,
         basePoints: 75,
@@ -1016,7 +1021,7 @@ class TaskData {
       ),
       Task(
         id: 'matematik_33',
-        title: 'kaç yaşında olduğunu gün, ay, yıl olarak hesapla.',
+        title: 'Kaç yaşında olduğunu gün, ay, yıl olarak hesapla.',
         description:
             'Kaç yaşında olduğunu saat, dakika, saniye olarak hesapla!',
         category: TaskCategory.matematik,
@@ -1027,7 +1032,7 @@ class TaskData {
       Task(
         id: 'matematik_34',
         title: 'Altın oran hesapla.',
-        description: 'Altın oranı hesapla ve çiz!',
+        description: 'Altın oranı araştır!',
         category: TaskCategory.matematik,
         difficulty: TaskDifficulty.expert,
         basePoints: 80,
@@ -1128,7 +1133,7 @@ class TaskData {
       ),
       Task(
         id: 'fen_5',
-        title: 'Su döngüsünü çiz.',
+        title: 'Suyun ne faydası var ve ne zaman içilir?',
         description: 'Su döngüsünü resimle!',
         category: TaskCategory.fen,
         difficulty: TaskDifficulty.medium,
@@ -1155,8 +1160,8 @@ class TaskData {
       ),
       Task(
         id: 'fen_8',
-        title: 'Bir kimyasal deney yap.',
-        description: 'Basit bir kimyasal deney yap!',
+        title: 'Işık hızı ne kadar?',
+        description: 'Işık hızı ne kadar? Araştır ve yaz!',
         category: TaskCategory.fen,
         difficulty: TaskDifficulty.hard,
         basePoints: 40,
@@ -1238,7 +1243,7 @@ class TaskData {
       ),
       Task(
         id: 'fen_17',
-        title: 'Bir pusula yap.',
+        title: 'Maket bir pusula yap.',
         description: 'Yön bulma aleti yap!',
         category: TaskCategory.fen,
         difficulty: TaskDifficulty.medium,
@@ -1301,8 +1306,8 @@ class TaskData {
       ),
       Task(
         id: 'fen_24',
-        title: 'Anemometreyi araştır.',
-        description: 'Anemometreyi araştır ve birine anlat.',
+        title: 'Maket bir Termometrearaştır.',
+        description: 'Termometreyi araştır ve birine anlat.',
         category: TaskCategory.fen,
         difficulty: TaskDifficulty.hard,
         basePoints: 54,
@@ -1446,7 +1451,7 @@ class TaskData {
       ),
       Task(
         id: 'fen_40',
-        title: 'kağıtlardan rüzgar gülü yap.',
+        title: 'Kağıtlardan rüzgar gülü yap.',
         description: 'Rüzgar gülü ne işe yarar öğren!',
         category: TaskCategory.fen,
         difficulty: TaskDifficulty.hard,
@@ -1474,7 +1479,7 @@ class TaskData {
       ),
       Task(
         id: 'spor_3',
-        title: '5 dakika yürüyüş yap.',
+        title: '15 dakika yürüyüş yap.',
         description: 'Açık havada veya evde yürü!',
         category: TaskCategory.spor,
         difficulty: TaskDifficulty.easy,
@@ -1546,7 +1551,7 @@ class TaskData {
       ),
       Task(
         id: 'spor_11',
-        title: '10 mountain climber yap.',
+        title: '5 mountain climber yap.',
         description: 'Karın kaslarını çalıştır!',
         category: TaskCategory.spor,
         difficulty: TaskDifficulty.medium,
@@ -1555,7 +1560,7 @@ class TaskData {
       ),
       Task(
         id: 'spor_12',
-        title: '15 tricep dip yap.',
+        title: '10 tricep dip yap.',
         description: 'Kol kaslarını güçlendir!',
         category: TaskCategory.spor,
         difficulty: TaskDifficulty.medium,
@@ -1798,8 +1803,8 @@ class TaskData {
       ),
       Task(
         id: 'spor_39',
-        title: '10 iron cross yap.',
-        description: 'Demir haç duruşu yap!',
+        title: '3 dakika sabitçe hiç hareket etmeden bekle.',
+        description: 'Ne kadar dayanıklısın?',
         category: TaskCategory.spor,
         difficulty: TaskDifficulty.expert,
         basePoints: 100,
@@ -1807,8 +1812,8 @@ class TaskData {
       ),
       Task(
         id: 'spor_40',
-        title: 'Bir fitness yarışmasına katıl.',
-        description: 'Fitness yarışması bul ve katıl!',
+        title: 'Bir futbol maçı izle.',
+        description: 'Futbol maçı nasıl oynanır? Araştır ve yaz!',
         category: TaskCategory.spor,
         difficulty: TaskDifficulty.expert,
         basePoints: 100,
@@ -1881,7 +1886,7 @@ class TaskData {
       Task(
         id: 'sanat_8',
         title: 'Bir heykel yap.',
-        description: 'Kil veya hamur ile heykel yap!',
+        description: 'Kil veya oyun hamuru ile heykel yap!',
         category: TaskCategory.sanat,
         difficulty: TaskDifficulty.hard,
         basePoints: 45,
@@ -1908,7 +1913,7 @@ class TaskData {
       Task(
         id: 'sanat_11',
         title: 'Bir baskı yap.',
-        description: 'Patates veya linol ile baskı yap!',
+        description: 'Patates veya başka bir şey ile baskı yap!',
         category: TaskCategory.sanat,
         difficulty: TaskDifficulty.hard,
         basePoints: 48,
@@ -1925,8 +1930,8 @@ class TaskData {
       ),
       Task(
         id: 'sanat_13',
-        title: 'Bir batik yap.',
-        description: 'Kumaş boyama tekniği kullan!',
+        title: 'Çini sanatını araştır.',
+        description: 'Çini sanatını araştır ve birine anlat!',
         category: TaskCategory.sanat,
         difficulty: TaskDifficulty.hard,
         basePoints: 50,
@@ -1934,8 +1939,8 @@ class TaskData {
       ),
       Task(
         id: 'sanat_14',
-        title: 'Bir seramik yap.',
-        description: 'Kil ile seramik yap!',
+        title: 'Bir seramik nasıl yapılır?',
+        description: 'Kil veya hamur ile seramik yap!',
         category: TaskCategory.sanat,
         difficulty: TaskDifficulty.hard,
         basePoints: 52,
@@ -1943,8 +1948,8 @@ class TaskData {
       ),
       Task(
         id: 'sanat_15',
-        title: 'Bir cam boyama yap.',
-        description: 'Cam üzerine boyama yap!',
+        title: 'Güzel bir resim çiz.',
+        description: 'Güzel bir doğa resmi çiz!',
         category: TaskCategory.sanat,
         difficulty: TaskDifficulty.hard,
         basePoints: 54,
@@ -1952,8 +1957,8 @@ class TaskData {
       ),
       Task(
         id: 'sanat_16',
-        title: 'Bir ahşap boyama yap.',
-        description: 'Ahşap üzerine boyama yap!',
+        title: 'Elişi kağıtlarıyla bir tasarım yap sana özel.',
+        description: 'Elişi kağıtlarıyla bir tasarım yap sana özel!',
         category: TaskCategory.sanat,
         difficulty: TaskDifficulty.medium,
         basePoints: 34,
@@ -1961,7 +1966,7 @@ class TaskData {
       ),
       Task(
         id: 'sanat_17',
-        title: 'Bir kumaş boyama yap.',
+        title: 'Eski bir kumaşı güzelce boya.',
         description: 'Kumaş üzerine boyama yap!',
         category: TaskCategory.sanat,
         difficulty: TaskDifficulty.medium,
@@ -1970,8 +1975,8 @@ class TaskData {
       ),
       Task(
         id: 'sanat_18',
-        title: 'Bir deri boyama yap.',
-        description: 'Deri üzerine boyama yap!',
+        title: 'Bir poster yap.',
+        description: 'Matematikle ilgili bir poster yap!',
         category: TaskCategory.sanat,
         difficulty: TaskDifficulty.hard,
         basePoints: 56,
@@ -1979,8 +1984,8 @@ class TaskData {
       ),
       Task(
         id: 'sanat_19',
-        title: 'Bir metal boyama yap.',
-        description: 'Metal üzerine boyama yap!',
+        title: 'Bir çanta tasarla.',
+        description: 'Kağıtlarla bir çanta tasarla!',
         category: TaskCategory.sanat,
         difficulty: TaskDifficulty.hard,
         basePoints: 58,
@@ -1997,8 +2002,8 @@ class TaskData {
       ),
       Task(
         id: 'sanat_21',
-        title: 'Bir çömlek yap.',
-        description: 'Kil ile çömlek yap!',
+        title: 'Bir çiçek yap.',
+        description: 'Kağıtlarla bir çiçek yap!',
         category: TaskCategory.sanat,
         difficulty: TaskDifficulty.hard,
         basePoints: 60,
@@ -2015,8 +2020,8 @@ class TaskData {
       ),
       Task(
         id: 'sanat_23',
-        title: 'Bir çanta yap.',
-        description: 'Kendi çantanı yap!',
+        title: 'Bir sayfa desen çiz ve boya.',
+        description: 'Şekillerle bir desen çiz ve boya!',
         category: TaskCategory.sanat,
         difficulty: TaskDifficulty.medium,
         basePoints: 42,
@@ -2087,8 +2092,8 @@ class TaskData {
       ),
       Task(
         id: 'sanat_31',
-        title: 'Bir poster yap.',
-        description: 'Kendi posterini yap!',
+        title: 'Bir posterin üzerine kendini çiz.',
+        description: 'Kendi posterinin üzerine kendini çiz!',
         category: TaskCategory.sanat,
         difficulty: TaskDifficulty.medium,
         basePoints: 54,
@@ -2132,7 +2137,7 @@ class TaskData {
       ),
       Task(
         id: 'sanat_36',
-        title: 'Bir film yap.',
+        title: '3 dakikalık bir film yap.',
         description: 'Kendi filmini yap!',
         category: TaskCategory.sanat,
         difficulty: TaskDifficulty.expert,
@@ -2141,7 +2146,7 @@ class TaskData {
       ),
       Task(
         id: 'sanat_37',
-        title: 'Bir animasyon yap.',
+        title: '2 dakikalık bir animasyon yap.',
         description: 'Kendi animasyonunu yap!',
         category: TaskCategory.sanat,
         difficulty: TaskDifficulty.expert,
@@ -2159,7 +2164,7 @@ class TaskData {
       ),
       Task(
         id: 'sanat_39',
-        title: 'Bir sergi düzenle.',
+        title: 'Bir sergi yaptığını hayal et ve nasıl bir sergi yapabilirsin?',
         description: 'Kendi sanat sergini düzenle!',
         category: TaskCategory.sanat,
         difficulty: TaskDifficulty.hard,
@@ -2168,7 +2173,7 @@ class TaskData {
       ),
       Task(
         id: 'sanat_40',
-        title: 'Bir sanat galerisi aç.',
+        title: 'Senin sanat galerinde neler olmalı? .',
         description: 'Kendi sanat galerini aç!',
         category: TaskCategory.sanat,
         difficulty: TaskDifficulty.expert,
@@ -2268,8 +2273,8 @@ class TaskData {
       ),
       Task(
         id: 'muzik_11',
-        title: 'Bir müzik okulu aç.',
-        description: 'Müzik öğretmeye başla!',
+        title: 'Eskilerden bir şarkı öğren.',
+        description: 'Eskilerden bir şarkı öğren!',
         category: TaskCategory.muzik,
         difficulty: TaskDifficulty.expert,
         basePoints: 80,
@@ -2277,8 +2282,8 @@ class TaskData {
       ),
       Task(
         id: 'muzik_12',
-        title: 'Bir müzik stüdyosu kur.',
-        description: 'Kendi stüdyonu kur!',
+        title: 'Mikrofon olabiecek bir nesne bul ve şarkı söyle.',
+        description: 'Tarak mı yoksa!',
         category: TaskCategory.muzik,
         difficulty: TaskDifficulty.expert,
         basePoints: 85,
@@ -2286,8 +2291,8 @@ class TaskData {
       ),
       Task(
         id: 'muzik_13',
-        title: 'Bir müzik yayınevi kur.',
-        description: 'Kendi yayınevini kur!',
+        title: 'Şarkı sözü ezberle.',
+        description: 'Şarkı sözü ezberle ve söyle!',
         category: TaskCategory.muzik,
         difficulty: TaskDifficulty.expert,
         basePoints: 90,
@@ -2295,8 +2300,8 @@ class TaskData {
       ),
       Task(
         id: 'muzik_14',
-        title: 'Bir müzik etiketi kur.',
-        description: 'Kendi etiketini kur!',
+        title: 'Bir şarkıyı resimle.',
+        description: 'Şarkının anlamını resimle!',
         category: TaskCategory.muzik,
         difficulty: TaskDifficulty.expert,
         basePoints: 95,
@@ -2304,8 +2309,8 @@ class TaskData {
       ),
       Task(
         id: 'muzik_15',
-        title: 'Bir müzik ajansı kur.',
-        description: 'Kendi ajansını kur!',
+        title: 'Bir şarkıyı şarkıcı gibi söyle.',
+        description: 'Şarkıcı gibi söyle ve şarkıyı dinle!',
         category: TaskCategory.muzik,
         difficulty: TaskDifficulty.expert,
         basePoints: 100,
@@ -2313,8 +2318,9 @@ class TaskData {
       ),
       Task(
         id: 'muzik_16',
-        title: 'Bir müzik yarışmasına katıl.',
-        description: 'Müzik yarışması bul ve katıl!',
+        title:
+            'Bir müzik yarışmasında birinci olacağını hayal ederek nasıl bir şarkı söylerdin?',
+        description: 'Gözlerini kapat ve şarkı söyle!',
         category: TaskCategory.muzik,
         difficulty: TaskDifficulty.hard,
         basePoints: 65,
@@ -2331,7 +2337,7 @@ class TaskData {
       ),
       Task(
         id: 'muzik_18',
-        title: 'Bir müzik albümü çıkar.',
+        title: 'Bir müzik albümü oluştur.',
         description: 'Kendi albümünü çıkar!',
         category: TaskCategory.muzik,
         difficulty: TaskDifficulty.expert,
@@ -2340,8 +2346,8 @@ class TaskData {
       ),
       Task(
         id: 'muzik_19',
-        title: 'Bir müzik turnesi yap.',
-        description: 'Kendi turneni yap!',
+        title: 'Gökyüzünde gördüğün bir şeyi şarkıya dönüştür.',
+        description: 'Gökyüzünde ne gördün?',
         category: TaskCategory.muzik,
         difficulty: TaskDifficulty.expert,
         basePoints: 100,
@@ -2349,7 +2355,7 @@ class TaskData {
       ),
       Task(
         id: 'muzik_20',
-        title: 'Bir müzik filmi yap.',
+        title: 'Kısa bir müzik filmi yap.',
         description: 'Müzik temalı film yap!',
         category: TaskCategory.muzik,
         difficulty: TaskDifficulty.expert,
@@ -2358,8 +2364,8 @@ class TaskData {
       ),
       Task(
         id: 'muzik_21',
-        title: 'Bir müzik belgeseli yap.',
-        description: 'Müzik hakkında belgesel yap!',
+        title: 'Nota öğren.',
+        description: 'Nota öğren ve birine anlat!',
         category: TaskCategory.muzik,
         difficulty: TaskDifficulty.expert,
         basePoints: 100,
@@ -2376,8 +2382,8 @@ class TaskData {
       ),
       Task(
         id: 'muzik_23',
-        title: 'Bir müzik dergisi çıkar.',
-        description: 'Kendi müzik dergini çıkar!',
+        title: 'Bir şarkının ritimini ezberle.',
+        description: 'Kendi şarkının ritimini ezberle!',
         category: TaskCategory.muzik,
         difficulty: TaskDifficulty.expert,
         basePoints: 100,
@@ -2385,7 +2391,7 @@ class TaskData {
       ),
       Task(
         id: 'muzik_24',
-        title: 'Bir müzik radyosu kur.',
+        title: 'Bir müzik radyosu aç.',
         description: 'Kendi radyonu kur!',
         category: TaskCategory.muzik,
         difficulty: TaskDifficulty.expert,
@@ -2394,7 +2400,7 @@ class TaskData {
       ),
       Task(
         id: 'muzik_25',
-        title: 'Bir müzik TV kanalı kur.',
+        title: 'Bir müzik TV kanalı aç.',
         description: 'Kendi TV kanalını kur!',
         category: TaskCategory.muzik,
         difficulty: TaskDifficulty.expert,
@@ -2403,8 +2409,8 @@ class TaskData {
       ),
       Task(
         id: 'muzik_26',
-        title: 'Bir müzik internet sitesi kur.',
-        description: 'Kendi web siteni kur!',
+        title: 'İngilizce bir şarkı söyle.',
+        description: 'Kendi şarkının İngilizce sözünü ezberle!',
         category: TaskCategory.muzik,
         difficulty: TaskDifficulty.expert,
         basePoints: 100,
@@ -2430,8 +2436,8 @@ class TaskData {
       ),
       Task(
         id: 'muzik_29',
-        title: 'Bir müzik sergisi düzenle.',
-        description: 'Müzik temalı sergi düzenle!',
+        title: 'Ritim tut.',
+        description: 'Ayaklarınla ritim tut!',
         category: TaskCategory.muzik,
         difficulty: TaskDifficulty.hard,
         basePoints: 70,
@@ -2439,7 +2445,7 @@ class TaskData {
       ),
       Task(
         id: 'muzik_30',
-        title: 'Bir müzik müzesi ziyaret et.',
+        title: 'Müzik müzelerini araştır.',
         description: 'Müzik müzelerini araştır!',
         category: TaskCategory.muzik,
         difficulty: TaskDifficulty.medium,
@@ -2448,8 +2454,8 @@ class TaskData {
       ),
       Task(
         id: 'muzik_31',
-        title: 'Bir müzik kütüphanesi ziyaret et.',
-        description: 'Müzik kütüphanelerini araştır!',
+        title: 'Elle ritim tut.',
+        description: 'Elle ritim tut ve şarkı söyle!',
         category: TaskCategory.muzik,
         difficulty: TaskDifficulty.medium,
         basePoints: 42,
@@ -2484,8 +2490,8 @@ class TaskData {
       ),
       Task(
         id: 'muzik_35',
-        title: 'Bir müzik blogu yaz.',
-        description: 'Müzik hakkında blog yaz!',
+        title: 'Müzik dinleyerek ev işlerine yardım et.',
+        description: 'Müzik dinleyerek ev işlerine yardım et!',
         category: TaskCategory.muzik,
         difficulty: TaskDifficulty.medium,
         basePoints: 50,
@@ -2493,8 +2499,8 @@ class TaskData {
       ),
       Task(
         id: 'muzik_36',
-        title: 'Bir müzik forumu kur.',
-        description: 'Müzik tartışma forumu kur!',
+        title: 'Şarkı söyleyerek bir derdini anlat.',
+        description: 'Şarkı söyleyerek bir derdini anlat!',
         category: TaskCategory.muzik,
         difficulty: TaskDifficulty.medium,
         basePoints: 52,
@@ -2511,8 +2517,8 @@ class TaskData {
       ),
       Task(
         id: 'muzik_38',
-        title: 'Bir müzik derneği kur.',
-        description: 'Müzik derneği kur!',
+        title: 'Müzikte ne kadar güçlü ses çıkarabilirsin?',
+        description: 'Dene bakalım',
         category: TaskCategory.muzik,
         difficulty: TaskDifficulty.hard,
         basePoints: 75,
@@ -2520,8 +2526,8 @@ class TaskData {
       ),
       Task(
         id: 'muzik_39',
-        title: 'Bir müzik vakfı kur.',
-        description: 'Müzik vakfı kur!',
+        title: 'En sevdiğin şarkıyı söyle.',
+        description: 'Şarkı söylemek ruhuna iyi gelir!',
         category: TaskCategory.muzik,
         difficulty: TaskDifficulty.expert,
         basePoints: 100,
@@ -2529,8 +2535,8 @@ class TaskData {
       ),
       Task(
         id: 'muzik_40',
-        title: 'Bir müzik imparatorluğu kur.',
-        description: 'Müzik alanında büyük bir iş kur!',
+        title: 'AŞIK VEYSEL kimdir?.',
+        description: 'AŞIK VEYSEL kimdir? Araştır ve şarkılarını öğren!',
         category: TaskCategory.muzik,
         difficulty: TaskDifficulty.expert,
         basePoints: 100,
@@ -2620,8 +2626,8 @@ class TaskData {
       ),
       Task(
         id: 'teknoloji_10',
-        title: 'Bir sosyal medya hesabı oluştur.',
-        description: 'Sosyal medya kullanımı öğren!',
+        title: 'Bir video düzenle.',
+        description: 'Video düzenleme yazılımı kullan!',
         category: TaskCategory.teknoloji,
         difficulty: TaskDifficulty.medium,
         basePoints: 28,
@@ -2683,8 +2689,8 @@ class TaskData {
       ),
       Task(
         id: 'teknoloji_17',
-        title: 'Yeni bir uygulama indir.',
-        description: 'Eğitici bir uygulama indir ve kullan!',
+        title: 'Yeni bir uygulama yapmak istesen bu ne olurdu?',
+        description: 'Uygulamanın ismi ne olurdu?',
         category: TaskCategory.teknoloji,
         difficulty: TaskDifficulty.easy,
         basePoints: 10,
@@ -2783,7 +2789,7 @@ class TaskData {
       ),
       Task(
         id: 'teknoloji_28',
-        title: 'Bir deployment yap.',
+        title: 'Uygulama yapılan programlama dillerini araştır.',
         description: 'Uygulama yayınlama öğren!',
         category: TaskCategory.teknoloji,
         difficulty: TaskDifficulty.hard,
@@ -2792,8 +2798,8 @@ class TaskData {
       ),
       Task(
         id: 'teknoloji_29',
-        title: 'Bir monitoring sistemi kur.',
-        description: 'Sistem izleme öğren!',
+        title: 'Yapay zekayı araştır.',
+        description: 'Yapay zekayı araştır ve öğren!',
         category: TaskCategory.teknoloji,
         difficulty: TaskDifficulty.hard,
         basePoints: 82,
@@ -2801,7 +2807,7 @@ class TaskData {
       ),
       Task(
         id: 'teknoloji_30',
-        title: 'Bir backup sistemi kur.',
+        title: 'Backup sistemi ne demektir?',
         description: 'Yedekleme sistemi kur!',
         category: TaskCategory.teknoloji,
         difficulty: TaskDifficulty.medium,
@@ -2810,7 +2816,7 @@ class TaskData {
       ),
       Task(
         id: 'teknoloji_31',
-        title: 'Bir güvenlik sistemi kur.',
+        title: 'Ağ güvenliği ne demektir?',
         description: 'Güvenlik önlemleri al!',
         category: TaskCategory.teknoloji,
         difficulty: TaskDifficulty.hard,
@@ -2819,7 +2825,7 @@ class TaskData {
       ),
       Task(
         id: 'teknoloji_32',
-        title: 'Bir network kur.',
+        title: 'Ağ ne demektir?',
         description: 'Ağ kurulumu öğren!',
         category: TaskCategory.teknoloji,
         difficulty: TaskDifficulty.hard,
@@ -2864,8 +2870,8 @@ class TaskData {
       ),
       Task(
         id: 'teknoloji_37',
-        title: 'Bir test automation sistemi kur.',
-        description: 'Otomatik test sistemi kur!',
+        title: 'Bir robot yap.',
+        description: 'Robot yap!',
         category: TaskCategory.teknoloji,
         difficulty: TaskDifficulty.expert,
         basePoints: 100,
@@ -2873,8 +2879,8 @@ class TaskData {
       ),
       Task(
         id: 'teknoloji_38',
-        title: 'Bir DevOps sistemi kur.',
-        description: 'DevOps pratikleri öğren!',
+        title: 'Oyuncaklarla bir bilgisayar yapmayı dene.',
+        description: 'Nasıl bir bilgisayar yapabilirsin?!',
         category: TaskCategory.teknoloji,
         difficulty: TaskDifficulty.expert,
         basePoints: 100,
@@ -2882,8 +2888,8 @@ class TaskData {
       ),
       Task(
         id: 'teknoloji_39',
-        title: 'Bir AI sistemi geliştir.',
-        description: 'Yapay zeka öğren!',
+        title: 'Teknoloji gelişirken SEN bişeyler tasarla.',
+        description: 'Yapay zeka öğren ve senin tasarın ne olurdu?',
         category: TaskCategory.teknoloji,
         difficulty: TaskDifficulty.expert,
         basePoints: 100,
@@ -2891,8 +2897,9 @@ class TaskData {
       ),
       Task(
         id: 'teknoloji_40',
-        title: 'Bir teknoloji şirketi kur.',
-        description: 'Kendi teknoloji şirketini kur!',
+        title: 'Akıllı ev yapmayı dene.',
+        description:
+            'İster çizerek ister oyuncaklarla hayalindeki Akıllı evi yapmayı dene!',
         category: TaskCategory.teknoloji,
         difficulty: TaskDifficulty.expert,
         basePoints: 100,
@@ -2955,7 +2962,7 @@ class TaskData {
       ),
       Task(
         id: 'iyilik_7',
-        title: 'Birine özür dile.',
+        title: 'Birinden özür dile.',
         description: 'Özür dilemek erdemdir!',
         category: TaskCategory.iyilik,
         difficulty: TaskDifficulty.medium,
@@ -3144,8 +3151,8 @@ class TaskData {
       ),
       Task(
         id: 'iyilik_28',
-        title: 'Birine heykel yap.',
-        description: 'Heykel yapmak güzeldir!',
+        title: 'Bir hayvan sev uzaktan da olsa.',
+        description: 'Bir kedi sevebilirsin belki!',
         category: TaskCategory.iyilik,
         difficulty: TaskDifficulty.hard,
         basePoints: 65,
@@ -3243,7 +3250,7 @@ class TaskData {
       ),
       Task(
         id: 'iyilik_39',
-        title: 'Birine oyun oyna.',
+        title: 'Biriyle oyun oyna.',
         description: 'Oyun oynamak güzeldir!',
         category: TaskCategory.iyilik,
         difficulty: TaskDifficulty.medium,
@@ -3252,7 +3259,7 @@ class TaskData {
       ),
       Task(
         id: 'iyilik_40',
-        title: 'Birine mutluluk ver.',
+        title: 'Bugün birini mutlu et.',
         description: 'Mutluluk vermek en güzel iyiliktir!',
         category: TaskCategory.iyilik,
         difficulty: TaskDifficulty.hard,
@@ -4058,7 +4065,7 @@ class TaskData {
       ),
       Task(
         id: 'zihin_9',
-        title: 'Bir rüya günlüğü tut.',
+        title: 'Bir günlük rüya günlüğü tut.',
         description: 'Rüyalarını kaydet!',
         category: TaskCategory.zihin,
         difficulty: TaskDifficulty.medium,
@@ -4067,7 +4074,7 @@ class TaskData {
       ),
       Task(
         id: 'zihin_10',
-        title: 'Bir şükran günlüğü tut.',
+        title: 'Bir günlükşükran günlüğü tut.',
         description: 'Şükran duyduğun şeyleri yaz!',
         category: TaskCategory.zihin,
         difficulty: TaskDifficulty.medium,
@@ -4076,7 +4083,7 @@ class TaskData {
       ),
       Task(
         id: 'zihin_11',
-        title: 'Bir hedef günlüğü tut.',
+        title: 'Bir günlükhedef günlüğü tut.',
         description: 'Hedeflerini yaz ve takip et!',
         category: TaskCategory.zihin,
         difficulty: TaskDifficulty.medium,
@@ -4085,7 +4092,7 @@ class TaskData {
       ),
       Task(
         id: 'zihin_12',
-        title: 'Bir başarı günlüğü tut.',
+        title: 'Bir günlük başarı günlüğü tut.',
         description: 'Başarılarını yaz ve kutla!',
         category: TaskCategory.zihin,
         difficulty: TaskDifficulty.medium,
@@ -4094,7 +4101,7 @@ class TaskData {
       ),
       Task(
         id: 'zihin_13',
-        title: 'Bir öğrenme günlüğü tut.',
+        title: 'Bir günlük öğrenme günlüğü tut.',
         description: 'Öğrendiklerini yaz!',
         category: TaskCategory.zihin,
         difficulty: TaskDifficulty.medium,
@@ -4103,7 +4110,7 @@ class TaskData {
       ),
       Task(
         id: 'zihin_14',
-        title: 'Bir yaratıcılık günlüğü tut.',
+        title: 'Bir günlükyaratıcılık günlüğü tut.',
         description: 'Yaratıcı fikirlerini yaz!',
         category: TaskCategory.zihin,
         difficulty: TaskDifficulty.medium,
@@ -4112,7 +4119,7 @@ class TaskData {
       ),
       Task(
         id: 'zihin_15',
-        title: 'Bir ilham günlüğü tut.',
+        title: 'Bir günlük ilham günlüğü tut.',
         description: 'İlham veren şeyleri yaz!',
         category: TaskCategory.zihin,
         difficulty: TaskDifficulty.medium,
@@ -4121,7 +4128,7 @@ class TaskData {
       ),
       Task(
         id: 'zihin_16',
-        title: 'Bir motivasyon günlüğü tut.',
+        title: 'Birgünlük motivasyon günlüğü tut.',
         description: 'Motivasyon veren şeyleri yaz!',
         category: TaskCategory.zihin,
         difficulty: TaskDifficulty.medium,
@@ -4130,7 +4137,7 @@ class TaskData {
       ),
       Task(
         id: 'zihin_17',
-        title: 'Bir mutluluk günlüğü tut.',
+        title: 'Bir günlükmutluluk günlüğü tut.',
         description: 'Mutlu olduğun anları yaz!',
         category: TaskCategory.zihin,
         difficulty: TaskDifficulty.medium,
@@ -4139,7 +4146,7 @@ class TaskData {
       ),
       Task(
         id: 'zihin_18',
-        title: 'Bir huzur günlüğü tut.',
+        title: 'Bir günlük huzur günlüğü tut.',
         description: 'Huzur veren anları yaz!',
         category: TaskCategory.zihin,
         difficulty: TaskDifficulty.medium,
@@ -4148,7 +4155,7 @@ class TaskData {
       ),
       Task(
         id: 'zihin_19',
-        title: 'Bir sevgi günlüğü tut.',
+        title: 'Bir günlük sevgi günlüğü tut.',
         description: 'Sevgi dolu anları yaz!',
         category: TaskCategory.zihin,
         difficulty: TaskDifficulty.medium,
@@ -4157,7 +4164,7 @@ class TaskData {
       ),
       Task(
         id: 'zihin_20',
-        title: 'Bir neşe günlüğü tut.',
+        title: 'Bir günlük neşe günlüğü tut.',
         description: 'Neşeli anları yaz!',
         category: TaskCategory.zihin,
         difficulty: TaskDifficulty.medium,
@@ -4166,7 +4173,7 @@ class TaskData {
       ),
       Task(
         id: 'zihin_21',
-        title: 'Bir umut günlüğü tut.',
+        title: 'Bir günlük umut günlüğü tut.',
         description: 'Umut veren şeyleri yaz!',
         category: TaskCategory.zihin,
         difficulty: TaskDifficulty.medium,
@@ -4175,7 +4182,7 @@ class TaskData {
       ),
       Task(
         id: 'zihin_22',
-        title: 'Bir hayal günlüğü tut.',
+        title: 'Bir günlük hayal günlüğü tut.',
         description: 'Hayallerini yaz!',
         category: TaskCategory.zihin,
         difficulty: TaskDifficulty.medium,
@@ -4184,7 +4191,7 @@ class TaskData {
       ),
       Task(
         id: 'zihin_23',
-        title: 'Bir hedef günlüğü tut.',
+        title: 'Bir günlük hedef günlüğü tut.',
         description: 'Hedeflerini yaz!',
         category: TaskCategory.zihin,
         difficulty: TaskDifficulty.medium,
@@ -4193,7 +4200,7 @@ class TaskData {
       ),
       Task(
         id: 'zihin_24',
-        title: 'Bir plan günlüğü tut.',
+        title: 'Bir günlük plan günlüğü tut.',
         description: 'Planlarını yaz!',
         category: TaskCategory.zihin,
         difficulty: TaskDifficulty.medium,
@@ -4202,7 +4209,7 @@ class TaskData {
       ),
       Task(
         id: 'zihin_25',
-        title: 'Bir not günlüğü tut.',
+        title: 'Bir günlük not günlüğü tut.',
         description: 'Önemli notları yaz!',
         category: TaskCategory.zihin,
         difficulty: TaskDifficulty.medium,
@@ -4211,7 +4218,7 @@ class TaskData {
       ),
       Task(
         id: 'zihin_26',
-        title: 'Bir fikir günlüğü tut.',
+        title: 'Bir günlük fikir günlüğü tut.',
         description: 'Fikirlerini yaz!',
         category: TaskCategory.zihin,
         difficulty: TaskDifficulty.medium,
@@ -4220,7 +4227,7 @@ class TaskData {
       ),
       Task(
         id: 'zihin_27',
-        title: 'Bir düşünce günlüğü tut.',
+        title: 'Bir günlük düşünce günlüğü tut.',
         description: 'Düşüncelerini yaz!',
         category: TaskCategory.zihin,
         difficulty: TaskDifficulty.medium,
@@ -4229,7 +4236,7 @@ class TaskData {
       ),
       Task(
         id: 'zihin_28',
-        title: 'Bir duygu günlüğü tut.',
+        title: 'Bir günlük duygu günlüğü tut.',
         description: 'Duygularını yaz!',
         category: TaskCategory.zihin,
         difficulty: TaskDifficulty.medium,
@@ -4238,7 +4245,7 @@ class TaskData {
       ),
       Task(
         id: 'zihin_29',
-        title: 'Bir deneyim günlüğü tut.',
+        title: 'Bir günlük deneyim günlüğü tut.',
         description: 'Deneyimlerini yaz!',
         category: TaskCategory.zihin,
         difficulty: TaskDifficulty.medium,
@@ -4247,7 +4254,7 @@ class TaskData {
       ),
       Task(
         id: 'zihin_30',
-        title: 'Bir anı günlüğü tut.',
+        title: 'Bir günlük anı günlüğü tut.',
         description: 'Anılarını yaz!',
         category: TaskCategory.zihin,
         difficulty: TaskDifficulty.medium,
@@ -4256,7 +4263,7 @@ class TaskData {
       ),
       Task(
         id: 'zihin_31',
-        title: 'Bir hikaye günlüğü tut.',
+        title: 'Bir günlük hikaye günlüğü tut.',
         description: 'Hikayelerini yaz!',
         category: TaskCategory.zihin,
         difficulty: TaskDifficulty.medium,
@@ -4265,7 +4272,7 @@ class TaskData {
       ),
       Task(
         id: 'zihin_32',
-        title: 'Bir şiir günlüğü tut.',
+        title: 'Bir günlük şiir günlüğü tut.',
         description: 'Şiirlerini yaz!',
         category: TaskCategory.zihin,
         difficulty: TaskDifficulty.medium,
@@ -4274,7 +4281,7 @@ class TaskData {
       ),
       Task(
         id: 'zihin_33',
-        title: 'Bir resim günlüğü tut.',
+        title: 'Bir günlük resim günlüğü tut.',
         description: 'Resimlerini çiz!',
         category: TaskCategory.zihin,
         difficulty: TaskDifficulty.medium,
@@ -4283,7 +4290,7 @@ class TaskData {
       ),
       Task(
         id: 'zihin_34',
-        title: 'Bir müzik günlüğü tut.',
+        title: 'Bir günlük müzik günlüğü tut.',
         description: 'Müzik notlarını yaz!',
         category: TaskCategory.zihin,
         difficulty: TaskDifficulty.medium,
@@ -4292,7 +4299,7 @@ class TaskData {
       ),
       Task(
         id: 'zihin_35',
-        title: 'Bir dans günlüğü tut.',
+        title: 'Bir günlük dans günlüğü tut.',
         description: 'Dans hareketlerini yaz!',
         category: TaskCategory.zihin,
         difficulty: TaskDifficulty.medium,
@@ -4301,7 +4308,7 @@ class TaskData {
       ),
       Task(
         id: 'zihin_36',
-        title: 'Bir spor günlüğü tut.',
+        title: 'Bir günlük spor günlüğü tut.',
         description: 'Spor aktivitelerini yaz!',
         category: TaskCategory.zihin,
         difficulty: TaskDifficulty.medium,
@@ -4310,7 +4317,7 @@ class TaskData {
       ),
       Task(
         id: 'zihin_37',
-        title: 'Bir yemek günlüğü tut.',
+        title: 'Bir günlük yemek günlüğü tut.',
         description: 'Yemek tariflerini yaz!',
         category: TaskCategory.zihin,
         difficulty: TaskDifficulty.medium,
@@ -4319,7 +4326,7 @@ class TaskData {
       ),
       Task(
         id: 'zihin_38',
-        title: 'Bir seyahat günlüğü tut.',
+        title: 'Bir günlük seyahat günlüğü tut.',
         description: 'Seyahat anılarını yaz!',
         category: TaskCategory.zihin,
         difficulty: TaskDifficulty.medium,
@@ -4328,7 +4335,7 @@ class TaskData {
       ),
       Task(
         id: 'zihin_39',
-        title: 'Bir öğrenme günlüğü tut.',
+        title: 'Bir günlük öğrenme günlüğü tut.',
         description: 'Öğrenme sürecini yaz!',
         category: TaskCategory.zihin,
         difficulty: TaskDifficulty.medium,
@@ -4337,7 +4344,7 @@ class TaskData {
       ),
       Task(
         id: 'zihin_40',
-        title: 'Bir yaşam günlüğü tut.',
+        title: 'Bir günlük yaşam günlüğü tut.',
         description: 'Yaşam hikayeni yaz!',
         category: TaskCategory.zihin,
         difficulty: TaskDifficulty.hard,
