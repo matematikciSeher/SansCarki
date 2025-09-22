@@ -10,6 +10,8 @@ import '../widgets/task_card.dart';
 import '../widgets/profile_page.dart';
 import 'quiz_arena_screen.dart';
 import 'game_selection_screen.dart';
+import '../widgets/app_header.dart';
+import '../widgets/fancy_bottom_buttons.dart';
 import 'feedback_screen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -27,7 +29,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
-  int _navIndex = 0;
   UserProfile _profile = UserProfile();
   List<Task> _completedTasks = [];
   Category? _selectedCategory;
@@ -36,7 +37,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, DateTime> _categoryLastSpin = {};
   int _categoryCooldownDays = 12; // varsayilan
   int _taskCooldownDays = 480; // varsayilan
-  DateTime? _lastCategoryWheelSpin; // günlük global çark spin tarihi
+
+  bool get _isTaskActive => _selectedTask != null;
 
   @override
   void initState() {
@@ -51,7 +53,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadAssetTasks();
     _loadCategorySpinDates();
     _loadCooldowns();
-    _loadLastWheelSpin();
   }
 
   Set<String> _buildEligibleCategoryIds() {
@@ -107,23 +108,6 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (_) {}
   }
 
-  Future<void> _loadLastWheelSpin() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString('category_wheel_last_spin');
-      if (raw != null) {
-        setState(() {
-          _lastCategoryWheelSpin = DateTime.tryParse(raw);
-        });
-      }
-    } catch (_) {}
-  }
-
-  Future<void> _saveLastWheelSpin(DateTime dt) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('category_wheel_last_spin', dt.toIso8601String());
-  }
-
   Future<void> _saveCategorySpinDates() async {
     final prefs = await SharedPreferences.getInstance();
     final jsonMap = _categoryLastSpin
@@ -135,15 +119,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final last = _categoryLastSpin[categoryId];
     if (last == null) return true;
     return DateTime.now().difference(last).inDays >= _categoryCooldownDays;
-  }
-
-  bool get _canSpinCategoryWheelToday {
-    if (_lastCategoryWheelSpin == null) return true;
-    final now = DateTime.now();
-    final last = _lastCategoryWheelSpin!;
-    return !(now.year == last.year &&
-        now.month == last.month &&
-        now.day == last.day);
   }
 
   @override
@@ -469,18 +444,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  /// Bugünün kategorisini hesapla (12 günde bir değişir)
-  Category _getTodaysCategory() {
-    final today = DateTime.now();
-    final startDate = DateTime(2025, 11, 1); // Başlangıç tarihi
-    final daysSinceStart = today.difference(startDate).inDays;
-    final categoryIndex =
-        daysSinceStart % 12; // 12 kategori, 12 günde bir döngü
-
-    final categories = CategoryData.getAllCategories();
-    return categories[categoryIndex];
-  }
-
   void _onCategorySelected(Category category) {
     // 12 gün kategori cooldown ve 480 gün görev cooldown uygula
     final allCategories = CategoryData.getAllCategories();
@@ -505,14 +468,7 @@ class _HomeScreenState extends State<HomeScreen> {
           return ad.isBefore(bd) ? a : b;
         });
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-              'Kategori bekleme süresinde. Otomatik seçildi: ${finalCategory.name} ${finalCategory.emoji}'),
-          backgroundColor: Colors.orange,
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      // Uyarı gösterme: kategori bekleme süresinde mesajı kaldırıldı
     }
 
     // Görev havuzu (assets + fallback)
@@ -629,6 +585,7 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _selectedCategory = null;
         _selectedTask = null;
+        _currentIndex = 0; // Çark sayfasına dön
       });
     }
   }
@@ -643,7 +600,6 @@ class _HomeScreenState extends State<HomeScreen> {
     // Kullanıcının görev geçmişi
     final completed = _completedTasks;
     final completedByCategory = <String, int>{};
-    final completedByDifficulty = <app_badge.BadgeTier, int>{};
     final completedByDifficultyCount = <TaskDifficulty, int>{};
     final completedCategories = <String>{};
 
@@ -728,291 +684,26 @@ class _HomeScreenState extends State<HomeScreen> {
       final allBadges = app_badge.BadgeData.getAllBadges();
       for (final badgeId in newBadges) {
         final badge = allBadges.firstWhere((b) => b.id == badgeId);
-        _showBadgeEarnedMessage(badge);
-      }
-    }
-  }
-
-  int _getCategoryPoints(String categoryId) {
-    // Kategori ID'sine göre puan hesapla
-    switch (categoryId) {
-      case 'kitap':
-        return _getCategoryPointsByTaskCategory(TaskCategory.kitap);
-      case 'yazma':
-        return _getCategoryPointsByTaskCategory(TaskCategory.yazma);
-      case 'matematik':
-        return _getCategoryPointsByTaskCategory(TaskCategory.matematik);
-      case 'fen':
-        return _getCategoryPointsByTaskCategory(TaskCategory.fen);
-      case 'spor':
-        return _getCategoryPointsByTaskCategory(TaskCategory.spor);
-      case 'sanat':
-        return _getCategoryPointsByTaskCategory(TaskCategory.sanat);
-      case 'muzik':
-        return _getCategoryPointsByTaskCategory(TaskCategory.muzik);
-      case 'teknoloji':
-        return _getCategoryPointsByTaskCategory(TaskCategory.teknoloji);
-      case 'iyilik':
-        return _getCategoryPointsByTaskCategory(TaskCategory.iyilik);
-      case 'ev':
-        return _getCategoryPointsByTaskCategory(TaskCategory.ev);
-      case 'oyun':
-        return _getCategoryPointsByTaskCategory(TaskCategory.oyun);
-      case 'zihin':
-        return _getCategoryPointsByTaskCategory(TaskCategory.zihin);
-      default:
-        return 0;
-    }
-  }
-
-  int _getCategoryPointsByTaskCategory(TaskCategory category) {
-    int totalPoints = 0;
-    for (final completedTask in _completedTasks) {
-      if (completedTask.category == category) {
-        totalPoints += completedTask.basePoints;
-      }
-    }
-    return totalPoints;
-  }
-
-  void _showBadgeEarnedMessage(app_badge.Badge badge) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Text(badge.emoji, style: const TextStyle(fontSize: 18)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'Yeni Rozet!',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      fontSize: 14,
-                    ),
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Text(badge.emoji, style: const TextStyle(fontSize: 18)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Yeni Rozet: ${badge.name}',
+                    style: const TextStyle(color: Colors.white),
                   ),
-                  Text(
-                    badge.name,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: badge.color,
-        duration: const Duration(seconds: 4),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
-  }
-
-  void _checkBadgeUpgrades() {
-    final currentBadges = Set<String>.from(_profile.badges);
-    final allBadges = app_badge.BadgeData.getAllBadges();
-    final upgradedBadges = <String>[];
-
-    // Her rozet seviyesi için yükseltme kontrolü
-    for (final tier in app_badge.BadgeTier.values) {
-      // En üst seviye elmas, mastery yok
-      if (tier == app_badge.BadgeTier.elmas) continue;
-
-      final tierBadges = allBadges.where((b) => b.tier == tier).toList();
-      final userTierBadges =
-          tierBadges.where((b) => currentBadges.contains(b.id)).toList();
-
-      if (userTierBadges.length >= tier.upgradeRequirement) {
-        // Yükseltme rozetini bul
-        final nextTier = _getNextTier(tier);
-        if (nextTier != null) {
-          final upgradeBadge = allBadges.firstWhere(
-            (b) => b.tier == nextTier && b.categoryId == null,
-            orElse: () => allBadges.first,
-          );
-
-          if (!currentBadges.contains(upgradeBadge.id)) {
-            upgradedBadges.add(upgradeBadge.id);
-          }
-        }
-      }
-    }
-
-    // Yükseltme rozetlerini ekle
-    if (upgradedBadges.isNotEmpty) {
-      setState(() {
-        _profile = _profile.copyWith(
-          badges: [..._profile.badges, ...upgradedBadges],
-        );
-      });
-
-      // Yükseltme mesajı göster
-      for (final badgeId in upgradedBadges) {
-        final badge = allBadges.firstWhere((b) => b.id == badgeId);
-        _showBadgeUpgradeMessage(badge);
-      }
-    }
-  }
-
-  app_badge.BadgeTier? _getNextTier(app_badge.BadgeTier currentTier) {
-    switch (currentTier) {
-      case app_badge.BadgeTier.bronz:
-        return app_badge.BadgeTier.gumus;
-      case app_badge.BadgeTier.gumus:
-        return app_badge.BadgeTier.altin;
-      case app_badge.BadgeTier.altin:
-        return app_badge.BadgeTier.elmas;
-      case app_badge.BadgeTier.elmas:
-        return null;
-    }
-  }
-
-  void _showBadgeUpgradeMessage(app_badge.Badge badge) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.trending_up, color: Colors.white),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Rozet Yükseltildi!',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  Text(
-                    '${badge.tier?.displayName ?? ''} ${badge.name}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: Colors.purple,
-        duration: const Duration(seconds: 5),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          '🎯 ÇARKIGO!',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: Colors.orange,
-        elevation: 0,
-        centerTitle: true,
-        actions: [
-          IconButton(
-            iconSize: 22,
-            icon: const Icon(Icons.feedback_outlined),
-            onPressed: _navigateToFeedback,
-            tooltip: 'Görüş ve Öneriler',
-          ),
-          IconButton(
-            iconSize: 22,
-            icon: const Icon(Icons.logout),
-            tooltip: 'Çıkış',
-            onPressed: () async {
-              final ok = await showDialog<bool>(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Çıkış yap?'),
-                  content: const Text(
-                      'Hesaptan çıkış yapıp giriş ekranına dönülecek.'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      child: const Text('İptal'),
-                    ),
-                    ElevatedButton(
-                      onPressed: () => Navigator.pop(context, true),
-                      child: const Text('Evet'),
-                    ),
-                  ],
                 ),
-              );
-              if (ok == true) {
-                await _logout();
-              }
-            },
-          ),
-          if (_selectedCategory != null)
-            IconButton(
-              iconSize: 22,
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () {
-                setState(() {
-                  _selectedCategory = null;
-                  _selectedTask = null;
-                });
-              },
+              ],
             ),
-        ],
-      ),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: [
-          // Ana sayfa - Çark
-          _buildWheelPage(),
-          // Profil sayfası
-          ProfilePage(profile: _profile, completedTasks: _completedTasks),
-        ],
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _navIndex,
-        onTap: (index) {
-          setState(() {
-            _navIndex = index;
-            if (index == 1) {
-              _navigateToGameCenter();
-            } else if (index == 2) {
-              _navigateToQuizArena();
-            } else if (index == 3) {
-              _currentIndex = 1; // Profil sayfası
-            } else {
-              _currentIndex = 0; // Çark sayfası
-            }
-          });
-        },
-        selectedItemColor: Colors.orange,
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.casino), label: 'Çark'),
-          BottomNavigationBarItem(icon: Icon(Icons.games), label: 'Oyun'),
-          BottomNavigationBarItem(icon: Icon(Icons.quiz), label: 'Quiz'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
-        ],
-      ),
-    );
+            backgroundColor: badge.color,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildWheelPage() {
@@ -1206,84 +897,102 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildStatCard(String title, String value, Color color) {
-    return Expanded(
-      child: Column(
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-        ],
+  void _openProfileSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => ProfilePage(
+        profile: _profile,
+        completedTasks: _completedTasks,
       ),
     );
   }
 
-  Widget _buildModernStatCard({
-    required String title,
-    required String value,
-    required Color color,
-  }) {
-    return Container(
-      width: 160,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            color.withOpacity(0.25),
-            color.withOpacity(0.10),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.35), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.20),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      extendBody: true,
+      appBar: AppHeaderBar(
+        title: '🎯 ÇARKIGO!',
+        subtitle: 'Öğren, oyna, keşfet',
+        actions: [
+          IconButton(
+            iconSize: 22,
+            icon: const Icon(Icons.person, color: Colors.white),
+            tooltip: 'Profil',
+            onPressed: _openProfileSheet,
           ),
+          IconButton(
+            iconSize: 22,
+            icon: const Icon(Icons.feedback_outlined, color: Colors.white),
+            onPressed: _navigateToFeedback,
+            tooltip: 'Görüş ve Öneriler',
+          ),
+          IconButton(
+            iconSize: 22,
+            icon: const Icon(Icons.logout, color: Colors.white),
+            tooltip: 'Çıkış',
+            onPressed: () async {
+              final ok = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Çıkış yap?'),
+                  content: const Text(
+                      'Hesaptan çıkış yapıp giriş ekranına dönülecek.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('İptal'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('Evet'),
+                    ),
+                  ],
+                ),
+              );
+              if (ok == true) {
+                await _logout();
+              }
+            },
+          ),
+          if (_selectedCategory != null && _selectedTask == null)
+            IconButton(
+              iconSize: 22,
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () {
+                setState(() {
+                  _selectedCategory = null;
+                  _selectedTask = null;
+                });
+              },
+            ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      body: IndexedStack(
+        index: _currentIndex,
         children: [
-          Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: Colors.white.withOpacity(0.95),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
+          // Ana sayfa - Çark
+          _buildWheelPage(),
+          // Profil sayfası
+          ProfilePage(profile: _profile, completedTasks: _completedTasks),
         ],
+      ),
+      bottomNavigationBar: BottomAppBar(
+        color: Colors.transparent,
+        elevation: 0,
+        child: FancyBottomButtons(
+          isTaskActive: _isTaskActive,
+          onWheelTap: () {
+            setState(() {
+              _currentIndex = 0;
+            });
+          },
+          onGamesTap: _navigateToGameCenter,
+          onQuizTap: _navigateToQuizArena,
+          onProfileTap: _openProfileSheet,
+        ),
       ),
     );
   }

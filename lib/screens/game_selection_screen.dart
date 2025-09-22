@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
+import '../widgets/app_header.dart';
+import '../widgets/fancy_bottom_buttons.dart';
+import 'quiz_arena_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../models/user_profile.dart';
@@ -254,6 +256,18 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
         return false;
       },
       child: Scaffold(
+        extendBody: true,
+        appBar: AppHeaderBar(
+            title: '🎮 Oyun Merkezi',
+            subtitle: 'Eğlenceli oyunlarla eğlen ve öğren!',
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.indigo.shade800,
+                Colors.deepPurple.shade700,
+              ],
+            )),
         body: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -269,9 +283,6 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
           child: SafeArea(
             child: Column(
               children: [
-                // Header
-                _buildHeader(),
-
                 // Ana içerik
                 Expanded(
                   child: FadeTransition(
@@ -303,67 +314,37 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
             ),
           ),
         ),
+        bottomNavigationBar: BottomAppBar(
+          color: Colors.transparent,
+          elevation: 0,
+          child: FancyBottomButtons(
+            onWheelTap: () =>
+                Navigator.popUntil(context, (route) => route.isFirst),
+            onGamesTap: () {},
+            onQuizTap: () async {
+              final updatedProfile = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => QuizArenaScreen(profile: _profile),
+                ),
+              );
+              if (updatedProfile != null) {
+                Navigator.pop(context, updatedProfile);
+              }
+            },
+            onProfileTap: () => _showProfile(context),
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      child: Row(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: IconButton(
-              onPressed: () => Navigator.pop(context),
-              icon: const Icon(Icons.arrow_back, color: Colors.white, size: 24),
-            ),
-          ),
-          const Expanded(
-            child: Column(
-              children: [
-                Text(
-                  '🎮 Oyun Merkezi',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Eğlenceli oyunlarla eğlen ve öğren!',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.white70,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: IconButton(
-              onPressed: () => _showProfile(context),
-              icon: const Icon(Icons.person, color: Colors.white, size: 24),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // Header kaldırıldı; AppHeaderBar kullanılıyor
 
   Widget _buildWelcomeCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -373,7 +354,7 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
             Colors.white.withOpacity(0.15),
           ],
         ),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: Colors.white.withOpacity(0.3),
           width: 1,
@@ -389,37 +370,37 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.2),
               shape: BoxShape.circle,
             ),
             child: const Icon(
               Icons.games,
-              size: 40,
+              size: 28,
               color: Colors.white,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
           const Text(
             '🎯 Oyun Merkezine Hoş Geldin!',
             style: TextStyle(
-              fontSize: 22,
+              fontSize: 16,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           Text(
             '${_games.length} farklı eğlenceli oyun seni bekliyor!',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 12,
               color: Colors.white.withOpacity(0.9),
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -429,7 +410,7 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
               _buildStatItem('⭐', 'Görev Puanı', '${_profile.points}'),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 6),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -447,31 +428,31 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
 
   Widget _buildStatItem(String emoji, String label, String value) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: Colors.white.withOpacity(0.2),
         ),
       ),
       child: Column(
         children: [
-          Text(emoji, style: const TextStyle(fontSize: 24)),
-          const SizedBox(height: 4),
+          Text(emoji, style: const TextStyle(fontSize: 18)),
+          const SizedBox(height: 1),
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 10,
               color: Colors.white.withOpacity(0.8),
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 1),
           Text(
             value,
             style: const TextStyle(
-              fontSize: 16,
+              fontSize: 13,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
@@ -611,6 +592,7 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
     );
   }
 
+  // ignore: unused_element
   void _showProfile(BuildContext context) {
     // Profil sayfası henüz mevcut değil, sadece profil bilgilerini göster
     showDialog(
@@ -624,7 +606,7 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
             _buildProfileInfo(
                 '🏆 En Yüksek Quiz', '${_profile.highestQuizScore ?? 0}'),
             _buildProfileInfo(
-                '🎯 Tamamlanan Görev', '${_profile.completedTasks ?? 0}'),
+                '🎯 Tamamlanan Görev', '${_profile.completedTasks}'),
           ],
         ),
         actions: [

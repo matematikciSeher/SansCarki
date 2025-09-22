@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math';
 import '../models/user_profile.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
 class WordBombGameScreen extends StatefulWidget {
@@ -237,7 +236,7 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
 
   double _getBalloonSize() {
     // Sabit balon boyutu (biraz daha büyük)
-    return 80.0;
+    return 96.0;
   }
 
   double _getSeparationDistance(double balloonSize) {
@@ -366,8 +365,8 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
           screenWidth < screenHeight ? screenWidth * 0.6 : screenHeight * 0.6;
       final squareLeft = (screenWidth - squareSize) / 2;
       final squareTop = (screenHeight - squareSize) / 2;
-      const double minSpeed = 1.6;
-      const double maxSpeed = 3.8;
+      const double minSpeed = 85.6;
+      const double maxSpeed = 95.8;
       for (int i = 0; i < _balloons.length; i++) {
         var balloon = _balloons[i];
         double oldX = balloon.x;
@@ -420,8 +419,8 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
         // Periyodik küçük hız pertürbasyonu ekle
         if (_tickCount % 30 == 0) {
           final r = Random();
-          balloon.dx += (r.nextDouble() - 0.5) * 0.6;
-          balloon.dy += (r.nextDouble() - 0.5) * 0.6;
+          balloon.dx += (r.nextDouble() - 0.5) * 1.0;
+          balloon.dy += (r.nextDouble() - 0.5) * 1.0;
         }
 
         // Hız sınırlarını uygula (min ve max)
@@ -536,8 +535,8 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
       isCorrect: isCorrect,
       x: 0.1 + random.nextDouble() * 0.8,
       y: 0.1 + random.nextDouble() * 0.8,
-      dx: customDx ?? (random.nextDouble() - 0.5) * 0.04,
-      dy: customDy ?? (random.nextDouble() - 0.5) * 0.04,
+      dx: customDx ?? (random.nextDouble() - 0.5) * 0.06,
+      dy: customDy ?? (random.nextDouble() - 0.5) * 0.06,
     );
   }
 
@@ -1189,71 +1188,9 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
 
   // _endGame kullanılmıyor
 
-  Future<void> _saveProfile(UserProfile profile) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user_profile', jsonEncode(profile.toJson()));
-  }
+  // _saveProfile kaldırıldı (kullanılmıyordu)
 
-  // _showGameOverDialog şu an kullanılmıyor
-  void _showGameOverDialog(UserProfile updatedProfile) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('💣 Oyun Bitti!'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Bomba patladı!'),
-            const SizedBox(height: 16),
-            _buildResultRow('🎯 Tur', '$_round'),
-            _buildResultRow('💣 Patlama', '$_bombCount'),
-            _buildResultRow('⭐ Puan', '$_score'),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.green.withOpacity(0.3)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.star, color: Colors.green),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Puanlar ana sisteme eklendi!',
-                    style: TextStyle(
-                      color: Colors.green.shade700,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              // UserProfile'ı SharedPreferences'a kaydet
-              await _saveProfile(updatedProfile);
-              Navigator.pop(context, updatedProfile);
-            },
-            child: const Text('Ana Menüye Dön'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _startNewGame();
-            },
-            child: const Text('Tekrar Oyna'),
-          ),
-        ],
-      ),
-    );
-  }
+  // _showGameOverDialog kaldırıldı (kullanılmıyordu)
 
   Widget _buildResultRow(String label, String value) {
     return Padding(
@@ -1665,39 +1602,150 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
   // 4. Responsive balon konumlandırma:
   Widget _buildBalloon(BalloonAnswer balloon) {
     final double balloonSize = _getBalloonSize();
+    // Subtle wobble and bob animation based on tick and a per-balloon phase
+    final double phase = (balloon.word.hashCode % 360) * pi / 180.0;
+    final double t = _tickCount * 0.08 + phase;
+    final double wobble = sin(t) * 0.03; // radians
+    final double bob = sin(t * 1.4) * 3.0; // px
+
     return Positioned(
       left: balloon.x,
-      top: balloon.y,
+      top: balloon.y + bob,
       child: GestureDetector(
         onTap: () => _onBalloonTap(balloon),
-        child: Container(
-          width: balloonSize,
-          height: balloonSize,
-          decoration: BoxDecoration(
-            gradient: RadialGradient(
-              colors: [
-                Colors.blue.shade300,
-                Colors.blue.shade600,
+        child: Transform.rotate(
+          angle: wobble,
+          child: SizedBox(
+            width: balloonSize,
+            height: balloonSize,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Outer glow
+                Container(
+                  width: balloonSize,
+                  height: balloonSize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.blue.withOpacity(0.30),
+                        blurRadius: 20,
+                        spreadRadius: 4,
+                      ),
+                      BoxShadow(
+                        color: Colors.cyan.withOpacity(0.15),
+                        blurRadius: 40,
+                        spreadRadius: 10,
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Main balloon body with multi-stop gradient
+                Container(
+                  width: balloonSize,
+                  height: balloonSize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      center: const Alignment(-0.3, -0.3),
+                      radius: 0.9,
+                      colors: [
+                        Colors.blue.shade50.withOpacity(0.9),
+                        Colors.blue.shade300,
+                        Colors.indigo.shade500,
+                      ],
+                      stops: const [0.0, 0.45, 1.0],
+                    ),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.9),
+                      width: 2,
+                    ),
+                  ),
+                ),
+
+                // Glass highlight
+                Positioned(
+                  left: balloonSize * 0.12,
+                  top: balloonSize * 0.10,
+                  child: Container(
+                    width: balloonSize * 0.42,
+                    height: balloonSize * 0.42,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.white.withOpacity(0.65),
+                          Colors.white.withOpacity(0.0),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Knot (small tie) at the bottom inside the circle
+                Positioned(
+                  bottom: balloonSize * 0.04,
+                  child: Transform.rotate(
+                    angle: 0.8,
+                    child: Container(
+                      width: balloonSize * 0.12,
+                      height: balloonSize * 0.12,
+                      decoration: BoxDecoration(
+                        color: Colors.indigo.shade700,
+                        borderRadius: BorderRadius.circular(balloonSize * 0.04),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.12),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Emoji content
+                Center(
+                  child: Text(
+                    balloon.emoji,
+                    style: TextStyle(
+                      fontSize: balloonSize * 0.36,
+                      shadows: const [
+                        Shadow(
+                            blurRadius: 6,
+                            color: Colors.black26,
+                            offset: Offset(0, 1)),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Subtle animated sheen sweeping across
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          begin: Alignment(-1 + (sin(t * 0.5) * 0.2), -1),
+                          end: const Alignment(1, 1),
+                          colors: [
+                            Colors.white.withOpacity(0.0),
+                            Colors.white.withOpacity(0.06),
+                            Colors.white.withOpacity(0.0),
+                          ],
+                          stops: const [0.2, 0.5, 0.8],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ],
-            ),
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: Colors.white.withOpacity(0.8),
-              width: 2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.blue.withOpacity(0.3),
-                blurRadius: 8,
-                spreadRadius: 1,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Center(
-            child: Text(
-              balloon.emoji,
-              style: const TextStyle(fontSize: 28),
             ),
           ),
         ),

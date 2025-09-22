@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import '../widgets/app_header.dart';
 import '../models/quiz.dart';
 import '../models/user_profile.dart';
 import '../data/quiz_repository.dart';
 import '../widgets/profile_page.dart';
+import '../widgets/fancy_bottom_buttons.dart';
+import 'game_selection_screen.dart';
 import 'quiz_game_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -77,6 +80,19 @@ class _QuizArenaScreenState extends State<QuizArenaScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBody: true,
+      appBar: AppHeaderBar(
+        title: '🏆 Quiz Arena',
+        subtitle: 'Bilgi yarışmasında kendini test et!',
+        showBackButton: true,
+        actions: [
+          IconButton(
+            onPressed: () => _showProfile(context),
+            icon: const Icon(Icons.person, color: Colors.white),
+            tooltip: 'Profil',
+          ),
+        ],
+      ),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -92,9 +108,6 @@ class _QuizArenaScreenState extends State<QuizArenaScreen>
         child: SafeArea(
           child: Column(
             children: [
-              // Header
-              _buildHeader(),
-
               // Ana içerik
               Expanded(
                 child: FadeTransition(
@@ -132,61 +145,32 @@ class _QuizArenaScreenState extends State<QuizArenaScreen>
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: IconButton(
-              onPressed: () => Navigator.pop(context),
-              icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
-            ),
-          ),
-          const Expanded(
-            child: Column(
-              children: [
-                Text(
-                  '🏆 Quiz Arena',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Bilgi yarışmasında kendini test et!',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.white70,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: IconButton(
-              onPressed: () => _showProfile(context),
-              icon: const Icon(Icons.person, color: Colors.white, size: 20),
-            ),
-          ),
-        ],
+      bottomNavigationBar: BottomAppBar(
+        color: Colors.transparent,
+        elevation: 0,
+        child: FancyBottomButtons(
+          onWheelTap: () =>
+              Navigator.popUntil(context, (route) => route.isFirst),
+          onGamesTap: () async {
+            final updatedProfile = await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    GameSelectionScreen(profile: widget.profile),
+              ),
+            );
+            if (updatedProfile != null) {
+              Navigator.pop(context, updatedProfile);
+            }
+          },
+          onQuizTap: () {},
+          onProfileTap: () => _showProfile(context),
+        ),
       ),
     );
   }
+
+  // Header kaldırıldı; AppHeaderBar kullanılıyor
 
   Widget _buildWelcomeCard() {
     return Container(

@@ -234,7 +234,7 @@ class _CategoryWheelState extends State<CategoryWheel>
               curve: Curves.elasticOut,
             ),
 
-        const SizedBox(height: 20),
+        const SizedBox(height: 1),
 
         // Spin butonu
         Container(
@@ -271,7 +271,7 @@ class _CategoryWheelState extends State<CategoryWheel>
                 vertical: 18,
               ),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
+                borderRadius: BorderRadius.circular(20),
               ),
               elevation: 0,
               shadowColor: Colors.transparent,
@@ -292,11 +292,11 @@ class _CategoryWheelState extends State<CategoryWheel>
                   )
                 else
                   const Icon(Icons.casino, size: 24),
-                const SizedBox(width: 12),
+                const SizedBox(width: 22),
                 Text(
                   _isSpinning ? 'Çeviriliyor...' : 'Kategori Seç! 🎯',
                   style: const TextStyle(
-                    fontSize: 18,
+                    fontSize: 15,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
