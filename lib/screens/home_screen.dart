@@ -37,6 +37,16 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, DateTime> _categoryLastSpin = {};
   int _categoryCooldownDays = 12; // varsayilan
   int _taskCooldownDays = 480; // varsayilan
+  // Ekstra çark: oyun puanına bağlı günlük hak (30K=>1, 60K=>2)
+  // DateTime? _extraSpinDate; // eski anahtar için geriye uyum (artık kullanılmıyor)
+  String? _extraSpinUsedDay; // 'YYYY-M-D'
+  int _extraSpinUsedCount = 0;
+  static const int _extraSpinThreshold = 30000; // 30K oyun puanı
+  // Günlük ana hak (24 saatte bir)
+  String? _dailySpinUsedDay; // 'YYYY-M-D'
+  // Ekstra spin arming kaldırıldı; tıklayınca kullanıcı çarkı kendi çevirir
+  bool _pendingExtraSpin =
+      false; // bir sonraki spin ekstra hak olarak sayılacak
 
   bool get _isTaskActive => _selectedTask != null;
 
@@ -53,6 +63,9 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadAssetTasks();
     _loadCategorySpinDates();
     _loadCooldowns();
+    _loadExtraSpinDate();
+    _loadExtraSpinUsage();
+    _loadDailySpinUsedDay();
   }
 
   Set<String> _buildEligibleCategoryIds() {
@@ -63,6 +76,41 @@ class _HomeScreenState extends State<HomeScreen> {
     };
     // Hepsi cooldown'daysa tümünü serbest bırak (wheel birini seçecek)
     return eligible.isEmpty ? {for (final c in categories) c.id} : eligible;
+  }
+
+  // _useExtraSpin kaldırıldı; artık ampül tıklanınca anında ek spin uygulanıyor
+
+  void _consumeExtraSpin() {
+    final now = DateTime.now();
+    final todayStr = '${now.year}-${now.month}-${now.day}';
+    if (_extraSpinUsedDay != todayStr) {
+      _extraSpinUsedDay = todayStr;
+      _extraSpinUsedCount = 0;
+    }
+    _extraSpinUsedCount++;
+    _saveExtraSpinUsage();
+  }
+
+  void _executeExtraSpin() {
+    if (_extraSpinsRemaining <= 0) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Tebrikler! Çarkı bir kez daha çevirme hakkı kazandın.'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+    // Ekstra hakkı yükle: kullanıcı çarkı kendisi çevirecek
+    final now = DateTime.now();
+    final todayStr = '${now.year}-${now.month}-${now.day}';
+    if (_extraSpinUsedDay != todayStr) {
+      _extraSpinUsedDay = todayStr;
+      _extraSpinUsedCount = 0;
+    }
+    // bir hak rezerve etmek yerine, canSpin'i etkin tutmak için internal bayrak gerekebilir.
+    // Basit çözüm: bir sonraki kategori seçimini ekstra kabul edip hak düşelim.
+    // Bunun için küçük bir bayrak set edelim:
+    _pendingExtraSpin = true;
+    setState(() {});
   }
 
   @override
@@ -106,6 +154,74 @@ class _HomeScreenState extends State<HomeScreen> {
         _taskCooldownDays = prefs.getInt('task_cooldown_days') ?? 480;
       });
     } catch (_) {}
+  }
+
+  Future<void> _loadExtraSpinDate() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      // Eski anahtar okunur ama kullanılmaz; sadece temizlemek isterseniz buradan silebiliriz
+      final raw = prefs.getString('extra_spin_date');
+      if (raw != null) {
+        await prefs.remove('extra_spin_date');
+      }
+    } catch (_) {}
+  }
+
+  // eski metodlar: kullanılmıyor
+  // Future<void> _saveExtraSpinDate(DateTime dt) async {}
+  // bool get _canUseExtraSpinToday => _extraSpinsRemaining > 0; // kullanılmıyor
+
+  Future<void> _loadExtraSpinUsage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _extraSpinUsedDay = prefs.getString('extra_spin_used_day');
+      _extraSpinUsedCount = prefs.getInt('extra_spin_used_count') ?? 0;
+    } catch (_) {}
+  }
+
+  Future<void> _saveExtraSpinUsage() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('extra_spin_used_day', _extraSpinUsedDay ?? '');
+    await prefs.setInt('extra_spin_used_count', _extraSpinUsedCount);
+  }
+
+  int get _extraSpinQuota {
+    final gp = _profile.totalAllPoints; // toplam puan esas alınsın
+    final quota = gp ~/ _extraSpinThreshold; // her 30K için 1 hak
+    if (quota >= 2) return 2; // üst sınır 2 (60K+)
+    if (quota >= 1) return 1;
+    return 0;
+  }
+
+  int get _extraSpinsRemaining {
+    final now = DateTime.now();
+    final todayStr = '${now.year}-${now.month}-${now.day}';
+    if (_extraSpinQuota == 0) return 0;
+    if (_extraSpinUsedDay != todayStr) return _extraSpinQuota;
+    final rem = _extraSpinQuota - _extraSpinUsedCount;
+    return rem < 0 ? 0 : rem;
+  }
+
+  // Günlük ana spin kullanılabilir mi? (24 saatte bir)
+  bool get _canUseDailySpin {
+    final now = DateTime.now();
+    final todayStr = '${now.year}-${now.month}-${now.day}';
+    return _dailySpinUsedDay != todayStr;
+  }
+
+  Future<void> _loadDailySpinUsedDay() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _dailySpinUsedDay = prefs.getString('daily_spin_used_day');
+    } catch (_) {}
+  }
+
+  Future<void> _saveDailySpinUsedDay() async {
+    final prefs = await SharedPreferences.getInstance();
+    final now = DateTime.now();
+    final todayStr = '${now.year}-${now.month}-${now.day}';
+    _dailySpinUsedDay = todayStr;
+    await prefs.setString('daily_spin_used_day', todayStr);
   }
 
   Future<void> _saveCategorySpinDates() async {
@@ -183,6 +299,15 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _profile =
             _profile.copyWith(badges: [..._profile.badges, ...newBadges]);
+      });
+      await _saveProfile();
+    }
+
+    // Oyun puanına özel rozet örneği: 30K+ oyun puanı
+    final int gamePts = _profile.totalGamePoints ?? 0;
+    if (gamePts >= _extraSpinThreshold && !current.contains('game_30k')) {
+      setState(() {
+        _profile = _profile.copyWith(badges: [..._profile.badges, 'game_30k']);
       });
       await _saveProfile();
     }
@@ -710,6 +835,44 @@ class _HomeScreenState extends State<HomeScreen> {
 
             const SizedBox(height: 8),
 
+            // Ampül göstergesi (30K başına hak, max 2)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                InkWell(
+                  onTap: _extraSpinsRemaining > 0 ? _executeExtraSpin : null,
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color:
+                          _extraSpinsRemaining > 0 ? Colors.amber : Colors.grey,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.lightbulb,
+                            color: _extraSpinsRemaining > 0
+                                ? Colors.black
+                                : Colors.white),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${_extraSpinsRemaining}',
+                          style: TextStyle(
+                            color: _extraSpinsRemaining > 0
+                                ? Colors.black
+                                : Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
             // Seçilen kategori bilgisi
             if (_selectedCategory != null)
               Container(
@@ -767,9 +930,29 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     CategoryWheel(
                       onCategorySelected: (c) {
-                        _onCategorySelected(c);
+                        if (_pendingExtraSpin) {
+                          _onCategorySelected(c);
+                          _consumeExtraSpin();
+                          _pendingExtraSpin = false;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Ekstra çark hakkını kullandın!'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        } else if (_canUseDailySpin) {
+                          _onCategorySelected(c);
+                          _saveDailySpinUsedDay();
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                  'Günlük çark hakkın doldu. Ampül yanarsa ekstra hak kullanabilirsin.'),
+                            ),
+                          );
+                        }
                       },
-                      canSpin: true,
+                      canSpin: _canUseDailySpin || _pendingExtraSpin,
                       eligibleCategoryIds: _buildEligibleCategoryIds(),
                     ),
                   ],
@@ -898,6 +1081,37 @@ class _HomeScreenState extends State<HomeScreen> {
         title: '🎯 ÇARKIGO!',
         subtitle: 'Öğren, oyna, keşfet',
         actions: [
+          if (_extraSpinsRemaining > 0)
+            Stack(
+              alignment: Alignment.topRight,
+              children: [
+                IconButton(
+                  iconSize: 22,
+                  icon: const Icon(Icons.lightbulb, color: Colors.amber),
+                  tooltip: 'Ekstra Çark Hakkı',
+                  onPressed: _executeExtraSpin,
+                ),
+                Positioned(
+                  right: 6,
+                  top: 6,
+                  child: Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: const BoxDecoration(
+                      color: Colors.black,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      '$_extraSpinsRemaining',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           IconButton(
             iconSize: 22,
             icon: const Icon(Icons.person, color: Colors.white),

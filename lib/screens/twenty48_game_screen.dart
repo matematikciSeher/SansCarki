@@ -1,5 +1,8 @@
+
 import 'dart:math';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_profile.dart';
 
 class Twenty48GameScreen extends StatefulWidget {
@@ -11,10 +14,12 @@ class Twenty48GameScreen extends StatefulWidget {
 }
 
 class _Twenty48GameScreenState extends State<Twenty48GameScreen> {
-  static const int size = 4;
+  static const int size = 5;
   final Random _rand = Random();
   late List<List<int>> _grid;
   int _score = 0;
+  int _bestScore = 0;
+  int _moves = 0;
   bool _gameOver = false;
   bool _showInfo = true;
 
@@ -23,15 +28,33 @@ class _Twenty48GameScreenState extends State<Twenty48GameScreen> {
     super.initState();
     _newGame();
     _showInfo = true;
+    _loadBestScore();
   }
 
   void _newGame() {
     _score = 0;
+    _moves = 0;
     _gameOver = false;
     _grid = List.generate(size, (_) => List.filled(size, 0));
     _spawn();
     _spawn();
     setState(() {});
+  }
+
+  Future<void> _loadBestScore() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      setState(() {
+        _bestScore = prefs.getInt('twenty48_best_score') ?? 0;
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _saveBestScore() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('twenty48_best_score', _bestScore);
+    } catch (_) {}
   }
 
   void _spawn() {
@@ -143,6 +166,7 @@ class _Twenty48GameScreenState extends State<Twenty48GameScreen> {
         break;
     }
     if (moved) {
+      _moves++;
       _spawn();
       setState(() {});
       if (!_canMove()) {
@@ -153,15 +177,36 @@ class _Twenty48GameScreenState extends State<Twenty48GameScreen> {
   }
 
   void _showGameOver() {
+    // Puanı profile ekle ve kaydet
+    final int earned = _score; // Klasik 2048 puanı
+    if (_score > _bestScore) {
+      _bestScore = _score;
+      _saveBestScore();
+    }
+    final updatedProfile = widget.profile.copyWith(
+      points: widget.profile.points + earned,
+      totalGamePoints: (widget.profile.totalGamePoints ?? 0) + earned,
+    );
+    () async {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(
+            'user_profile', jsonEncode(updatedProfile.toJson()));
+      } catch (_) {}
+    }();
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Text('Oyun Bitti'),
-        content: Text('Skor: $_score'),
+        content: Text('Skor: $_score\nKazanılan Puan: $earned'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pop(context, updatedProfile);
+            },
             child: const Text('Kapat'),
           ),
           ElevatedButton(
@@ -185,9 +230,9 @@ class _Twenty48GameScreenState extends State<Twenty48GameScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Colors.indigo.shade900,
-              Colors.purple.shade800,
-              Colors.deepPurple.shade900,
+              const Color(0xFF0F2027),
+              const Color(0xFF203A43),
+              const Color(0xFF2C5364),
             ],
           ),
         ),
@@ -231,7 +276,7 @@ class _Twenty48GameScreenState extends State<Twenty48GameScreen> {
                         },
                       ),
               ),
-              if (!_showInfo) _buildControls(),
+              if (!_showInfo) _buildBottomBar(),
             ],
           ),
         ),
@@ -356,9 +401,44 @@ class _Twenty48GameScreenState extends State<Twenty48GameScreen> {
     );
   }
 
+  Widget _buildBottomBar() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.15),
+        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.15))),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.flag, color: Colors.white70, size: 18),
+              const SizedBox(width: 6),
+              Text('Hamle: $_moves',
+                  style: const TextStyle(color: Colors.white, fontSize: 13)),
+            ],
+          ),
+          Row(
+            children: [
+              const Icon(Icons.star, color: Colors.amber, size: 18),
+              const SizedBox(width: 6),
+              Text('En İyi: $_bestScore',
+                  style: const TextStyle(color: Colors.white, fontSize: 13)),
+            ],
+          ),
+          IconButton(
+            onPressed: _newGame,
+            tooltip: 'Yeni Oyun',
+            icon: const Icon(Icons.refresh, color: Colors.white),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildBoard(double s) {
     final tileGap = 8.0;
-    final tileSize = (s - tileGap * (size + 1)) / size;
     return Column(
       children: [
         for (int r = 0; r < size; r++)
@@ -398,69 +478,37 @@ class _Twenty48GameScreenState extends State<Twenty48GameScreen> {
   Color _tileColor(int v) {
     switch (v) {
       case 0:
-        return Colors.white10;
+        return const Color(0x141A1F); // very dark transparent
       case 2:
-        return const Color(0xFFEEE4DA);
+        return const Color(0xFF29ABE2); // vivid blue
       case 4:
-        return const Color(0xFFEDE0C8);
+        return const Color(0xFFFF8A00); // orange
       case 8:
-        return const Color(0xFFF2B179);
+        return const Color(0xFFFF3D7F); // pink
       case 16:
-        return const Color(0xFFF59563);
+        return const Color(0xFF01C853); // green
       case 32:
-        return const Color(0xFFF67C5F);
+        return const Color(0xFF9C27B0); // purple
       case 64:
-        return const Color(0xFFF65E3B);
+        return const Color(0xFFFFC107); // amber
       case 128:
-        return const Color(0xFFEDCF72);
+        return const Color(0xFF00BFA5); // teal
       case 256:
-        return const Color(0xFFEDCC61);
+        return const Color(0xFFFF5252); // red
       case 512:
-        return const Color(0xFFEDC850);
+        return const Color(0xFF3F51B5); // indigo
       case 1024:
-        return const Color(0xFFEDC53F);
+        return const Color(0xFF7C4DFF); // deep purple accent
       case 2048:
-        return const Color(0xFFEDC22E);
+        return const Color(0xFFFFD600); // bright yellow
+      case 4096:
+        return const Color(0xFF00E5FF); // cyan accent
+      case 8192:
+        return const Color(0xFFFF6E40); // deep orange accent
       default:
-        return Colors.blueGrey.shade700;
+        return Colors.deepPurpleAccent; // fallback vibrant
     }
   }
 
-  Widget _buildControls() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          ElevatedButton(
-            onPressed: _newGame,
-            child: const Text('Yeni Oyun'),
-          ),
-          Row(
-            children: [
-              IconButton(
-                onPressed: () => _handleMove('up'),
-                icon: const Icon(Icons.keyboard_arrow_up, color: Colors.white),
-              ),
-              IconButton(
-                onPressed: () => _handleMove('left'),
-                icon:
-                    const Icon(Icons.keyboard_arrow_left, color: Colors.white),
-              ),
-              IconButton(
-                onPressed: () => _handleMove('right'),
-                icon:
-                    const Icon(Icons.keyboard_arrow_right, color: Colors.white),
-              ),
-              IconButton(
-                onPressed: () => _handleMove('down'),
-                icon:
-                    const Icon(Icons.keyboard_arrow_down, color: Colors.white),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  // Kontrol tuşları kaldırıldı
 }
