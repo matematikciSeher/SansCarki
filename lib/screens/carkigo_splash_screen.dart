@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+// import 'package:flutter_svg/flutter_svg.dart';
+import '../widgets/animated_login_wheel.dart';
 import 'admin_quiz_panel_screen.dart';
 import 'register_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -178,26 +179,28 @@ class _CarkiGoSplashScreenState extends State<CarkiGoSplashScreen> {
           child: SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-              child: Container(
+              child: Padding(
                 padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.9),
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
-                      blurRadius: 16,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    SvgPicture.asset(
-                      'assets/branding/logo.svg',
-                      width: MediaQuery.of(context).size.width * 0.6,
-                      fit: BoxFit.contain,
+                    AnimatedLoginWheel(
+                      size: MediaQuery.of(context).size.width * 0.55,
+                      enableIdleSpin: true,
+                      entryDuration: Duration(milliseconds: 5000),
+                      spinDuration: Duration(milliseconds: 5000),
+                      iconDropDuration: Duration(milliseconds: 2400),
+                      icons: const [
+                        Icons.star,
+                        Icons.sports_esports,
+                        Icons.music_note,
+                        Icons.school,
+                        Icons.emoji_emotions,
+                        Icons.rocket_launch,
+                        Icons.palette,
+                        Icons.lightbulb,
+                      ],
+                      iconSize: 20,
                     ),
                     const SizedBox(height: 16),
                     const Text('ÇARKI ÇEVİR, EĞLENCEYE GÖMÜL!'),
