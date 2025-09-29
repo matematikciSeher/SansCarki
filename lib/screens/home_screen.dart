@@ -835,44 +835,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
             const SizedBox(height: 8),
 
-            // Ampül göstergesi (30K başına hak, max 2)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                InkWell(
-                  onTap: _extraSpinsRemaining > 0 ? _executeExtraSpin : null,
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    decoration: BoxDecoration(
-                      color:
-                          _extraSpinsRemaining > 0 ? Colors.amber : Colors.grey,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.lightbulb,
-                            color: _extraSpinsRemaining > 0
-                                ? Colors.black
-                                : Colors.white),
-                        const SizedBox(width: 6),
-                        Text(
-                          '${_extraSpinsRemaining}',
-                          style: TextStyle(
-                            color: _extraSpinsRemaining > 0
-                                ? Colors.black
-                                : Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
             // Seçilen kategori bilgisi
             if (_selectedCategory != null)
               Container(

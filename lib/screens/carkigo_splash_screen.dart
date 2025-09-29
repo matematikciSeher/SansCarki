@@ -70,14 +70,19 @@ class _CarkiGoSplashScreenState extends State<CarkiGoSplashScreen> {
       case 'invalid-email':
         return 'Geçersiz e-posta formatı';
       case 'user-disabled':
-        return 'Hesap devre dışı';
+        return 'Hesap devre dışı bırakılmış';
       case 'user-not-found':
       case 'wrong-password':
+      case 'invalid-credential':
         return 'E-posta veya şifre hatalı';
       case 'too-many-requests':
-        return 'Çok fazla deneme. Bir süre sonra tekrar deneyin';
+        return 'Çok fazla deneme yaptınız. Lütfen biraz sonra tekrar deneyin';
+      case 'network-request-failed':
+        return 'Ağ hatası. İnternet bağlantınızı kontrol edin';
+      case 'operation-not-allowed':
+        return 'Bu giriş yöntemi şu anda kullanıma kapalı';
       default:
-        return 'Hata: ${e.message ?? e.code}';
+        return 'Bir hata oluştu. Lütfen tekrar deneyin';
     }
   }
 
@@ -187,9 +192,11 @@ class _CarkiGoSplashScreenState extends State<CarkiGoSplashScreen> {
                     AnimatedLoginWheel(
                       size: MediaQuery.of(context).size.width * 0.55,
                       enableIdleSpin: true,
-                      entryDuration: Duration(milliseconds: 5000),
-                      spinDuration: Duration(milliseconds: 5000),
-                      iconDropDuration: Duration(milliseconds: 2400),
+                      entryDuration: Duration(milliseconds: 80000),
+                      spinDuration: Duration(milliseconds: 70000),
+                      idlePeriod: Duration(seconds: 40),
+                      idleRampDuration: Duration(milliseconds: 15000),
+                      iconDropDuration: Duration(milliseconds: 40000),
                       icons: const [
                         Icons.star,
                         Icons.sports_esports,

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_fortune_wheel/flutter_fortune_wheel.dart';
@@ -30,6 +31,7 @@ class _CategoryWheelState extends State<CategoryWheel>
   late StreamController<int> _selectedController;
   bool _isSpinning = false;
   int _currentSelectedIndex = 0;
+  Timer? _tickTimer;
 
   @override
   void initState() {
@@ -58,6 +60,7 @@ class _CategoryWheelState extends State<CategoryWheel>
 
   @override
   void dispose() {
+    _tickTimer?.cancel();
     _selectedController.close();
     _bounceController.dispose();
     _glowController.dispose();
@@ -69,6 +72,13 @@ class _CategoryWheelState extends State<CategoryWheel>
 
     setState(() {
       _isSpinning = true;
+    });
+
+    // Basit çark sesi: dönüş boyunca sistem tıklama sesi çal
+    _tickTimer?.cancel();
+    _tickTimer = Timer.periodic(const Duration(milliseconds: 160), (_) {
+      SystemSound.play(SystemSoundType.click);
+      HapticFeedback.selectionClick();
     });
 
     final categories = CategoryData.getAllCategories(); // 12 kategori
@@ -170,6 +180,10 @@ class _CategoryWheelState extends State<CategoryWheel>
                         setState(() {
                           _isSpinning = false;
                         });
+                        // Dönüş bittiğinde sesi durdur ve küçük bir bildirim sesi ver
+                        _tickTimer?.cancel();
+                        _tickTimer = null;
+                        SystemSound.play(SystemSoundType.alert);
                         final categories = CategoryData.getAllCategories();
                         widget.onCategorySelected(
                             categories[_currentSelectedIndex]);
@@ -294,7 +308,7 @@ class _CategoryWheelState extends State<CategoryWheel>
                   const Icon(Icons.casino, size: 24),
                 const SizedBox(width: 22),
                 Text(
-                  _isSpinning ? 'Çeviriliyor...' : 'Kategori Seç! 🎯',
+                  _isSpinning ? 'Çeviriliyor...' : 'ÇARKI ÇEVİR',
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,

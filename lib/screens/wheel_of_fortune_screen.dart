@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:characters/characters.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_profile.dart';
+import '../services/audio_service.dart';
 
 class GameLogic {
   final List<String> players;
@@ -209,7 +210,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
     });
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 6500),
+      duration: const Duration(seconds: 30),
     );
     _rotation = Tween<double>(begin: 0, end: 0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
@@ -235,6 +236,15 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
 
           // Çark durduktan sonra popup aç
           _showActionPopup(result);
+
+          // Sonuca göre sesler
+          if (result == 'İflas') {
+            AudioService.playBankrupt();
+          } else if (result == 'Pas') {
+            AudioService.playPass();
+          } else if (result.startsWith('+')) {
+            AudioService.playPoints();
+          }
 
           if (result == 'İflas' || result == 'Pas') {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -436,18 +446,22 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
   void _spinWheel() {
     if (_spinning) return;
     setState(() => _spinning = true);
-    final spins = 8 + _random.nextInt(5); // 8-12 tam tur, daha uzun
+    AudioService.playSpinStart();
+    final spins = 3; // 3 tam tur (30 sn'de daha uzun yol)
     final targetIndex = _random.nextInt(_segments.length);
     _pendingTargetIndex = targetIndex;
     final perSlice = 2 * pi / _segments.length;
     // Pointer üstte, tepe noktası -pi/2 yönünde. Dilim merkezini oraya hizala:
-    // hedef açı = k*2π - (pi/2 + per/2) - index*per
-    final targetAngle =
-        spins * 2 * pi - (pi / 2 + perSlice / 2) - targetIndex * perSlice;
-    _rotation = Tween<double>(
-            begin: _rotation.value % (2 * pi), end: targetAngle)
-        .animate(
-            CurvedAnimation(parent: _controller, curve: Curves.easeOutQuart));
+    // hedef merkez açısı = -(pi/2 + per/2) - index*per (mod 2π)
+    final double current = _rotation.value % (2 * pi);
+    final double targetCenter =
+        -(pi / 2 + perSlice / 2) - targetIndex * perSlice;
+    double base = (targetCenter - current) % (2 * pi);
+    if (base < 0) base += 2 * pi; // pozitif aralık
+    final double totalAdvance = spins * 2 * pi + base;
+    final double endAngle = _rotation.value + totalAdvance;
+    _rotation = Tween<double>(begin: _rotation.value, end: endAngle).animate(
+        CurvedAnimation(parent: _controller, curve: Curves.easeOutQuint));
     _controller.forward(from: 0);
   }
 
@@ -632,6 +646,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
   }
 
   void _showWinDialog() {
+    AudioService.playWin();
     showDialog(
       context: context,
       barrierDismissible: false,
