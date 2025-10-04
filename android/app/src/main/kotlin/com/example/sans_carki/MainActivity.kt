@@ -1,4 +1,4 @@
-package com.example.sans_carki
+package com.sanscarki.app
 
 import io.flutter.embedding.android.FlutterActivity
 

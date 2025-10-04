@@ -6,14 +6,14 @@ import 'admin_quiz_panel_screen.dart';
 import 'register_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-class CarkiGoSplashScreen extends StatefulWidget {
-  const CarkiGoSplashScreen({super.key});
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
 
   @override
-  State<CarkiGoSplashScreen> createState() => _CarkiGoSplashScreenState();
+  State<LoginPage> createState() => _LoginPageState();
 }
 
-class _CarkiGoSplashScreenState extends State<CarkiGoSplashScreen> {
+class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   String? _errorText;
@@ -41,8 +41,7 @@ class _CarkiGoSplashScreenState extends State<CarkiGoSplashScreen> {
       _isLoading = true;
     });
     try {
-      await FirebaseAuth.instance
-          .signInWithEmailAndPassword(email: email, password: pass);
+      await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: pass);
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
@@ -192,11 +191,6 @@ class _CarkiGoSplashScreenState extends State<CarkiGoSplashScreen> {
                     AnimatedLoginWheel(
                       size: MediaQuery.of(context).size.width * 0.55,
                       enableIdleSpin: true,
-                      entryDuration: Duration(milliseconds: 80000),
-                      spinDuration: Duration(milliseconds: 70000),
-                      idlePeriod: Duration(seconds: 40),
-                      idleRampDuration: Duration(milliseconds: 15000),
-                      iconDropDuration: Duration(milliseconds: 40000),
                       icons: const [
                         Icons.star,
                         Icons.sports_esports,
@@ -217,8 +211,7 @@ class _CarkiGoSplashScreenState extends State<CarkiGoSplashScreen> {
                       keyboardType: TextInputType.emailAddress,
                       decoration: InputDecoration(
                         labelText: 'E-posta',
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16)),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
                         errorText: _errorText,
                         prefixIcon: const Icon(Icons.email_outlined),
                       ),
@@ -230,8 +223,7 @@ class _CarkiGoSplashScreenState extends State<CarkiGoSplashScreen> {
                       obscureText: true,
                       decoration: InputDecoration(
                         labelText: 'Şifre',
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16)),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
                         prefixIcon: const Icon(Icons.lock_outline),
                       ),
                       onSubmitted: (_) => _login(),
@@ -252,21 +244,18 @@ class _CarkiGoSplashScreenState extends State<CarkiGoSplashScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.purpleAccent,
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           elevation: 2,
                         ),
                         child: _isLoading
                             ? const SizedBox(
                                 height: 20,
                                 width: 20,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: Colors.white),
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                               )
                             : const Text(
                                 'GİRİŞ YAP',
-                                style: TextStyle(
-                                    fontSize: 16, fontWeight: FontWeight.bold),
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                               ),
                       ),
                     ),
@@ -279,8 +268,7 @@ class _CarkiGoSplashScreenState extends State<CarkiGoSplashScreen> {
                           onPressed: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(
-                                  builder: (_) => const RegisterScreen()),
+                              MaterialPageRoute(builder: (_) => const RegisterScreen()),
                             );
                           },
                           child: const Text('Üye Ol'),

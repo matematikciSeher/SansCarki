@@ -18,7 +18,7 @@ import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import '../data/task_repository.dart';
-import 'carkigo_splash_screen.dart';
+import 'login_page.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -324,7 +324,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => const CarkiGoSplashScreen()),
+      MaterialPageRoute(builder: (_) => const LoginPage()),
       (route) => false,
     );
   }

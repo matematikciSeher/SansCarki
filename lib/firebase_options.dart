@@ -51,7 +51,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyC1a1WaBBLsZMZW6xDdAUzc3_RoXLE7e3M',
-    appId: '1:608870837825:android:7c562fb85c17052e7b20c0',
+    appId: '1:608870837825:android:e2aabab507d9bf2c7b20c0',
     messagingSenderId: '608870837825',
     projectId: 'carkigo',
     storageBucket: 'carkigo.firebasestorage.app',
@@ -59,10 +59,10 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyArToPGBztKpDnKfhR7jMBTp7duTfwQbMo',
-    appId: '1:608870837825:ios:cfc8ad3ee6190b6b7b20c0',
+    appId: '1:608870837825:ios:d63f3fc919fd2a9a7b20c0',
     messagingSenderId: '608870837825',
     projectId: 'carkigo',
     storageBucket: 'carkigo.firebasestorage.app',
-    iosBundleId: 'com.example.sansCarki',
+    iosBundleId: 'com.sanscarki.app',
   );
 }

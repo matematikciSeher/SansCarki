@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:608870837825:android:7c562fb85c17052e7b20c0",
+        "mobilesdk_app_id": "1:608870837825:android:e2aabab507d9bf2c7b20c0",
         "android_client_info": {
-          "package_name": "com.example.sans_carki"
+          "package_name": "com.sanscarki.app"
         }
       },
       "oauth_client": [],

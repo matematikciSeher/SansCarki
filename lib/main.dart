@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
-import 'screens/carkigo_splash_screen.dart';
+import 'screens/login_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
@@ -24,7 +24,7 @@ class CarkiGoApp extends StatelessWidget {
         fontFamily: 'Montserrat',
       ),
       debugShowCheckedModeBanner: false,
-      home: const CarkiGoSplashScreen(),
+      home: const LoginPage(),
     );
   }
 }
