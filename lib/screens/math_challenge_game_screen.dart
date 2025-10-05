@@ -246,13 +246,22 @@ class _MathChallengeGameScreenState extends State<MathChallengeGameScreen> with 
     final accuracyBonus = accuracy.round();
     _score += accuracyBonus;
 
-    // Profil güncelleme
-    final updatedProfile = widget.profile.copyWith(
-      points: widget.profile.points + _score,
-      totalGamePoints: (widget.profile.totalGamePoints ?? 0) + _score,
+    // Önce güncel profili Firestore'dan çek
+    UserProfile? currentProfile;
+    try {
+      currentProfile = await UserService.getCurrentUserProfile();
+    } catch (e) {
+      print('Güncel profil çekme hatası: $e');
+      currentProfile = widget.profile; // Fallback
+    }
+
+    // Profil güncelleme - güncel profili kullan
+    final updatedProfile = (currentProfile ?? widget.profile).copyWith(
+      points: (currentProfile?.points ?? 0) + _score,
+      totalGamePoints: ((currentProfile?.totalGamePoints ?? 0)) + _score,
     );
 
-    // UserProfile'ı SharedPreferences'a kaydet
+    // UserProfile'ı Firestore'a kaydet
     await _saveProfile(updatedProfile);
 
     _showGameCompleteDialog(updatedProfile, accuracy);

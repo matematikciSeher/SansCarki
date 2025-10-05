@@ -1,8 +1,6 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_profile.dart';
 import '../services/user_service.dart';
 
@@ -317,16 +315,27 @@ class _TetrisGameScreenState extends State<TetrisGameScreen> with TickerProvider
     }
   }
 
-  void _gameOver() {
+  void _gameOver() async {
     _timer?.cancel();
     setState(() {
       _isRunning = false;
       _isGameOver = true;
     });
+
+    // Güncel profili Firestore'dan çek
+    UserProfile? currentProfile;
+    try {
+      currentProfile = await UserService.getCurrentUserProfile();
+    } catch (e) {
+      print('Güncel profil çekme hatası: $e');
+      currentProfile = widget.profile; // Fallback
+    }
+
     final gained = max(0, _score);
-    final updated = widget.profile.copyWith(
-      points: widget.profile.points + gained,
-      totalGamePoints: (widget.profile.totalGamePoints ?? 0) + gained,
+    final baseProfile = currentProfile ?? widget.profile;
+    final updated = baseProfile.copyWith(
+      points: baseProfile.points + gained,
+      totalGamePoints: (baseProfile.totalGamePoints ?? 0) + gained,
     );
     showDialog(
       context: context,

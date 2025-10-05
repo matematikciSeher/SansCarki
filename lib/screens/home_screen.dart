@@ -115,8 +115,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Oyunlardan döndüğünde profili yenile
-    _loadProfile();
+    // didChangeDependencies kaldırıldı - gereksiz yüklenmeleri önlemek için
+    // Bunun yerine oyun/quiz'den döndüğünde manuel refresh yapılacak
   }
 
   Future<void> _loadAssetTasks() async {
@@ -991,7 +991,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _navigateToQuizArena() async {
-    final updatedProfile = await Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => QuizArenaScreen(
@@ -999,20 +999,12 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
-    if (updatedProfile != null && updatedProfile is UserProfile) {
-      setState(() {
-        _profile = updatedProfile;
-      });
-      // Güncellenmiş profili kaydet ve yenile
-      await _saveProfile();
-      await _refreshData(); // Profili yenile
-    } else {
-      await _refreshData(); // Profili yenile
-    }
+    // Quiz'den döndükten sonra Firestore'dan güncel profili çek
+    await _refreshData();
   }
 
   void _navigateToGameCenter() async {
-    final updatedProfile = await Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => GameSelectionScreen(
@@ -1020,16 +1012,8 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
-    if (updatedProfile != null && updatedProfile is UserProfile) {
-      setState(() {
-        _profile = updatedProfile;
-      });
-      // Güncellenmiş profili kaydet ve yenile
-      await _saveProfile();
-      await _refreshData(); // Profili yenile
-    } else {
-      await _refreshData(); // Profili yenile
-    }
+    // Oyundan döndükten sonra Firestore'dan güncel profili çek
+    await _refreshData();
   }
 
   void _navigateToFeedback() async {

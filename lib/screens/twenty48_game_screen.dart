@@ -1,5 +1,4 @@
 import 'dart:math';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_profile.dart';
@@ -174,31 +173,41 @@ class _Twenty48GameScreenState extends State<Twenty48GameScreen> {
     }
   }
 
-  void _showGameOver() {
+  void _showGameOver() async {
     // Puanı profile ekle ve kaydet
     final int earned = _score; // Klasik 2048 puanı
     if (_score > _bestScore) {
       _bestScore = _score;
       _saveBestScore();
     }
-    final updatedProfile = widget.profile.copyWith(
-      points: widget.profile.points + earned,
-      totalGamePoints: (widget.profile.totalGamePoints ?? 0) + earned,
+
+    // Güncel profili Firestore'dan çek
+    UserProfile? currentProfile;
+    try {
+      currentProfile = await UserService.getCurrentUserProfile();
+    } catch (e) {
+      print('Güncel profil çekme hatası: $e');
+      currentProfile = widget.profile; // Fallback
+    }
+
+    final baseProfile = currentProfile ?? widget.profile;
+    final updatedProfile = baseProfile.copyWith(
+      points: baseProfile.points + earned,
+      totalGamePoints: (baseProfile.totalGamePoints ?? 0) + earned,
     );
-    () async {
-      try {
-        await UserService.updateCurrentUserProfile(updatedProfile);
-        await UserService.logActivity(
-          activityType: '2048_completed',
-          data: {
-            'score': _score,
-            'moves': _moves,
-          },
-        );
-      } catch (e) {
-        print('2048 profil kaydetme hatası: $e');
-      }
-    }();
+
+    try {
+      await UserService.updateCurrentUserProfile(updatedProfile);
+      await UserService.logActivity(
+        activityType: '2048_completed',
+        data: {
+          'score': _score,
+          'moves': _moves,
+        },
+      );
+    } catch (e) {
+      print('2048 profil kaydetme hatası: $e');
+    }
 
     showDialog(
       context: context,

@@ -377,6 +377,7 @@ class _PatternMatchingGameScreenState extends State<PatternMatchingGameScreen> w
     if (_score <= 0) return;
 
     try {
+      // Güncel profili Firestore'dan çek
       final profile = await UserService.getCurrentUserProfile();
       if (profile != null) {
         final newTotal = (profile.totalGamePoints ?? 0) + _score;

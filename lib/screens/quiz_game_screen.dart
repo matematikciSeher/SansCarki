@@ -248,20 +248,30 @@ class _QuizGameScreenState extends State<QuizGameScreen> with TickerProviderStat
       // çevrimdışı/erişim hatası: temizleme yapma
     }
 
-    // Quiz puanlarını UserProfile'a ekle
-    final updatedProfile = widget.profile.copyWith(
-      totalQuizzes: (widget.profile.totalQuizzes ?? 0) + 1,
-      correctQuizAnswers: (widget.profile.correctQuizAnswers ?? 0) + _correctAnswers,
-      totalQuizPoints: (widget.profile.totalQuizPoints ?? 0) + _totalPoints,
-      points: widget.profile.points + _totalPoints, // Ana puan sistemine ekle
-      highestQuizScore: widget.profile.highestQuizScore == null || _totalPoints > widget.profile.highestQuizScore!
+    // Önce güncel profili Firestore'dan çek
+    UserProfile? currentProfile;
+    try {
+      currentProfile = await UserService.getCurrentUserProfile();
+    } catch (e) {
+      print('Güncel profil çekme hatası: $e');
+      currentProfile = widget.profile; // Fallback
+    }
+
+    // Quiz puanlarını güncel profile ekle
+    final baseProfile = currentProfile ?? widget.profile;
+    final updatedProfile = baseProfile.copyWith(
+      totalQuizzes: (baseProfile.totalQuizzes ?? 0) + 1,
+      correctQuizAnswers: (baseProfile.correctQuizAnswers ?? 0) + _correctAnswers,
+      totalQuizPoints: (baseProfile.totalQuizPoints ?? 0) + _totalPoints,
+      points: baseProfile.points + _totalPoints, // Ana puan sistemine ekle
+      highestQuizScore: baseProfile.highestQuizScore == null || _totalPoints > baseProfile.highestQuizScore!
           ? _totalPoints
-          : widget.profile.highestQuizScore,
+          : baseProfile.highestQuizScore,
       quizAccuracy:
-          widget.profile.quizAccuracy == null ? accuracy / 100 : ((widget.profile.quizAccuracy! + accuracy / 100) / 2),
-      averageQuizTime: widget.profile.averageQuizTime == null
+          baseProfile.quizAccuracy == null ? accuracy / 100 : ((baseProfile.quizAccuracy! + accuracy / 100) / 2),
+      averageQuizTime: baseProfile.averageQuizTime == null
           ? averageTime.round()
-          : ((widget.profile.averageQuizTime! + averageTime.round()) / 2).round(),
+          : ((baseProfile.averageQuizTime! + averageTime.round()) / 2).round(),
       solvedQuestionIds: solvedIds,
     );
 
