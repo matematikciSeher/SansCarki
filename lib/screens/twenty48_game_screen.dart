@@ -1,9 +1,9 @@
-
 import 'dart:math';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_profile.dart';
+import '../services/user_service.dart';
 
 class Twenty48GameScreen extends StatefulWidget {
   final UserProfile profile;
@@ -74,10 +74,8 @@ class _Twenty48GameScreenState extends State<Twenty48GameScreen> {
       for (int c = 0; c < size; c++) {
         final v = _grid[r][c];
         if (v == 0) return true;
-        if (r + 1 < size && (_grid[r + 1][c] == 0 || _grid[r + 1][c] == v))
-          return true;
-        if (c + 1 < size && (_grid[r][c + 1] == 0 || _grid[r][c + 1] == v))
-          return true;
+        if (r + 1 < size && (_grid[r + 1][c] == 0 || _grid[r + 1][c] == v)) return true;
+        if (c + 1 < size && (_grid[r][c + 1] == 0 || _grid[r][c + 1] == v)) return true;
       }
     }
     return false;
@@ -189,10 +187,17 @@ class _Twenty48GameScreenState extends State<Twenty48GameScreen> {
     );
     () async {
       try {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString(
-            'user_profile', jsonEncode(updatedProfile.toJson()));
-      } catch (_) {}
+        await UserService.updateCurrentUserProfile(updatedProfile);
+        await UserService.logActivity(
+          activityType: '2048_completed',
+          data: {
+            'score': _score,
+            'moves': _moves,
+          },
+        );
+      } catch (e) {
+        print('2048 profil kaydetme hatası: $e');
+      }
     }();
 
     showDialog(
@@ -316,8 +321,7 @@ class _Twenty48GameScreenState extends State<Twenty48GameScreen> {
                   '• Parmağını kaydırarak (yukarı/aşağı/sağ/sol) tüm blokları hareket ettir.\n'
                   '• Her hamleden sonra boş bir hücreye yeni bir blok (2/4) eklenir.\n'
                   '• Hamle kalmazsa oyun biter.',
-                  style:
-                      TextStyle(color: Colors.white, fontSize: 16, height: 1.4),
+                  style: TextStyle(color: Colors.white, fontSize: 16, height: 1.4),
                 ),
                 SizedBox(height: 14),
                 Text(
@@ -333,8 +337,7 @@ class _Twenty48GameScreenState extends State<Twenty48GameScreen> {
                   '• Büyük sayıları bir köşede tutmaya çalış.\n'
                   '• Boş yerleri koru, gereksiz hareketlerden kaçın.\n'
                   '• Önceki hamlelerinin sonuçlarını düşünerek strateji kur.',
-                  style:
-                      TextStyle(color: Colors.white, fontSize: 15, height: 1.4),
+                  style: TextStyle(color: Colors.white, fontSize: 15, height: 1.4),
                 ),
               ],
             ),
@@ -350,11 +353,9 @@ class _Twenty48GameScreenState extends State<Twenty48GameScreen> {
               backgroundColor: Colors.white,
               foregroundColor: Colors.black,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            child: const Text('🎮 Oyuna Başla',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            child: const Text('🎮 Oyuna Başla', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -415,16 +416,14 @@ class _Twenty48GameScreenState extends State<Twenty48GameScreen> {
             children: [
               const Icon(Icons.flag, color: Colors.white70, size: 18),
               const SizedBox(width: 6),
-              Text('Hamle: $_moves',
-                  style: const TextStyle(color: Colors.white, fontSize: 13)),
+              Text('Hamle: $_moves', style: const TextStyle(color: Colors.white, fontSize: 13)),
             ],
           ),
           Row(
             children: [
               const Icon(Icons.star, color: Colors.amber, size: 18),
               const SizedBox(width: 6),
-              Text('En İyi: $_bestScore',
-                  style: const TextStyle(color: Colors.white, fontSize: 13)),
+              Text('En İyi: $_bestScore', style: const TextStyle(color: Colors.white, fontSize: 13)),
             ],
           ),
           IconButton(
@@ -461,9 +460,7 @@ class _Twenty48GameScreenState extends State<Twenty48GameScreen> {
                               style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
-                                color: _grid[r][c] <= 4
-                                    ? Colors.black87
-                                    : Colors.white,
+                                color: _grid[r][c] <= 4 ? Colors.black87 : Colors.white,
                               ),
                             ),
                     ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../services/user_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -11,8 +12,7 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _passwordAgainController =
-      TextEditingController();
+  final TextEditingController _passwordAgainController = TextEditingController();
   bool _isLoading = false;
   String? _errorText;
 
@@ -45,8 +45,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _errorText = null;
     });
     try {
-      await FirebaseAuth.instance
-          .createUserWithEmailAndPassword(email: email, password: pass);
+      // Firebase Auth ile kullanıcı oluştur
+      final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(email: email, password: pass);
+
+      // Firestore'da kullanıcı profili oluştur
+      if (userCredential.user != null) {
+        await UserService.createUser(
+          uid: userCredential.user!.uid,
+          email: email,
+        );
+      }
+
       if (!mounted) return;
       setState(() => _isLoading = false);
       Navigator.pop(context);
@@ -58,10 +67,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
         _isLoading = false;
         _errorText = _mapAuthError(e);
       });
-    } catch (_) {
+    } catch (e) {
       setState(() {
         _isLoading = false;
-        _errorText = 'Kayıt başarısız. Tekrar deneyin.';
+        _errorText = 'Kayıt başarısız: ${e.toString()}';
       });
     }
   }
@@ -112,8 +121,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
                     labelText: 'E-posta',
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16)),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
                     prefixIcon: const Icon(Icons.email_outlined),
                   ),
                 ),
@@ -123,8 +131,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   obscureText: true,
                   decoration: InputDecoration(
                     labelText: 'Şifre',
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16)),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
                     prefixIcon: const Icon(Icons.lock_outline),
                   ),
                 ),
@@ -134,8 +141,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   obscureText: true,
                   decoration: InputDecoration(
                     labelText: 'Şifre (tekrar)',
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16)),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
                     prefixIcon: const Icon(Icons.lock_reset_outlined),
                   ),
                 ),
@@ -145,10 +151,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _register,
                     child: _isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2))
+                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
                         : const Text('Üye Ol'),
                   ),
                 ),

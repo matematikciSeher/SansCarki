@@ -6,6 +6,7 @@ import 'package:characters/characters.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_profile.dart';
 import '../services/audio_service.dart';
+import '../services/user_service.dart';
 
 class GameLogic {
   final List<String> players;
@@ -34,9 +35,7 @@ class GameLogic {
 
   static bool _isLetter(String ch) {
     final code = ch.codeUnitAt(0);
-    return (code >= 65 && code <= 90) ||
-        (code >= 97 && code <= 122) ||
-        'ÇĞİÖŞÜçğıöşü'.contains(ch);
+    return (code >= 65 && code <= 90) || (code >= 97 && code <= 122) || 'ÇĞİÖŞÜçğıöşü'.contains(ch);
   }
 
   static String _normalize(String ch) {
@@ -118,8 +117,7 @@ class WheelOfFortuneScreen extends StatefulWidget {
   State<WheelOfFortuneScreen> createState() => _WheelOfFortuneScreenState();
 }
 
-class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
-    with SingleTickerProviderStateMixin {
+class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen> with SingleTickerProviderStateMixin {
   late GameLogic _logic;
   String? _hintCategory;
   String? _hintText;
@@ -228,9 +226,8 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
       ..addStatusListener((status) {
         if (status == AnimationStatus.completed) {
           setState(() => _spinning = false);
-          final result = (_pendingTargetIndex != null)
-              ? _segments[_pendingTargetIndex!]
-              : _resultFromAngle(_rotation.value);
+          final result =
+              (_pendingTargetIndex != null) ? _segments[_pendingTargetIndex!] : _resultFromAngle(_rotation.value);
           _pendingTargetIndex = null;
           _logic.applySpinResult(result);
 
@@ -252,9 +249,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
                 content: Text(
                   result == 'İflas'
                       ? 'İflas! Puan sıfırlandı.'
-                      : (_logic.players.length <= 1
-                          ? 'Pas! Tur boşa geçti.'
-                          : 'Pas! Sıra diğer oyuncuda.'),
+                      : (_logic.players.length <= 1 ? 'Pas! Tur boşa geçti.' : 'Pas! Sıra diğer oyuncuda.'),
                 ),
               ),
             );
@@ -274,8 +269,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
   }
 
   Future<void> _loadWords() async {
-    final jsonStr = await DefaultAssetBundle.of(context)
-        .loadString('assets/words_hints.json');
+    final jsonStr = await DefaultAssetBundle.of(context).loadString('assets/words_hints.json');
     final data = json.decode(jsonStr) as Map<String, dynamic>;
 
     List<Map<String, String>> collect = [];
@@ -286,19 +280,12 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
           .map((e) {
             final m = e as Map<String, dynamic>;
             final raw = (m['word'] ?? m['kelime'] ?? '').toString();
-            final hintText =
-                (m['ipuç'] ?? m['ipucu'] ?? m['hint'] ?? m['hints'] ?? '')
-                    .toString();
+            final hintText = (m['ipuç'] ?? m['ipucu'] ?? m['hint'] ?? m['hints'] ?? '').toString();
             final word = raw.toString();
             final hintsList = (m['hints'] is List)
                 ? (m['hints'] as List)
                 : [
-                    {
-                      'category': 'İpucu',
-                      'text': hintText.isNotEmpty
-                          ? hintText
-                          : 'Kelime hakkında ipucu'
-                    },
+                    {'category': 'İpucu', 'text': hintText.isNotEmpty ? hintText : 'Kelime hakkında ipucu'},
                     {'category': 'İpucu', 'text': 'Kategori: Kelime'},
                     {'category': 'İpucu', 'text': 'Seviye: $diffTag'},
                   ];
@@ -312,18 +299,14 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
           .toList();
     }
 
-    List<Map<String, String>> mapAtasozleri(
-        List<dynamic> list, String diffTag) {
+    List<Map<String, String>> mapAtasozleri(List<dynamic> list, String diffTag) {
       return list
           .map((it) {
             if (it is String) {
               return {
                 'word': _normalizeTr(it),
                 'hints': json.encode([
-                  {
-                    'category': 'Atasözü',
-                    'text': 'Geleneksel bir öğüt içerir.'
-                  },
+                  {'category': 'Atasözü', 'text': 'Geleneksel bir öğüt içerir.'},
                   {'category': 'Atasözü', 'text': 'Günlük hayatta kullanılır.'},
                   {'category': 'Atasözü', 'text': 'Seviye: $diffTag'},
                 ]),
@@ -332,18 +315,11 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
             } else {
               final m = it as Map<String, dynamic>;
               return {
-                'word':
-                    _normalizeTr((m['word'] ?? m['kelime'] ?? '').toString()),
+                'word': _normalizeTr((m['word'] ?? m['kelime'] ?? '').toString()),
                 'hints': json.encode(m['hints'] ??
                     [
-                      {
-                        'category': 'Atasözü',
-                        'text': 'Geleneksel bir öğüt içerir.'
-                      },
-                      {
-                        'category': 'Atasözü',
-                        'text': 'Günlük hayatta kullanılır.'
-                      },
+                      {'category': 'Atasözü', 'text': 'Geleneksel bir öğüt içerir.'},
+                      {'category': 'Atasözü', 'text': 'Günlük hayatta kullanılır.'},
                       {'category': 'Atasözü', 'text': 'Seviye: $diffTag'},
                     ]),
                 'difficulty': normDiff(diffTag),
@@ -367,34 +343,25 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
           })
           .cast<Map<String, String>>()
           .toList();
-      final extra =
-          mapAtasozleri((data['atasozleri'] as List?) ?? const [], 'medium');
+      final extra = mapAtasozleri((data['atasozleri'] as List?) ?? const [], 'medium');
       _singleItems.addAll(extra);
-    } else if (data.containsKey('ilkokul') ||
-        data.containsKey('ortaokul') ||
-        data.containsKey('lise')) {
+    } else if (data.containsKey('ilkokul') || data.containsKey('ortaokul') || data.containsKey('lise')) {
       // New schema
       final ilkokul = (data['ilkokul'] as Map<String, dynamic>?);
       final ortaokul = (data['ortaokul'] as Map<String, dynamic>?);
       final lise = (data['lise'] as Map<String, dynamic>?);
 
       if (ilkokul != null) {
-        collect.addAll(
-            mapWords((ilkokul['kelimeler'] as List?) ?? const [], 'easy'));
-        collect.addAll(mapAtasozleri(
-            (ilkokul['atasozleri'] as List?) ?? const [], 'easy'));
+        collect.addAll(mapWords((ilkokul['kelimeler'] as List?) ?? const [], 'easy'));
+        collect.addAll(mapAtasozleri((ilkokul['atasozleri'] as List?) ?? const [], 'easy'));
       }
       if (ortaokul != null) {
-        collect.addAll(
-            mapWords((ortaokul['kelimeler'] as List?) ?? const [], 'medium'));
-        collect.addAll(mapAtasozleri(
-            (ortaokul['atasozleri'] as List?) ?? const [], 'medium'));
+        collect.addAll(mapWords((ortaokul['kelimeler'] as List?) ?? const [], 'medium'));
+        collect.addAll(mapAtasozleri((ortaokul['atasozleri'] as List?) ?? const [], 'medium'));
       }
       if (lise != null) {
-        collect
-            .addAll(mapWords((lise['kelimeler'] as List?) ?? const [], 'hard'));
-        collect.addAll(
-            mapAtasozleri((lise['atasozleri'] as List?) ?? const [], 'hard'));
+        collect.addAll(mapWords((lise['kelimeler'] as List?) ?? const [], 'hard'));
+        collect.addAll(mapAtasozleri((lise['atasozleri'] as List?) ?? const [], 'hard'));
       }
 
       _singleItems = collect;
@@ -424,10 +391,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
       else
         targetDifficulty = 'hard';
     }
-    final filtered = list
-        .where((m) =>
-            (m['difficulty'] == targetDifficulty) || m['difficulty'] == null)
-        .toList();
+    final filtered = list.where((m) => (m['difficulty'] == targetDifficulty) || m['difficulty'] == null).toList();
     final pool = filtered.isNotEmpty ? filtered : list;
     // Prefer words not used in this session
     final fresh = pool.where((m) => !_usedWords.contains(m['word'])).toList();
@@ -454,14 +418,13 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
     // Pointer üstte, tepe noktası -pi/2 yönünde. Dilim merkezini oraya hizala:
     // hedef merkez açısı = -(pi/2 + per/2) - index*per (mod 2π)
     final double current = _rotation.value % (2 * pi);
-    final double targetCenter =
-        -(pi / 2 + perSlice / 2) - targetIndex * perSlice;
+    final double targetCenter = -(pi / 2 + perSlice / 2) - targetIndex * perSlice;
     double base = (targetCenter - current) % (2 * pi);
     if (base < 0) base += 2 * pi; // pozitif aralık
     final double totalAdvance = spins * 2 * pi + base;
     final double endAngle = _rotation.value + totalAdvance;
-    _rotation = Tween<double>(begin: _rotation.value, end: endAngle).animate(
-        CurvedAnimation(parent: _controller, curve: Curves.easeOutQuint));
+    _rotation = Tween<double>(begin: _rotation.value, end: endAngle)
+        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutQuint));
     _controller.forward(from: 0);
   }
 
@@ -524,13 +487,10 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
         content: TextField(
           controller: controller,
           maxLength: 1,
-          decoration:
-              const InputDecoration(hintText: 'Bir sesli harf gir (AEIİOÖUÜ)'),
+          decoration: const InputDecoration(hintText: 'Bir sesli harf gir (AEIİOÖUÜ)'),
         ),
         actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('İptal')),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('İptal')),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, controller.text.trim()),
             child: const Text('Satın Al'),
@@ -609,13 +569,10 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
         title: Text(isProverb ? 'Cümle Tahmini' : 'Kelime Tahmini'),
         content: TextField(
           controller: controller,
-          decoration: InputDecoration(
-              hintText: isProverb ? 'Tüm cümleyi yaz' : 'Tüm kelimeyi yaz'),
+          decoration: InputDecoration(hintText: isProverb ? 'Tüm cümleyi yaz' : 'Tüm kelimeyi yaz'),
         ),
         actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('İptal')),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('İptal')),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, controller.text.trim()),
             child: const Text('Tahmin Et'),
@@ -629,8 +586,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
     if (g == target) {
       setState(() {
         for (final ch in _logic.secretWord.characters) {
-          if (GameLogic._isLetter(ch))
-            _logic.revealed.add(GameLogic._normalize(ch));
+          if (GameLogic._isLetter(ch)) _logic.revealed.add(GameLogic._normalize(ch));
         }
         // Bir sonraki turda serbest spin olsun
         _logic.lastSpin = null;
@@ -656,16 +612,12 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-                '${_logic.players[_logic.currentPlayerIndex]} kelimeyi bildi!'),
+            Text('${_logic.players[_logic.currentPlayerIndex]} kelimeyi bildi!'),
             const SizedBox(height: 8),
             Text('Kelime: ${_logic.secretWord}'),
             const SizedBox(height: 8),
             Text('Oturum Toplam Puanı: ' +
-                (_logic.scores.isNotEmpty
-                        ? _logic.scores.reduce((a, b) => a + b)
-                        : 0)
-                    .toString()),
+                (_logic.scores.isNotEmpty ? _logic.scores.reduce((a, b) => a + b) : 0).toString()),
           ],
         ),
         actions: [
@@ -688,8 +640,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
                 if (raw != null) {
                   final profile = UserProfile.fromJson(json.decode(raw));
                   if (context.mounted) {
-                    Navigator.pop(
-                        context, profile); // exit with updated profile
+                    Navigator.pop(context, profile); // exit with updated profile
                   }
                 } else {
                   if (context.mounted) Navigator.pop(context);
@@ -762,8 +713,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
       width: double.infinity,
       child: Builder(builder: (context) {
         final hasSpaces = _logic.secretWord.contains(' ');
-        final maxWordWidth =
-            MediaQuery.of(context).size.width - 32; // padding payı
+        final maxWordWidth = MediaQuery.of(context).size.width - 32; // padding payı
         if (!hasSpaces) {
           // Tek kelime: tek satırda ölçekleyerek göster
           return FittedBox(
@@ -773,8 +723,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
               mainAxisSize: MainAxisSize.min,
               children: _logic.secretWord.characters.map((ch) {
                 final isLetter = GameLogic._isLetter(ch);
-                final show = !isLetter ||
-                    _logic.revealed.contains(GameLogic._normalize(ch));
+                final show = !isLetter || _logic.revealed.contains(GameLogic._normalize(ch));
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   child: Container(
@@ -788,10 +737,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
                     ),
                     child: Text(
                       show ? _normalizeTr(ch) : '_',
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                          letterSpacing: 1.5),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, letterSpacing: 1.5),
                     ),
                   ),
                 );
@@ -816,8 +762,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
                   mainAxisSize: MainAxisSize.min,
                   children: word.characters.map((ch) {
                     final isLetter = GameLogic._isLetter(ch);
-                    final show = !isLetter ||
-                        _logic.revealed.contains(GameLogic._normalize(ch));
+                    final show = !isLetter || _logic.revealed.contains(GameLogic._normalize(ch));
                     return Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 3),
                       child: Container(
@@ -831,10 +776,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
                         ),
                         child: Text(
                           show ? _normalizeTr(ch) : '_',
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              letterSpacing: 1.4),
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1.4),
                         ),
                       ),
                     );
@@ -850,8 +792,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
     final scoreboard = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Puan Tablosu',
-            style: TextStyle(fontWeight: FontWeight.bold)),
+        const Text('Puan Tablosu', style: TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 4),
         FutureBuilder<SharedPreferences>(
           future: SharedPreferences.getInstance(),
@@ -864,8 +805,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
                 totalGame = (map['totalGamePoints'] ?? 0) as int;
               } catch (_) {}
             }
-            return Text('Kayıtlı Oyun Puanı: $totalGame',
-                style: const TextStyle(fontSize: 12));
+            return Text('Kayıtlı Oyun Puanı: $totalGame', style: const TextStyle(fontSize: 12));
           },
         ),
         const SizedBox(height: 4),
@@ -874,17 +814,14 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
             margin: const EdgeInsets.only(bottom: 4),
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: i == _logic.currentPlayerIndex
-                  ? Colors.orange.withOpacity(0.2)
-                  : Colors.white,
+              color: i == _logic.currentPlayerIndex ? Colors.orange.withOpacity(0.2) : Colors.white,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: Colors.black12),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(_logic.players[i],
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text(_logic.players[i], style: const TextStyle(fontWeight: FontWeight.w600)),
                 const SizedBox(width: 8),
                 Text('${_logic.scores[i]}'),
               ],
@@ -893,12 +830,9 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
       ],
     );
 
-    final bool canGuessLetter =
-        _logic.lastSpin != null && _logic.lastSpin!.startsWith('+');
-    final bool awaitingGuess =
-        _logic.lastSpin != null && _logic.lastSpin!.startsWith('+');
-    final bool isProverb =
-        (_hintCategory ?? '').toLowerCase().contains('atasö');
+    final bool canGuessLetter = _logic.lastSpin != null && _logic.lastSpin!.startsWith('+');
+    final bool awaitingGuess = _logic.lastSpin != null && _logic.lastSpin!.startsWith('+');
+    final bool isProverb = (_hintCategory ?? '').toLowerCase().contains('atasö');
     final controls = Wrap(
       alignment: WrapAlignment.center,
       spacing: 12,
@@ -952,21 +886,16 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
                         SizedBox(height: 6),
                         Text('• Adımlar:'),
                         Text('  1) Çarkı çevir. Sayı gelirse harf tahmin et.'),
-                        Text(
-                            '  2) Doğru harf sayısı × çarktaki puan kadar kazanırsın.'),
-                        Text(
-                            '  3) Pas gelirse sıra değişir (tek oyuncuda tur boşa geçer).'),
-                        Text(
-                            '  4) İflas gelirse puanın sıfırlanır ve sıra değişir.'),
+                        Text('  2) Doğru harf sayısı × çarktaki puan kadar kazanırsın.'),
+                        Text('  3) Pas gelirse sıra değişir (tek oyuncuda tur boşa geçer).'),
+                        Text('  4) İflas gelirse puanın sıfırlanır ve sıra değişir.'),
                         SizedBox(height: 8),
                         Text('• Sesli Harf: 200 puana satın alınır.'),
-                        Text(
-                            '• Joker: Bir gizli harfi açar (her oyuncu 1 kez).'),
+                        Text('• Joker: Bir gizli harfi açar (her oyuncu 1 kez).'),
                         SizedBox(height: 8),
                         Text('• Puan Dilimleri: 100 – 2000 arasında değişir.'),
                         SizedBox(height: 8),
-                        Text(
-                            '• Çok kelimeli ifadeler (atasözleri) satır kırarak gösterilir.'),
+                        Text('• Çok kelimeli ifadeler (atasözleri) satır kırarak gösterilir.'),
                       ],
                     ),
                   ),
@@ -1010,24 +939,20 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
                         decoration: BoxDecoration(
                           color: Colors.amber.withOpacity(0.15),
                           borderRadius: BorderRadius.circular(10),
-                          border:
-                              Border.all(color: Colors.amber.withOpacity(0.4)),
+                          border: Border.all(color: Colors.amber.withOpacity(0.4)),
                         ),
                         child: Column(
                           children: [
                             if (_hintCategory != null)
                               Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
                                   color: Colors.amber,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
                                   _hintCategory!,
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold),
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                                 ),
                               ),
                             const SizedBox(height: 2),
@@ -1066,38 +991,26 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
                                     cost = 150;
                                 }
                                 // Deduct locally from current player's score if possible; else do nothing
-                                if (_logic.scores[_logic.currentPlayerIndex] <
-                                    cost) {
+                                if (_logic.scores[_logic.currentPlayerIndex] < cost) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                        content: Text(
-                                            'Yetersiz puan: $cost gerekir')),
+                                    SnackBar(content: Text('Yetersiz puan: $cost gerekir')),
                                   );
                                   return;
                                 }
                                 setState(() {
-                                  _logic.scores[_logic.currentPlayerIndex] -=
-                                      cost;
+                                  _logic.scores[_logic.currentPlayerIndex] -= cost;
                                 });
                                 final list = _singleItems;
                                 final current = list.firstWhere(
                                   (e) => e['word'] == _logic.secretWord,
-                                  orElse: () => {
-                                    'word': _logic.secretWord,
-                                    'hints':
-                                        '[{"category":"İpucu","text":"İpucu yok"}]'
-                                  },
+                                  orElse: () =>
+                                      {'word': _logic.secretWord, 'hints': '[{"category":"İpucu","text":"İpucu yok"}]'},
                                 );
-                                final hints =
-                                    (json.decode(current['hints']!) as List)
-                                        .cast<Map>();
+                                final hints = (json.decode(current['hints']!) as List).cast<Map>();
                                 // rotate hint
                                 final next = hints.length <= 1
                                     ? hints.first
-                                    : hints[(hints.indexWhere((h) =>
-                                                '${h['text']}' == _hintText) +
-                                            1) %
-                                        hints.length];
+                                    : hints[(hints.indexWhere((h) => '${h['text']}' == _hintText) + 1) % hints.length];
                                 setState(() {
                                   _hintCategory = '${next['category']}';
                                   _hintText = '${next['text']}';
@@ -1120,8 +1033,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
                     const SizedBox(height: 12),
                     if (!_loading)
                       SizedBox(
-                        height:
-                            min(280, MediaQuery.of(context).size.width * 0.65),
+                        height: min(280, MediaQuery.of(context).size.width * 0.65),
                         child: Stack(
                           alignment: Alignment.topCenter,
                           children: [
@@ -1134,8 +1046,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
                     if (!_loading) controls,
                     const SizedBox(height: 8),
                     if (_logic.lastSpin != null)
-                      Text('Sonuç: ${_logic.lastSpin!}',
-                          style: const TextStyle(fontWeight: FontWeight.w600)),
+                      Text('Sonuç: ${_logic.lastSpin!}', style: const TextStyle(fontWeight: FontWeight.w600)),
                   ],
                 );
 
@@ -1143,9 +1054,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
                   return Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                          child: Center(
-                              child: SingleChildScrollView(child: centerBody))),
+                      Expanded(child: Center(child: SingleChildScrollView(child: centerBody))),
                       Container(
                         width: 220,
                         padding: const EdgeInsets.all(12),
@@ -1219,8 +1128,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: Colors.deepPurple,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 32, vertical: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                   ),
                   child: const Text('Başla', style: TextStyle(fontSize: 22)),
                 ),
@@ -1235,21 +1143,27 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
   Future<void> _saveSessionGamePoints() async {
     if (_sessionSaved) return;
     // Tek oyuncu olduğu için tüm skor toplamı oyuncunun skoru
-    final earned =
-        _logic.scores.isNotEmpty ? _logic.scores.reduce((a, b) => a + b) : 0;
+    final earned = _logic.scores.isNotEmpty ? _logic.scores.reduce((a, b) => a + b) : 0;
     if (earned <= 0) {
       _sessionSaved = true;
       return;
     }
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString('user_profile');
-      if (raw != null) {
-        final map = json.decode(raw) as Map<String, dynamic>;
-        final profile = UserProfile.fromJson(map);
+      // Firestore'dan güncel profili al
+      final profile = await UserService.getCurrentUserProfile();
+      if (profile != null) {
         final newTotal = (profile.totalGamePoints ?? 0) + earned;
-        final updated = profile.copyWith(totalGamePoints: newTotal);
-        await prefs.setString('user_profile', json.encode(updated.toJson()));
+        final updated = profile.copyWith(
+          totalGamePoints: newTotal,
+          points: profile.points + earned,
+        );
+        await UserService.updateCurrentUserProfile(updated);
+
+        // Aktivite logla
+        await UserService.logActivity(
+          activityType: 'wheel_of_fortune_completed',
+          data: {'points': earned},
+        );
 
         // Puan kaydedildiğini bildir
         if (mounted) {
@@ -1262,8 +1176,8 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
           );
         }
       }
-    } catch (_) {
-      // yut
+    } catch (e) {
+      print('Wheel of Fortune puan kaydetme hatası: $e');
     }
     _sessionSaved = true;
   }
@@ -1289,8 +1203,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
               ),
               const SizedBox(width: 8),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: Colors.green,
                   borderRadius: BorderRadius.circular(20),
@@ -1340,9 +1253,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
                   },
                   icon: const Icon(Icons.text_fields),
                   label: Text(
-                      ((_hintCategory ?? '').toLowerCase().contains('atasö'))
-                          ? 'Cümle Tahmin Et'
-                          : 'Kelime Tahmin Et'),
+                      ((_hintCategory ?? '').toLowerCase().contains('atasö')) ? 'Cümle Tahmin Et' : 'Kelime Tahmin Et'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.purple,
                     foregroundColor: Colors.white,
@@ -1430,20 +1341,17 @@ class _WheelPainter extends CustomPainter {
       canvas.drawArc(rect, start, per, true, paint);
       // Label
       final angle = start + per / 2;
-      final offset = Offset(center.dx + (radius * 0.6) * cos(angle),
-          center.dy + (radius * 0.6) * sin(angle));
+      final offset = Offset(center.dx + (radius * 0.6) * cos(angle), center.dy + (radius * 0.6) * sin(angle));
       textPainter.text = TextSpan(
         text: segments[i],
-        style: const TextStyle(
-            fontSize: 14, color: Colors.black, fontWeight: FontWeight.bold),
+        style: const TextStyle(fontSize: 14, color: Colors.black, fontWeight: FontWeight.bold),
       );
       textPainter.layout();
       canvas.save();
       canvas.translate(offset.dx, offset.dy);
       // Dikey yazı: -90° döndür
       canvas.rotate(-pi / 2);
-      textPainter.paint(
-          canvas, Offset(-textPainter.width / 2, -textPainter.height / 2));
+      textPainter.paint(canvas, Offset(-textPainter.width / 2, -textPainter.height / 2));
       canvas.restore();
     }
     // Outer ring

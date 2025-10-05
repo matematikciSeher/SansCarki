@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_profile.dart';
+import '../services/user_service.dart';
 
 class TetrisGameScreen extends StatefulWidget {
   final UserProfile profile;
@@ -14,8 +15,7 @@ class TetrisGameScreen extends StatefulWidget {
   State<TetrisGameScreen> createState() => _TetrisGameScreenState();
 }
 
-class _TetrisGameScreenState extends State<TetrisGameScreen>
-    with TickerProviderStateMixin {
+class _TetrisGameScreenState extends State<TetrisGameScreen> with TickerProviderStateMixin {
   static const int gridWidth = 10;
   static const int gridHeight = 20;
 
@@ -26,186 +26,46 @@ class _TetrisGameScreenState extends State<TetrisGameScreen>
   // Coordinates are (x, y) within a 4x4 box
   final Map<String, List<List<Point<int>>>> _tetrominoes = {
     'I': [
-      [
-        const Point(0, 1),
-        const Point(1, 1),
-        const Point(2, 1),
-        const Point(3, 1)
-      ],
-      [
-        const Point(2, 0),
-        const Point(2, 1),
-        const Point(2, 2),
-        const Point(2, 3)
-      ],
-      [
-        const Point(0, 2),
-        const Point(1, 2),
-        const Point(2, 2),
-        const Point(3, 2)
-      ],
-      [
-        const Point(1, 0),
-        const Point(1, 1),
-        const Point(1, 2),
-        const Point(1, 3)
-      ],
+      [const Point(0, 1), const Point(1, 1), const Point(2, 1), const Point(3, 1)],
+      [const Point(2, 0), const Point(2, 1), const Point(2, 2), const Point(2, 3)],
+      [const Point(0, 2), const Point(1, 2), const Point(2, 2), const Point(3, 2)],
+      [const Point(1, 0), const Point(1, 1), const Point(1, 2), const Point(1, 3)],
     ],
     'O': [
-      [
-        const Point(1, 1),
-        const Point(2, 1),
-        const Point(1, 2),
-        const Point(2, 2)
-      ],
-      [
-        const Point(1, 1),
-        const Point(2, 1),
-        const Point(1, 2),
-        const Point(2, 2)
-      ],
-      [
-        const Point(1, 1),
-        const Point(2, 1),
-        const Point(1, 2),
-        const Point(2, 2)
-      ],
-      [
-        const Point(1, 1),
-        const Point(2, 1),
-        const Point(1, 2),
-        const Point(2, 2)
-      ],
+      [const Point(1, 1), const Point(2, 1), const Point(1, 2), const Point(2, 2)],
+      [const Point(1, 1), const Point(2, 1), const Point(1, 2), const Point(2, 2)],
+      [const Point(1, 1), const Point(2, 1), const Point(1, 2), const Point(2, 2)],
+      [const Point(1, 1), const Point(2, 1), const Point(1, 2), const Point(2, 2)],
     ],
     'T': [
-      [
-        const Point(1, 1),
-        const Point(0, 2),
-        const Point(1, 2),
-        const Point(2, 2)
-      ],
-      [
-        const Point(1, 1),
-        const Point(1, 2),
-        const Point(2, 1),
-        const Point(1, 0)
-      ],
-      [
-        const Point(0, 1),
-        const Point(1, 1),
-        const Point(2, 1),
-        const Point(1, 2)
-      ],
-      [
-        const Point(1, 1),
-        const Point(1, 2),
-        const Point(0, 1),
-        const Point(1, 0)
-      ],
+      [const Point(1, 1), const Point(0, 2), const Point(1, 2), const Point(2, 2)],
+      [const Point(1, 1), const Point(1, 2), const Point(2, 1), const Point(1, 0)],
+      [const Point(0, 1), const Point(1, 1), const Point(2, 1), const Point(1, 2)],
+      [const Point(1, 1), const Point(1, 2), const Point(0, 1), const Point(1, 0)],
     ],
     'S': [
-      [
-        const Point(1, 1),
-        const Point(2, 1),
-        const Point(0, 2),
-        const Point(1, 2)
-      ],
-      [
-        const Point(1, 0),
-        const Point(1, 1),
-        const Point(2, 1),
-        const Point(2, 2)
-      ],
-      [
-        const Point(1, 1),
-        const Point(2, 1),
-        const Point(0, 2),
-        const Point(1, 2)
-      ],
-      [
-        const Point(1, 0),
-        const Point(1, 1),
-        const Point(2, 1),
-        const Point(2, 2)
-      ],
+      [const Point(1, 1), const Point(2, 1), const Point(0, 2), const Point(1, 2)],
+      [const Point(1, 0), const Point(1, 1), const Point(2, 1), const Point(2, 2)],
+      [const Point(1, 1), const Point(2, 1), const Point(0, 2), const Point(1, 2)],
+      [const Point(1, 0), const Point(1, 1), const Point(2, 1), const Point(2, 2)],
     ],
     'Z': [
-      [
-        const Point(0, 1),
-        const Point(1, 1),
-        const Point(1, 2),
-        const Point(2, 2)
-      ],
-      [
-        const Point(2, 0),
-        const Point(1, 1),
-        const Point(2, 1),
-        const Point(1, 2)
-      ],
-      [
-        const Point(0, 1),
-        const Point(1, 1),
-        const Point(1, 2),
-        const Point(2, 2)
-      ],
-      [
-        const Point(2, 0),
-        const Point(1, 1),
-        const Point(2, 1),
-        const Point(1, 2)
-      ],
+      [const Point(0, 1), const Point(1, 1), const Point(1, 2), const Point(2, 2)],
+      [const Point(2, 0), const Point(1, 1), const Point(2, 1), const Point(1, 2)],
+      [const Point(0, 1), const Point(1, 1), const Point(1, 2), const Point(2, 2)],
+      [const Point(2, 0), const Point(1, 1), const Point(2, 1), const Point(1, 2)],
     ],
     'J': [
-      [
-        const Point(0, 1),
-        const Point(0, 2),
-        const Point(1, 2),
-        const Point(2, 2)
-      ],
-      [
-        const Point(1, 0),
-        const Point(2, 0),
-        const Point(1, 1),
-        const Point(1, 2)
-      ],
-      [
-        const Point(0, 1),
-        const Point(1, 1),
-        const Point(2, 1),
-        const Point(2, 2)
-      ],
-      [
-        const Point(1, 0),
-        const Point(1, 1),
-        const Point(0, 2),
-        const Point(1, 2)
-      ],
+      [const Point(0, 1), const Point(0, 2), const Point(1, 2), const Point(2, 2)],
+      [const Point(1, 0), const Point(2, 0), const Point(1, 1), const Point(1, 2)],
+      [const Point(0, 1), const Point(1, 1), const Point(2, 1), const Point(2, 2)],
+      [const Point(1, 0), const Point(1, 1), const Point(0, 2), const Point(1, 2)],
     ],
     'L': [
-      [
-        const Point(2, 1),
-        const Point(0, 2),
-        const Point(1, 2),
-        const Point(2, 2)
-      ],
-      [
-        const Point(1, 0),
-        const Point(1, 1),
-        const Point(1, 2),
-        const Point(2, 2)
-      ],
-      [
-        const Point(0, 1),
-        const Point(1, 1),
-        const Point(2, 1),
-        const Point(0, 2)
-      ],
-      [
-        const Point(0, 0),
-        const Point(1, 0),
-        const Point(1, 1),
-        const Point(1, 2)
-      ],
+      [const Point(2, 1), const Point(0, 2), const Point(1, 2), const Point(2, 2)],
+      [const Point(1, 0), const Point(1, 1), const Point(1, 2), const Point(2, 2)],
+      [const Point(0, 1), const Point(1, 1), const Point(2, 1), const Point(0, 2)],
+      [const Point(0, 0), const Point(1, 0), const Point(1, 1), const Point(1, 2)],
     ],
   };
 
@@ -443,8 +303,18 @@ class _TetrisGameScreenState extends State<TetrisGameScreen>
   }
 
   Future<void> _saveProfile(UserProfile profile) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user_profile', jsonEncode(profile.toJson()));
+    try {
+      await UserService.updateCurrentUserProfile(profile);
+      await UserService.logActivity(
+        activityType: 'tetris_completed',
+        data: {
+          'score': _score,
+          'linesCleared': _linesCleared,
+        },
+      );
+    } catch (e) {
+      print('Tetris profil kaydetme hatası: $e');
+    }
   }
 
   void _gameOver() {
@@ -556,8 +426,7 @@ class _TetrisGameScreenState extends State<TetrisGameScreen>
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: Colors.indigo,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 32, vertical: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                   ),
                   child: const Text('Başla', style: TextStyle(fontSize: 22)),
                 ),
@@ -649,8 +518,7 @@ class _TetrisGameScreenState extends State<TetrisGameScreen>
           ),
           IconButton(
             onPressed: _pauseResume,
-            icon: Icon(_isRunning ? Icons.pause : Icons.play_arrow,
-                color: Colors.white),
+            icon: Icon(_isRunning ? Icons.pause : Icons.play_arrow, color: Colors.white),
           ),
         ],
       ),
@@ -715,13 +583,10 @@ class _TetrisGameScreenState extends State<TetrisGameScreen>
     );
   }
 
-  Widget _ctrlBtn(IconData icon, VoidCallback onTap,
-      {bool emphasized = false, Color? bgColor, Color? fgColor}) {
+  Widget _ctrlBtn(IconData icon, VoidCallback onTap, {bool emphasized = false, Color? bgColor, Color? fgColor}) {
     final double vPad = emphasized ? 16 : 12;
-    final Color bg =
-        bgColor ?? (emphasized ? Colors.white : Colors.white.withOpacity(0.9));
-    final Color fg =
-        fgColor ?? (emphasized ? Colors.indigo : Colors.indigo.shade700);
+    final Color bg = bgColor ?? (emphasized ? Colors.white : Colors.white.withOpacity(0.9));
+    final Color fg = fgColor ?? (emphasized ? Colors.indigo : Colors.indigo.shade700);
     final double iconSize = emphasized ? 28 : 24;
     return Expanded(
       child: Padding(
@@ -828,8 +693,6 @@ class _TetrisPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _TetrisPainter oldDelegate) {
-    return oldDelegate.grid != grid ||
-        oldDelegate.currentCells != currentCells ||
-        oldDelegate.ghost != ghost;
+    return oldDelegate.grid != grid || oldDelegate.currentCells != currentCells || oldDelegate.ghost != ghost;
   }
 }

@@ -18,7 +18,7 @@ import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import '../data/task_repository.dart';
-import 'login_page.dart';
+import '../services/user_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -45,8 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // Günlük ana hak (24 saatte bir)
   String? _dailySpinUsedDay; // 'YYYY-M-D'
   // Ekstra spin arming kaldırıldı; tıklayınca kullanıcı çarkı kendi çevirir
-  bool _pendingExtraSpin =
-      false; // bir sonraki spin ekstra hak olarak sayılacak
+  bool _pendingExtraSpin = false; // bir sonraki spin ekstra hak olarak sayılacak
 
   bool get _isTaskActive => _selectedTask != null;
 
@@ -136,11 +135,9 @@ class _HomeScreenState extends State<HomeScreen> {
       final prefs = await SharedPreferences.getInstance();
       final raw = prefs.getString('category_last_spin_dates');
       if (raw != null) {
-        final Map<String, dynamic> map =
-            json.decode(raw) as Map<String, dynamic>;
+        final Map<String, dynamic> map = json.decode(raw) as Map<String, dynamic>;
         setState(() {
-          _categoryLastSpin = map.map(
-              (key, value) => MapEntry(key, DateTime.parse(value as String)));
+          _categoryLastSpin = map.map((key, value) => MapEntry(key, DateTime.parse(value as String)));
         });
       }
     } catch (_) {}
@@ -226,8 +223,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _saveCategorySpinDates() async {
     final prefs = await SharedPreferences.getInstance();
-    final jsonMap = _categoryLastSpin
-        .map((key, value) => MapEntry(key, value.toIso8601String()));
+    final jsonMap = _categoryLastSpin.map((key, value) => MapEntry(key, value.toIso8601String()));
     await prefs.setString('category_last_spin_dates', json.encode(jsonMap));
   }
 
@@ -243,14 +239,31 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadProfile() async {
-    final prefs = await SharedPreferences.getInstance();
-    final profileJson = prefs.getString('user_profile');
-    if (profileJson != null) {
+    try {
+      // Kullanıcı mevcut değilse oluştur
+      await UserService.ensureUserExists();
+
+      // Firestore'dan profili çek
+      final profile = await UserService.getCurrentUserProfile();
+      if (profile != null) {
+        setState(() {
+          _profile = profile;
+        });
+        // Oyun/quiz/görev toplam puanına göre rozetleri garanti et
+        await _ensurePointBadges();
+      } else {
+        // Profil yoksa yeni bir tane oluştur
+        setState(() {
+          _profile = UserProfile();
+        });
+        await _saveProfile();
+      }
+    } catch (e) {
+      // Hata durumunda varsayılan profil kullan
+      print('Profil yükleme hatası: $e');
       setState(() {
-        _profile = UserProfile.fromJson(json.decode(profileJson));
+        _profile = UserProfile();
       });
-      // Oyun/quiz/görev toplam puanına göre rozetleri garanti et
-      await _ensurePointBadges();
     }
   }
 
@@ -297,8 +310,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (newBadges.isNotEmpty) {
       setState(() {
-        _profile =
-            _profile.copyWith(badges: [..._profile.badges, ...newBadges]);
+        _profile = _profile.copyWith(badges: [..._profile.badges, ...newBadges]);
       });
       await _saveProfile();
     }
@@ -314,27 +326,43 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _saveProfile() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user_profile', json.encode(_profile.toJson()));
+    try {
+      // Firestore'a kaydet
+      await UserService.updateCurrentUserProfile(_profile);
+    } catch (e) {
+      print('Profil kaydetme hatası: $e');
+      // Hata durumunda da devam et
+    }
   }
 
   Future<void> _logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('user_profile');
-    if (!mounted) return;
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const LoginPage()),
-      (route) => false,
-    );
+    try {
+      // Firebase Auth'dan çıkış yap
+      await UserService.signOut();
+
+      // Local verileri temizle (opsiyonel)
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('user_profile');
+      await prefs.remove('completed_tasks');
+
+      // AuthWrapper otomatik olarak LoginPage'e yönlendirecek
+      // Navigator kullanmaya gerek yok
+    } catch (e) {
+      print('Çıkış hatası: $e');
+      // Hata durumunda kullanıcıyı bilgilendir
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Çıkış yapılırken bir hata oluştu')),
+        );
+      }
+    }
   }
 
   Future<void> _loadCompletedTasks() async {
     final prefs = await SharedPreferences.getInstance();
     final tasksJson = prefs.getStringList('completed_tasks') ?? [];
     setState(() {
-      _completedTasks =
-          tasksJson.map((json) => Task.fromJson(jsonDecode(json))).toList();
+      _completedTasks = tasksJson.map((json) => Task.fromJson(jsonDecode(json))).toList();
     });
   }
 
@@ -343,10 +371,29 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _saveCompletedTasks() async {
-    final prefs = await SharedPreferences.getInstance();
-    final tasksJson =
-        _completedTasks.map((task) => jsonEncode(task.toJson())).toList();
-    await prefs.setStringList('completed_tasks', tasksJson);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final tasksJson = _completedTasks.map((task) => jsonEncode(task.toJson())).toList();
+      await prefs.setStringList('completed_tasks', tasksJson);
+
+      // Firestore'a da kaydet (opsiyonel - detaylı görev geçmişi için)
+      final uid = UserService.getCurrentUserId();
+      if (uid != null && _completedTasks.isNotEmpty) {
+        // Son tamamlanan görevi aktivite olarak logla
+        final lastTask = _completedTasks.first;
+        await UserService.logActivity(
+          activityType: 'task_completed',
+          data: {
+            'taskId': lastTask.id,
+            'taskTitle': lastTask.title,
+            'category': lastTask.category.toString(),
+            'points': lastTask.basePoints,
+          },
+        );
+      }
+    } catch (e) {
+      print('Görev kaydetme hatası: $e');
+    }
   }
 
   Future<void> _saveTaskProof(
@@ -469,19 +516,16 @@ class _HomeScreenState extends State<HomeScreen> {
                           width: double.infinity,
                           child: ElevatedButton.icon(
                             onPressed: () async {
-                              final result =
-                                  await FilePicker.platform.pickFiles(
+                              final result = await FilePicker.platform.pickFiles(
                                 allowMultiple: false,
                                 type: FileType.any,
                               );
-                              if (result != null &&
-                                  result.files.single.path != null) {
+                              if (result != null && result.files.single.path != null) {
                                 setInnerState(() {
                                   pickedDocPath = result.files.single.path;
                                 });
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text('Belge seçildi.')),
+                                  const SnackBar(content: Text('Belge seçildi.')),
                                 );
                               }
                             },
@@ -520,8 +564,7 @@ class _HomeScreenState extends State<HomeScreen> {
         if (!await proofsDir.exists()) {
           await proofsDir.create(recursive: true);
         }
-        final fileName =
-            'proof_${task.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        final fileName = 'proof_${task.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
         final destPath = '${proofsDir.path}/$fileName';
         await File(pickedImagePath!).copy(destPath);
         finalSavedPath = destPath;
@@ -534,8 +577,7 @@ class _HomeScreenState extends State<HomeScreen> {
           await proofsDir.create(recursive: true);
         }
         final extension = pickedDocPath!.split('.').last;
-        final docName =
-            'proof_${task.id}_${DateTime.now().millisecondsSinceEpoch}.$extension';
+        final docName = 'proof_${task.id}_${DateTime.now().millisecondsSinceEpoch}.$extension';
         final docDest = '${proofsDir.path}/$docName';
         await File(pickedDocPath!).copy(docDest);
         savedDocPath = docDest;
@@ -579,22 +621,16 @@ class _HomeScreenState extends State<HomeScreen> {
     // Görev havuzu (assets + fallback)
     final List<Task> allTasks = [
       ...(_assetTasks ?? const <Task>[]),
-      if ((_assetTasks == null || _assetTasks!.isEmpty))
-        ...TaskRepositoryFallback.sampleTasks,
+      if ((_assetTasks == null || _assetTasks!.isEmpty)) ...TaskRepositoryFallback.sampleTasks,
     ];
-    final List<Task> categoryTasks = allTasks
-        .where((task) =>
-            task.category.toString().split('.').last == finalCategory.id)
-        .toList();
+    final List<Task> categoryTasks =
+        allTasks.where((task) => task.category.toString().split('.').last == finalCategory.id).toList();
 
     // 480 gün görev cooldown (sınıf filtresi kaldırıldı)
-    final Map<String, DateTime?> lastDone = {
-      for (final t in _completedTasks) t.id: t.completedAt
-    };
+    final Map<String, DateTime?> lastDone = {for (final t in _completedTasks) t.id: t.completedAt};
     List<Task> availableTasks = categoryTasks.where((task) {
       final last = lastDone[task.id];
-      if (last != null && now.difference(last).inDays < _taskCooldownDays)
-        return false;
+      if (last != null && now.difference(last).inDays < _taskCooldownDays) return false;
       return true;
     }).toList();
 
@@ -614,15 +650,14 @@ class _HomeScreenState extends State<HomeScreen> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-              'Bu kategoride uygun görev bulunamadı (cooldown/sınıf filtresi).'),
+          content: Text('Bu kategoride uygun görev bulunamadı (cooldown/sınıf filtresi).'),
           backgroundColor: Colors.red,
         ),
       );
     }
   }
 
-  void _completeTask([Task? specificTask]) {
+  void _completeTask([Task? specificTask]) async {
     final task = specificTask ?? _selectedTask;
     if (task == null) return;
 
@@ -655,8 +690,8 @@ class _HomeScreenState extends State<HomeScreen> {
       _checkAndAddBadges();
     });
 
-    _saveProfile();
-    _saveCompletedTasks();
+    await _saveProfile();
+    await _saveCompletedTasks();
 
     // Başarı mesajı göster
     String message = 'Görev tamamlandı! +$earnedPoints puan kazandın! 🎉';
@@ -714,8 +749,7 @@ class _HomeScreenState extends State<HomeScreen> {
       completedByCategory[cat] = (completedByCategory[cat] ?? 0) + 1;
       completedCategories.add(cat);
       // Zorluk sayımı
-      completedByDifficultyCount[task.difficulty] =
-          (completedByDifficultyCount[task.difficulty] ?? 0) + 1;
+      completedByDifficultyCount[task.difficulty] = (completedByDifficultyCount[task.difficulty] ?? 0) + 1;
     }
 
     // Rozet koşullarını kontrol et
@@ -725,8 +759,7 @@ class _HomeScreenState extends State<HomeScreen> {
       switch (badge.type) {
         case app_badge.BadgeType.zorluk:
           if (badge.requiredDifficulty != null && badge.requiredCount != null) {
-            final count =
-                completedByDifficultyCount[badge.requiredDifficulty!] ?? 0;
+            final count = completedByDifficultyCount[badge.requiredDifficulty!] ?? 0;
             if (count >= badge.requiredCount!) earned = true;
           }
           break;
@@ -737,16 +770,13 @@ class _HomeScreenState extends State<HomeScreen> {
           }
           break;
         case app_badge.BadgeType.streak:
-          if (badge.requiredCount != null &&
-              _profile.streakDays >= badge.requiredCount!) earned = true;
+          if (badge.requiredCount != null && _profile.streakDays >= badge.requiredCount!) earned = true;
           break;
         case app_badge.BadgeType.cesitlilik:
-          if (badge.requiredCount != null &&
-              completedCategories.length >= badge.requiredCount!) earned = true;
+          if (badge.requiredCount != null && completedCategories.length >= badge.requiredCount!) earned = true;
           break;
         case app_badge.BadgeType.ozel:
-          if (badge.id == 'ilk_gorev' && _profile.completedTasks == 1)
-            earned = true;
+          if (badge.id == 'ilk_gorev' && _profile.completedTasks == 1) earned = true;
           // Diğer özel rozetler için ek koşullar eklenebilir
           break;
       }
@@ -766,14 +796,8 @@ class _HomeScreenState extends State<HomeScreen> {
     else if (total >= 5000) highestId = 'points_bronz';
 
     if (highestId != null) {
-      final pointIds = {
-        'points_bronz',
-        'points_gumus',
-        'points_altin',
-        'points_elmas'
-      };
-      final cleaned =
-          _profile.badges.where((b) => !pointIds.contains(b)).toList();
+      final pointIds = {'points_bronz', 'points_gumus', 'points_altin', 'points_elmas'};
+      final cleaned = _profile.badges.where((b) => !pointIds.contains(b)).toList();
       if (!cleaned.contains(highestId)) cleaned.add(highestId);
       setState(() {
         _profile = _profile.copyWith(badges: cleaned);
@@ -820,18 +844,12 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             // Düz metin olarak puan/başlıklar (alt alta)
-            Text('🏆 ${_profile.level}',
-                style:
-                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text('🏆 ${_profile.level}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
-            Text('⭐ Görev Puanı: ${_profile.points}',
-                style: const TextStyle(fontSize: 14)),
-            Text('🎮 Oyun Puanı: ${_profile.totalGamePoints ?? 0}',
-                style: const TextStyle(fontSize: 14)),
-            Text('🧠 Quiz Puanı: ${_profile.totalQuizPoints ?? 0}',
-                style: const TextStyle(fontSize: 14)),
-            Text('💎 Toplam Puan: ${_profile.totalAllPoints}',
-                style: const TextStyle(fontSize: 14)),
+            Text('⭐ Görev Puanı: ${_profile.points}', style: const TextStyle(fontSize: 14)),
+            Text('🎮 Oyun Puanı: ${_profile.totalGamePoints ?? 0}', style: const TextStyle(fontSize: 14)),
+            Text('🧠 Quiz Puanı: ${_profile.totalQuizPoints ?? 0}', style: const TextStyle(fontSize: 14)),
+            Text('💎 Toplam Puan: ${_profile.totalAllPoints}', style: const TextStyle(fontSize: 14)),
 
             const SizedBox(height: 8),
 
@@ -908,8 +926,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text(
-                                  'Günlük çark hakkın doldu. Ampül yanarsa ekstra hak kullanabilirsin.'),
+                              content: Text('Günlük çark hakkın doldu. Ampül yanarsa ekstra hak kullanabilirsin.'),
                             ),
                           );
                         }
@@ -958,8 +975,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(height: 8),
                         TaskCard(
                           task: _selectedTask!,
-                          onComplete: () =>
-                              _showProofDialogAndComplete(_selectedTask!),
+                          onComplete: () => _showProofDialogAndComplete(_selectedTask!),
                           showCompleteButton: true,
                         ),
                       ],
@@ -1095,8 +1111,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 context: context,
                 builder: (context) => AlertDialog(
                   title: const Text('Çıkış yap?'),
-                  content: const Text(
-                      'Hesaptan çıkış yapıp giriş ekranına dönülecek.'),
+                  content: const Text('Hesaptan çıkış yapıp giriş ekranına dönülecek.'),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context, false),

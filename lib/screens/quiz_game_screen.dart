@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'dart:convert';
 import '../models/user_profile.dart';
 import '../models/quiz.dart';
 // Quiz questions are now provided by caller (e.g., fetched from Firestore)
 import 'package:shared_preferences/shared_preferences.dart';
 import '../data/quiz_repository.dart';
+import '../services/user_service.dart';
 
 class QuizGameScreen extends StatefulWidget {
   final List<QuizQuestion> questions;
@@ -21,8 +21,7 @@ class QuizGameScreen extends StatefulWidget {
   State<QuizGameScreen> createState() => _QuizGameScreenState();
 }
 
-class _QuizGameScreenState extends State<QuizGameScreen>
-    with TickerProviderStateMixin {
+class _QuizGameScreenState extends State<QuizGameScreen> with TickerProviderStateMixin {
   late AnimationController _questionAnimationController;
   late AnimationController _timerAnimationController;
   late Animation<double> _questionFadeAnimation;
@@ -83,8 +82,7 @@ class _QuizGameScreenState extends State<QuizGameScreen>
 
   void _updateSlideAnimation() {
     // Alternating slide: right->left then left->right
-    final begin =
-        _slideFromRight ? const Offset(0.2, 0) : const Offset(-0.2, 0);
+    final begin = _slideFromRight ? const Offset(0.2, 0) : const Offset(-0.2, 0);
     _questionSlideAnimation = Tween<Offset>(
       begin: begin,
       end: Offset.zero,
@@ -149,8 +147,7 @@ class _QuizGameScreenState extends State<QuizGameScreen>
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Text('⏰ Süre Doldu!'),
-        content:
-            const Text('Bu soru için süre doldu. Doğru cevap gösteriliyor.'),
+        content: const Text('Bu soru için süre doldu. Doğru cevap gösteriliyor.'),
         actions: [
           TextButton(
             onPressed: () {
@@ -254,35 +251,44 @@ class _QuizGameScreenState extends State<QuizGameScreen>
     // Quiz puanlarını UserProfile'a ekle
     final updatedProfile = widget.profile.copyWith(
       totalQuizzes: (widget.profile.totalQuizzes ?? 0) + 1,
-      correctQuizAnswers:
-          (widget.profile.correctQuizAnswers ?? 0) + _correctAnswers,
+      correctQuizAnswers: (widget.profile.correctQuizAnswers ?? 0) + _correctAnswers,
       totalQuizPoints: (widget.profile.totalQuizPoints ?? 0) + _totalPoints,
       points: widget.profile.points + _totalPoints, // Ana puan sistemine ekle
-      highestQuizScore: widget.profile.highestQuizScore == null ||
-              _totalPoints > widget.profile.highestQuizScore!
+      highestQuizScore: widget.profile.highestQuizScore == null || _totalPoints > widget.profile.highestQuizScore!
           ? _totalPoints
           : widget.profile.highestQuizScore,
-      quizAccuracy: widget.profile.quizAccuracy == null
-          ? accuracy / 100
-          : ((widget.profile.quizAccuracy! + accuracy / 100) / 2),
+      quizAccuracy:
+          widget.profile.quizAccuracy == null ? accuracy / 100 : ((widget.profile.quizAccuracy! + accuracy / 100) / 2),
       averageQuizTime: widget.profile.averageQuizTime == null
           ? averageTime.round()
-          : ((widget.profile.averageQuizTime! + averageTime.round()) / 2)
-              .round(),
+          : ((widget.profile.averageQuizTime! + averageTime.round()) / 2).round(),
       solvedQuestionIds: solvedIds,
     );
 
-    // UserProfile'ı kaydet
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user_profile', jsonEncode(updatedProfile.toJson()));
+    // UserProfile'ı Firestore'a kaydet
+    try {
+      await UserService.updateCurrentUserProfile(updatedProfile);
+
+      // Aktivite logla (opsiyonel)
+      await UserService.logActivity(
+        activityType: 'quiz_completed',
+        data: {
+          'points': _totalPoints,
+          'correctAnswers': _correctAnswers,
+          'totalQuestions': _questions.length,
+          'accuracy': accuracy,
+        },
+      );
+    } catch (e) {
+      print('Quiz profil kaydetme hatası: $e');
+    }
 
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) {
         return Dialog(
-          insetPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
           backgroundColor: Colors.transparent,
           child: Stack(
             children: [
@@ -327,24 +333,18 @@ class _QuizGameScreenState extends State<QuizGameScreen>
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(16),
-                        border:
-                            Border.all(color: Colors.white.withOpacity(0.3)),
+                        border: Border.all(color: Colors.white.withOpacity(0.3)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Text('Doğru: $_correctAnswers/${_questions.length}',
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold)),
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                           Text('Doğruluk: ${accuracy.toStringAsFixed(1)}%',
                               style: const TextStyle(color: Colors.white)),
-                          Text('Quiz Puanı: $_totalPoints',
-                              style: const TextStyle(color: Colors.white)),
-                          Text('Toplam Puan: ${updatedProfile.points}',
-                              style: const TextStyle(color: Colors.white)),
-                          Text(
-                              'Ortalama Süre: ${averageTime.toStringAsFixed(1)}s',
+                          Text('Quiz Puanı: $_totalPoints', style: const TextStyle(color: Colors.white)),
+                          Text('Toplam Puan: ${updatedProfile.points}', style: const TextStyle(color: Colors.white)),
+                          Text('Ortalama Süre: ${averageTime.toStringAsFixed(1)}s',
                               style: const TextStyle(color: Colors.white)),
                         ],
                       ),
@@ -355,13 +355,10 @@ class _QuizGameScreenState extends State<QuizGameScreen>
                         Expanded(
                           child: OutlinedButton(
                             style: OutlinedButton.styleFrom(
-                              side: BorderSide(
-                                  color: Colors.white.withOpacity(0.8),
-                                  width: 2),
+                              side: BorderSide(color: Colors.white.withOpacity(0.8), width: 2),
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16)),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             ),
                             onPressed: () {
                               Navigator.pop(context);
@@ -377,8 +374,7 @@ class _QuizGameScreenState extends State<QuizGameScreen>
                               backgroundColor: Colors.white,
                               foregroundColor: Colors.purple,
                               padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16)),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                               elevation: 4,
                             ),
                             onPressed: () {
@@ -418,8 +414,7 @@ class _QuizGameScreenState extends State<QuizGameScreen>
                       ],
                     ),
                     child: const Center(
-                      child: Icon(Icons.celebration,
-                          color: Colors.white, size: 34),
+                      child: Icon(Icons.celebration, color: Colors.white, size: 34),
                     ),
                   ),
                 ),
@@ -444,8 +439,7 @@ class _QuizGameScreenState extends State<QuizGameScreen>
       _remainingTime = 30;
     });
 
-    final desiredCount =
-        widget.questions.isNotEmpty ? widget.questions.length : 10;
+    final desiredCount = widget.questions.isNotEmpty ? widget.questions.length : 10;
     final recent = await _getRecentQuestionIds();
     final fresh = await QuizRepository.fetchRandom(
       count: desiredCount,
@@ -686,13 +680,11 @@ class _QuizGameScreenState extends State<QuizGameScreen>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(30),
-                  border: Border.all(
-                      color: Colors.white.withOpacity(0.5), width: 1),
+                  border: Border.all(color: Colors.white.withOpacity(0.5), width: 1),
                 ),
                 child: Text(
                   question.category.emoji,
@@ -789,10 +781,8 @@ class _QuizGameScreenState extends State<QuizGameScreen>
                     textAlign: TextAlign.left,
                   ),
                 ),
-                if (showResult && isCorrect)
-                  const Icon(Icons.check_circle, color: Colors.green),
-                if (showResult && isSelected && !isCorrect)
-                  const Icon(Icons.cancel, color: Colors.red),
+                if (showResult && isCorrect) const Icon(Icons.check_circle, color: Colors.green),
+                if (showResult && isSelected && !isCorrect) const Icon(Icons.cancel, color: Colors.red),
               ],
             ),
           ),

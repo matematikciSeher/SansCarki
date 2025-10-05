@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math';
 import '../models/user_profile.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
+import '../services/user_service.dart';
 
 class MathChallengeGameScreen extends StatefulWidget {
   final UserProfile profile;
@@ -14,12 +13,10 @@ class MathChallengeGameScreen extends StatefulWidget {
   });
 
   @override
-  State<MathChallengeGameScreen> createState() =>
-      _MathChallengeGameScreenState();
+  State<MathChallengeGameScreen> createState() => _MathChallengeGameScreenState();
 }
 
-class _MathChallengeGameScreenState extends State<MathChallengeGameScreen>
-    with TickerProviderStateMixin {
+class _MathChallengeGameScreenState extends State<MathChallengeGameScreen> with TickerProviderStateMixin {
   late AnimationController _questionAnimationController;
   late Animation<double> _questionFadeAnimation;
   late Animation<Offset> _questionSlideAnimation;
@@ -131,8 +128,7 @@ class _MathChallengeGameScreenState extends State<MathChallengeGameScreen>
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Text('⏰ Süre Doldu!'),
-        content:
-            const Text('Bu soru için süre doldu. Doğru cevap gösteriliyor.'),
+        content: const Text('Bu soru için süre doldu. Doğru cevap gösteriliyor.'),
         actions: [
           TextButton(
             onPressed: () async {
@@ -263,8 +259,21 @@ class _MathChallengeGameScreenState extends State<MathChallengeGameScreen>
   }
 
   Future<void> _saveProfile(UserProfile profile) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user_profile', jsonEncode(profile.toJson()));
+    try {
+      await UserService.updateCurrentUserProfile(profile);
+
+      // Aktivite logla (opsiyonel)
+      await UserService.logActivity(
+        activityType: 'math_game_completed',
+        data: {
+          'score': _score,
+          'correctAnswers': _correctAnswers,
+          'totalQuestions': _questions.length,
+        },
+      );
+    } catch (e) {
+      print('Matematik oyunu profil kaydetme hatası: $e');
+    }
   }
 
   void _showGameCompleteDialog(UserProfile updatedProfile, double accuracy) {
@@ -278,8 +287,7 @@ class _MathChallengeGameScreenState extends State<MathChallengeGameScreen>
           children: [
             Text('Matematik mücadelesini tamamladın!'),
             const SizedBox(height: 16),
-            _buildResultRow(
-                '🎯 Doğru Cevap', '$_correctAnswers/${_questions.length}'),
+            _buildResultRow('🎯 Doğru Cevap', '$_correctAnswers/${_questions.length}'),
             _buildResultRow('📊 Doğruluk', '${accuracy.toStringAsFixed(1)}%'),
             _buildResultRow('⭐ Puan', '$_score'),
             const SizedBox(height: 16),
@@ -435,8 +443,7 @@ class _MathChallengeGameScreenState extends State<MathChallengeGameScreen>
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: Colors.purple,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 32, vertical: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                   ),
                   child: const Text('Başla', style: TextStyle(fontSize: 22)),
                 ),
@@ -732,10 +739,8 @@ class _MathChallengeGameScreenState extends State<MathChallengeGameScreen>
                     textAlign: TextAlign.center,
                   ),
                 ),
-                if (showResult && isCorrect)
-                  const Icon(Icons.check_circle, color: Colors.green),
-                if (showResult && isSelected && !isCorrect)
-                  const Icon(Icons.cancel, color: Colors.red),
+                if (showResult && isCorrect) const Icon(Icons.check_circle, color: Colors.green),
+                if (showResult && isSelected && !isCorrect) const Icon(Icons.cancel, color: Colors.red),
               ],
             ),
           ),
@@ -765,11 +770,7 @@ class _QuestionDef {
   final int correctIndex;
   final bool isHard;
 
-  const _QuestionDef(
-      {required this.question,
-      required this.options,
-      required this.correctIndex,
-      this.isHard = false});
+  const _QuestionDef({required this.question, required this.options, required this.correctIndex, this.isHard = false});
 }
 
 // Kullanıcıdan gelen sabit soru bankası (örnek ilk bölümden bir kaç tanesi; tamamı eklenecek)
@@ -795,8 +796,7 @@ final List<_QuestionDef> _questionBank = [
     correctIndex: 1,
   ),
   _QuestionDef(
-    question:
-        'Bir çiftçi 128 elmayı 8 çocuğa eşit paylaştırıyor. Her çocuk kaç elma alır?',
+    question: 'Bir çiftçi 128 elmayı 8 çocuğa eşit paylaştırıyor. Her çocuk kaç elma alır?',
     options: [14, 15, 16, 18],
     correctIndex: 2,
   ),
@@ -836,8 +836,7 @@ final List<_QuestionDef> _questionBank = [
     correctIndex: 2,
   ),
   _QuestionDef(
-    question:
-        'Bir otobüste 54 yolcu vardır. 19 yolcu indi, 23 yolcu bindi. Son durumda kaç yolcu vardır?',
+    question: 'Bir otobüste 54 yolcu vardır. 19 yolcu indi, 23 yolcu bindi. Son durumda kaç yolcu vardır?',
     options: [56, 57, 58, 59],
     correctIndex: 0,
   ),
@@ -862,8 +861,7 @@ final List<_QuestionDef> _questionBank = [
     correctIndex: 2,
   ),
   _QuestionDef(
-    question:
-        'Bir dikdörtgenin kısa kenarı 12 cm, uzun kenarı 18 cm’dir. Çevresi kaç cm’dir?',
+    question: 'Bir dikdörtgenin kısa kenarı 12 cm, uzun kenarı 18 cm’dir. Çevresi kaç cm’dir?',
     options: [58, 60, 62, 64],
     correctIndex: 1,
   ),
@@ -899,8 +897,7 @@ final List<_QuestionDef> _questionBank = [
     correctIndex: 0,
   ),
   _QuestionDef(
-    question:
-        'Bir çiftçi 150 yumurtanın 48’ini sattı. Geriye kaç yumurta kaldı?',
+    question: 'Bir çiftçi 150 yumurtanın 48’ini sattı. Geriye kaç yumurta kaldı?',
     options: [98, 100, 102, 104],
     correctIndex: 2,
   ),
@@ -925,8 +922,7 @@ final List<_QuestionDef> _questionBank = [
     correctIndex: 1,
   ),
   _QuestionDef(
-    question:
-        'Bir sınıfta 42 öğrenci vardır. 16’sı kız, gerisi erkek. Erkek öğrenci sayısı kaçtır?',
+    question: 'Bir sınıfta 42 öğrenci vardır. 16’sı kız, gerisi erkek. Erkek öğrenci sayısı kaçtır?',
     options: [24, 25, 26, 27],
     correctIndex: 2,
   ),
@@ -976,8 +972,7 @@ final List<_QuestionDef> _questionBank = [
     correctIndex: 1,
   ),
   _QuestionDef(
-    question:
-        'Bir okulda 240 öğrenci vardır. 85’i sabahçı, kalanı öğlenci. Öğlenci sayısı kaçtır?',
+    question: 'Bir okulda 240 öğrenci vardır. 85’i sabahçı, kalanı öğlenci. Öğlenci sayısı kaçtır?',
     options: [145, 150, 155, 160],
     correctIndex: 2,
   ),
@@ -1067,15 +1062,13 @@ final List<_QuestionDef> _questionBank = [
     correctIndex: 2,
   ),
   _QuestionDef(
-    question:
-        'Bir sınıfta 54 öğrenci vardır. 18 öğrenci başka okula gider, yerine 25 öğrenci gelir. Kaç öğrenci olur?',
+    question: 'Bir sınıfta 54 öğrenci vardır. 18 öğrenci başka okula gider, yerine 25 öğrenci gelir. Kaç öğrenci olur?',
     options: [60, 61, 62, 63],
     correctIndex: 3,
   ),
   // Zor problemler
   _QuestionDef(
-    question:
-        'Bir işçi bir işi 12 günde bitirebiliyor. Aynı işten 3 işçi birlikte çalışırsa iş kaç günde biter?',
+    question: 'Bir işçi bir işi 12 günde bitirebiliyor. Aynı işten 3 işçi birlikte çalışırsa iş kaç günde biter?',
     options: [3, 4, 5, 6],
     correctIndex: 1,
     isHard: true,
@@ -1108,43 +1101,37 @@ final List<_QuestionDef> _questionBank = [
     correctIndex: 2,
   ),
   _QuestionDef(
-    question:
-        'Bir çiftçi 256 elmayı torbalara koyuyor. Her torbada 16 elma olacaksa kaç torba gerekir?',
+    question: 'Bir çiftçi 256 elmayı torbalara koyuyor. Her torbada 16 elma olacaksa kaç torba gerekir?',
     options: [12, 14, 15, 16],
     correctIndex: 3,
   ),
   // 🟥 Zor Sorular (126–130)
   _QuestionDef(
-    question:
-        'Bir tren saatte 90 km hızla gidiyor. 4 saat 20 dakikada kaç km yol alır?',
+    question: 'Bir tren saatte 90 km hızla gidiyor. 4 saat 20 dakikada kaç km yol alır?',
     options: [380, 390, 400, 410],
     correctIndex: 1,
     isHard: true,
   ),
   _QuestionDef(
-    question:
-        'Bir dikdörtgenin uzun kenarı 45 cm, kısa kenarı 27 cm’dir. Çevresi kaç cm’dir?',
+    question: 'Bir dikdörtgenin uzun kenarı 45 cm, kısa kenarı 27 cm’dir. Çevresi kaç cm’dir?',
     options: [138, 140, 144, 150],
     correctIndex: 2,
     isHard: true,
   ),
   _QuestionDef(
-    question:
-        'Bir kitap 480 sayfadır. Ali günde 24 sayfa okursa kitabı kaç günde bitirir?',
+    question: 'Bir kitap 480 sayfadır. Ali günde 24 sayfa okursa kitabı kaç günde bitirir?',
     options: [18, 19, 20, 21],
     correctIndex: 2,
     isHard: true,
   ),
   _QuestionDef(
-    question:
-        'Bir market 12 kg pirinci 144 TL’ye satıyor. 5 kg pirincin fiyatı kaç TL olur?',
+    question: 'Bir market 12 kg pirinci 144 TL’ye satıyor. 5 kg pirincin fiyatı kaç TL olur?',
     options: [55, 58, 60, 62],
     correctIndex: 2,
     isHard: true,
   ),
   _QuestionDef(
-    question:
-        'Bir dik üçgenin dik kenarları 9 cm ve 12 cm’dir. Hipotenüs uzunluğu kaç cm’dir?',
+    question: 'Bir dik üçgenin dik kenarları 9 cm ve 12 cm’dir. Hipotenüs uzunluğu kaç cm’dir?',
     options: [14, 15, 16, 17],
     correctIndex: 1,
     isHard: true,
@@ -1170,22 +1157,19 @@ final List<_QuestionDef> _questionBank = [
     correctIndex: 2,
   ),
   _QuestionDef(
-    question:
-        'Bir otobüste 45 yolcu vardır. 12 yolcu inip 23 yolcu binerse otobüste kaç yolcu olur?',
+    question: 'Bir otobüste 45 yolcu vardır. 12 yolcu inip 23 yolcu binerse otobüste kaç yolcu olur?',
     options: [54, 55, 56, 57],
     correctIndex: 3,
   ),
   // ... Kullanıcının gönderdiği tüm sorular aynı formatta eklenebilir
   _QuestionDef(
-    question:
-        'Bir manav, 3 kasa elmayı 8 TL’den, 5 kasa armudu 12 TL’den satıyor. Manav toplamda kaç TL kazanır?',
+    question: 'Bir manav, 3 kasa elmayı 8 TL’den, 5 kasa armudu 12 TL’den satıyor. Manav toplamda kaç TL kazanır?',
     options: [81, 82, 83, 84],
     correctIndex: 3,
     isHard: true,
   ),
   _QuestionDef(
-    question:
-        'Bir tren 120 m uzunlukta ve saatte 60 km hızla gidiyor. 300 m köprüyü kaç saniyede tamamen geçer?',
+    question: 'Bir tren 120 m uzunlukta ve saatte 60 km hızla gidiyor. 300 m köprüyü kaç saniyede tamamen geçer?',
     options: [24, 25, 26, 27],
     correctIndex: 0,
     isHard: true,
@@ -1225,29 +1209,25 @@ final List<_QuestionDef> _questionBank = [
     isHard: true,
   ),
   _QuestionDef(
-    question:
-        'Bir dikdörtgenin kısa kenarı 15 cm, uzun kenarı kısa kenarın 3 katıdır. Alanı kaç cm²’dir?',
+    question: 'Bir dikdörtgenin kısa kenarı 15 cm, uzun kenarı kısa kenarın 3 katıdır. Alanı kaç cm²’dir?',
     options: [675, 680, 690, 700],
     correctIndex: 0,
     isHard: true,
   ),
   _QuestionDef(
-    question:
-        '540 metre uzunluğundaki bir yol, 30 metre uzunluğunda bölümlere ayrılırsa kaç bölüm oluşur?',
+    question: '540 metre uzunluğundaki bir yol, 30 metre uzunluğunda bölümlere ayrılırsa kaç bölüm oluşur?',
     options: [17, 18, 19, 20],
     correctIndex: 1,
     isHard: true,
   ),
   _QuestionDef(
-    question:
-        'Bir havuz 24 m uzunluğunda, 12 m genişliğinde ve 2 m derinliğindedir. Hacmi kaç m³’tür?',
+    question: 'Bir havuz 24 m uzunluğunda, 12 m genişliğinde ve 2 m derinliğindedir. Hacmi kaç m³’tür?',
     options: [550, 560, 576, 580],
     correctIndex: 2,
     isHard: true,
   ),
   _QuestionDef(
-    question:
-        '20 günde bir işi bitiren işçi, 4 işçi birlikte çalışırsa kaç günde işi tamamlar?',
+    question: '20 günde bir işi bitiren işçi, 4 işçi birlikte çalışırsa kaç günde işi tamamlar?',
     options: [4, 5, 6, 7],
     correctIndex: 1,
     isHard: true,
@@ -1273,8 +1253,7 @@ final List<_QuestionDef> _questionBank = [
     correctIndex: 1,
   ),
   _QuestionDef(
-    question:
-        'Bir dikdörtgenin kısa kenarı 18 cm, uzun kenarı 40 cm’dir. Çevresi kaç cm’dir?',
+    question: 'Bir dikdörtgenin kısa kenarı 18 cm, uzun kenarı 40 cm’dir. Çevresi kaç cm’dir?',
     options: [112, 116, 118, 120],
     correctIndex: 1,
   ),
@@ -1349,8 +1328,7 @@ final List<_QuestionDef> _questionBank = [
     correctIndex: 2,
   ),
   _QuestionDef(
-    question:
-        'Bir dikdörtgenin kısa kenarı 16 cm, uzun kenarı 36 cm’dir. Çevresi kaç cm’dir?',
+    question: 'Bir dikdörtgenin kısa kenarı 16 cm, uzun kenarı 36 cm’dir. Çevresi kaç cm’dir?',
     options: [100, 102, 104, 106],
     correctIndex: 2,
   ),
@@ -1400,8 +1378,7 @@ final List<_QuestionDef> _questionBank = [
     correctIndex: 2,
   ),
   _QuestionDef(
-    question:
-        'Bir dik üçgenin dik kenarları 6 cm ve 8 cm’dir. Hipotenüs uzunluğu kaç cm’dir?',
+    question: 'Bir dik üçgenin dik kenarları 6 cm ve 8 cm’dir. Hipotenüs uzunluğu kaç cm’dir?',
     options: [9, 10, 11, 12],
     correctIndex: 1,
   ),
@@ -1439,29 +1416,25 @@ final List<_QuestionDef> _questionBank = [
     isHard: true,
   ),
   _QuestionDef(
-    question:
-        'Bir dikdörtgenin kısa kenarı 16 cm, uzun kenarı kısa kenarın 2,5 katıdır. Alanı kaç cm²’dir?',
+    question: 'Bir dikdörtgenin kısa kenarı 16 cm, uzun kenarı kısa kenarın 2,5 katıdır. Alanı kaç cm²’dir?',
     options: [640, 650, 660, 670],
     correctIndex: 0,
     isHard: true,
   ),
   _QuestionDef(
-    question:
-        '600 metre uzunluğundaki bir yol 25 metre uzunluğundaki bölümlere ayrılırsa kaç bölüm oluşur?',
+    question: '600 metre uzunluğundaki bir yol 25 metre uzunluğundaki bölümlere ayrılırsa kaç bölüm oluşur?',
     options: [23, 24, 25, 26],
     correctIndex: 1,
     isHard: true,
   ),
   _QuestionDef(
-    question:
-        'Bir havuz 30 m uzunluğunda, 10 m genişliğinde ve 2 m derinliğindedir. Hacmi kaç m³’tür?',
+    question: 'Bir havuz 30 m uzunluğunda, 10 m genişliğinde ve 2 m derinliğindedir. Hacmi kaç m³’tür?',
     options: [580, 600, 620, 640],
     correctIndex: 1,
     isHard: true,
   ),
   _QuestionDef(
-    question:
-        '30 günde bir işi bitiren işçi, 5 işçi birlikte çalışırsa kaç günde işi tamamlar?',
+    question: '30 günde bir işi bitiren işçi, 5 işçi birlikte çalışırsa kaç günde işi tamamlar?',
     options: [5, 6, 7, 8],
     correctIndex: 1,
     isHard: true,
@@ -1487,8 +1460,7 @@ final List<_QuestionDef> _questionBank = [
     correctIndex: 1,
   ),
   _QuestionDef(
-    question:
-        'Bir dikdörtgenin kısa kenarı 18 cm, uzun kenarı 42 cm’dir. Çevresi kaç cm’dir?',
+    question: 'Bir dikdörtgenin kısa kenarı 18 cm, uzun kenarı 42 cm’dir. Çevresi kaç cm’dir?',
     options: [116, 120, 124, 126],
     correctIndex: 1,
   ),
@@ -1563,8 +1535,7 @@ final List<_QuestionDef> _questionBank = [
     correctIndex: 1,
   ),
   _QuestionDef(
-    question:
-        'Bir dikdörtgenin kısa kenarı 16 cm, uzun kenarı 38 cm’dir. Çevresi kaç cm’dir?',
+    question: 'Bir dikdörtgenin kısa kenarı 16 cm, uzun kenarı 38 cm’dir. Çevresi kaç cm’dir?',
     options: [104, 108, 110, 112],
     correctIndex: 1,
   ),
@@ -1614,8 +1585,7 @@ final List<_QuestionDef> _questionBank = [
     correctIndex: 1,
   ),
   _QuestionDef(
-    question:
-        'Bir dik üçgenin dik kenarları 6 cm ve 8 cm’dir. Hipotenüs uzunluğu kaç cm’dir?',
+    question: 'Bir dik üçgenin dik kenarları 6 cm ve 8 cm’dir. Hipotenüs uzunluğu kaç cm’dir?',
     options: [9, 10, 11, 12],
     correctIndex: 1,
   ),
@@ -1666,14 +1636,12 @@ final List<_QuestionDef> _questionBank = [
     correctIndex: 1,
   ),
   _QuestionDef(
-    question:
-        'Kısa kenarı 14 cm, uzun kenarı 20 cm olan dikdörtgenin alanı kaç cm²’dir?',
+    question: 'Kısa kenarı 14 cm, uzun kenarı 20 cm olan dikdörtgenin alanı kaç cm²’dir?',
     options: [260, 270, 280, 290],
     correctIndex: 2,
   ),
   _QuestionDef(
-    question:
-        'Bir işçi günde 8 saat çalışarak 18 günde işi bitiriyor. Günde 12 saat çalışan işçi kaç günde bitirir?',
+    question: 'Bir işçi günde 8 saat çalışarak 18 günde işi bitiriyor. Günde 12 saat çalışan işçi kaç günde bitirir?',
     options: [10, 12, 14, 16],
     correctIndex: 1,
     isHard: true,
@@ -1724,8 +1692,7 @@ final List<_QuestionDef> _questionBank = [
     correctIndex: 2,
   ),
   _QuestionDef(
-    question:
-        'Dik kenarları 9 cm ve 12 cm olan dik üçgende hipotenüs uzunluğu kaç cm’dir?',
+    question: 'Dik kenarları 9 cm ve 12 cm olan dik üçgende hipotenüs uzunluğu kaç cm’dir?',
     options: [14, 15, 16, 17],
     correctIndex: 1,
     isHard: true,
@@ -1776,8 +1743,7 @@ final List<_QuestionDef> _questionBank = [
     correctIndex: 2,
   ),
   _QuestionDef(
-    question:
-        '12 km uzunluğundaki bir yol, 400 m’lik parçalara bölünürse kaç parça olur?',
+    question: '12 km uzunluğundaki bir yol, 400 m’lik parçalara bölünürse kaç parça olur?',
     options: [28, 29, 30, 31],
     correctIndex: 2,
     isHard: true,
@@ -1803,8 +1769,7 @@ final List<_QuestionDef> _questionBank = [
     correctIndex: 2,
   ),
   _QuestionDef(
-    question:
-        'Kısa kenarı 18 cm, uzun kenarı 27 cm olan dikdörtgenin çevresi kaç cm’dir?',
+    question: 'Kısa kenarı 18 cm, uzun kenarı 27 cm olan dikdörtgenin çevresi kaç cm’dir?',
     options: [84, 88, 90, 92],
     correctIndex: 2,
   ),
@@ -1829,8 +1794,7 @@ final List<_QuestionDef> _questionBank = [
     correctIndex: 1,
   ),
   _QuestionDef(
-    question:
-        'Bir işçi bir işi 15 günde bitiriyor. 3 işçi birlikte çalışırsa kaç günde biter?',
+    question: 'Bir işçi bir işi 15 günde bitiriyor. 3 işçi birlikte çalışırsa kaç günde biter?',
     options: [4, 5, 6, 7],
     correctIndex: 1,
     isHard: true,
@@ -1881,8 +1845,7 @@ final List<_QuestionDef> _questionBank = [
     correctIndex: 1,
   ),
   _QuestionDef(
-    question:
-        '36 km uzunluğundaki bir yol, 600 m’lik parçalara ayrılırsa kaç parça oluşur?',
+    question: '36 km uzunluğundaki bir yol, 600 m’lik parçalara ayrılırsa kaç parça oluşur?',
     options: [55, 58, 60, 62],
     correctIndex: 2,
     isHard: true,
@@ -1908,8 +1871,7 @@ final List<_QuestionDef> _questionBank = [
     correctIndex: 2,
   ),
   _QuestionDef(
-    question:
-        'Kısa kenarı 22 cm, uzun kenarı 35 cm olan dikdörtgenin çevresi kaç cm’dir?',
+    question: 'Kısa kenarı 22 cm, uzun kenarı 35 cm olan dikdörtgenin çevresi kaç cm’dir?',
     options: [110, 112, 114, 116],
     correctIndex: 2,
   ),
@@ -1934,8 +1896,7 @@ final List<_QuestionDef> _questionBank = [
     correctIndex: 1,
   ),
   _QuestionDef(
-    question:
-        'Bir işi 12 günde bitiren 4 işçi aynı hızla birlikte çalışırsa kaç günde bitirir?',
+    question: 'Bir işi 12 günde bitiren 4 işçi aynı hızla birlikte çalışırsa kaç günde bitirir?',
     options: [2, 3, 4, 5],
     correctIndex: 1,
     isHard: true,
@@ -2012,8 +1973,7 @@ final List<_QuestionDef> _questionBank = [
     correctIndex: 2,
   ),
   _QuestionDef(
-    question:
-        'Kısa kenarı 17 cm, uzun kenarı 23 cm olan dikdörtgenin alanı kaç cm²’dir?',
+    question: 'Kısa kenarı 17 cm, uzun kenarı 23 cm olan dikdörtgenin alanı kaç cm²’dir?',
     options: [380, 384, 391, 396],
     correctIndex: 2,
   ),
@@ -2089,8 +2049,7 @@ final List<_QuestionDef> _questionBank = [
     correctIndex: 2,
   ),
   _QuestionDef(
-    question:
-        '600 m uzunluğundaki yol 20 m’lik bölümlere ayrılırsa kaç bölüm oluşur?',
+    question: '600 m uzunluğundaki yol 20 m’lik bölümlere ayrılırsa kaç bölüm oluşur?',
     options: [25, 30, 35, 40],
     correctIndex: 1,
     isHard: true,
@@ -2116,8 +2075,7 @@ final List<_QuestionDef> _questionBank = [
     correctIndex: 3,
   ),
   _QuestionDef(
-    question:
-        'Bir dikdörtgenin kısa kenarı 19 cm, uzun kenarı 33 cm’dir. Çevresi kaç cm’dir?',
+    question: 'Bir dikdörtgenin kısa kenarı 19 cm, uzun kenarı 33 cm’dir. Çevresi kaç cm’dir?',
     options: [100, 102, 104, 106],
     correctIndex: 2,
   ),

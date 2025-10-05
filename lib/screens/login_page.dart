@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'home_screen.dart';
 // import 'package:flutter_svg/flutter_svg.dart';
 import '../widgets/animated_login_wheel.dart';
 import 'admin_quiz_panel_screen.dart';
@@ -42,11 +41,8 @@ class _LoginPageState extends State<LoginPage> {
     });
     try {
       await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: pass);
-      if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-      );
+      // AuthWrapper otomatik olarak HomeScreen'e yönlendirecek
+      // Navigator kullanmaya gerek yok
     } on FirebaseAuthException catch (e) {
       setState(() {
         _errorText = _mapAuthError(e);

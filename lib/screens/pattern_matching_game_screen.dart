@@ -4,6 +4,7 @@ import 'dart:math';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_profile.dart';
+import '../services/user_service.dart';
 
 class PatternMatchingGameScreen extends StatefulWidget {
   final UserProfile profile;
@@ -14,12 +15,10 @@ class PatternMatchingGameScreen extends StatefulWidget {
   });
 
   @override
-  State<PatternMatchingGameScreen> createState() =>
-      _PatternMatchingGameScreenState();
+  State<PatternMatchingGameScreen> createState() => _PatternMatchingGameScreenState();
 }
 
-class _PatternMatchingGameScreenState extends State<PatternMatchingGameScreen>
-    with TickerProviderStateMixin {
+class _PatternMatchingGameScreenState extends State<PatternMatchingGameScreen> with TickerProviderStateMixin {
   late AnimationController _patternAnimationController;
   late Animation<double> _patternScaleAnimation;
 
@@ -157,8 +156,7 @@ class _PatternMatchingGameScreenState extends State<PatternMatchingGameScreen>
       _checkPattern();
     } else {
       // Kısmi kontrol
-      if (_userPattern[_userPattern.length - 1] !=
-          _pattern[_userPattern.length - 1]) {
+      if (_userPattern[_userPattern.length - 1] != _pattern[_userPattern.length - 1]) {
         _gameOver();
       }
     }
@@ -379,17 +377,24 @@ class _PatternMatchingGameScreenState extends State<PatternMatchingGameScreen>
     if (_score <= 0) return;
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString('user_profile');
-      if (raw != null) {
-        final map = json.decode(raw) as Map<String, dynamic>;
-        final profile = UserProfile.fromJson(map);
+      final profile = await UserService.getCurrentUserProfile();
+      if (profile != null) {
         final newTotal = (profile.totalGamePoints ?? 0) + _score;
-        final updated = profile.copyWith(totalGamePoints: newTotal);
-        await prefs.setString('user_profile', json.encode(updated.toJson()));
+        final updated = profile.copyWith(
+          totalGamePoints: newTotal,
+          points: profile.points + _score,
+        );
+        await UserService.updateCurrentUserProfile(updated);
+        await UserService.logActivity(
+          activityType: 'pattern_matching_completed',
+          data: {
+            'score': _score,
+            'level': _currentLevel,
+          },
+        );
       }
     } catch (e) {
-      // Hata durumunda sessizce devam et
+      print('Pattern matching profil kaydetme hatası: $e');
     }
   }
 
@@ -472,8 +477,7 @@ class _PatternMatchingGameScreenState extends State<PatternMatchingGameScreen>
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: Colors.pink,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 32, vertical: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                   ),
                   child: const Text('Başla', style: TextStyle(fontSize: 22)),
                 ),
@@ -658,9 +662,7 @@ class _PatternMatchingGameScreenState extends State<PatternMatchingGameScreen>
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: isActive
-                      ? _colors[colorIndex]
-                      : _colors[colorIndex].withOpacity(0.3),
+                  color: isActive ? _colors[colorIndex] : _colors[colorIndex].withOpacity(0.3),
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: Colors.white.withOpacity(0.5),
@@ -728,8 +730,7 @@ class _PatternMatchingGameScreenState extends State<PatternMatchingGameScreen>
 
   Widget _buildColorGrid() {
     final screenWidth = MediaQuery.of(context).size.width;
-    final crossAxisCount =
-        screenWidth > 400 ? 4 : 3; // Küçük ekranlarda 3 sütun
+    final crossAxisCount = screenWidth > 400 ? 4 : 3; // Küçük ekranlarda 3 sütun
 
     return GridView.builder(
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -755,9 +756,7 @@ class _PatternMatchingGameScreenState extends State<PatternMatchingGameScreen>
         onTap: isActive ? () => _onColorTap(index) : null,
         child: Container(
           decoration: BoxDecoration(
-            color: isHighlighted
-                ? _colors[index]
-                : _colors[index].withOpacity(0.8),
+            color: isHighlighted ? _colors[index] : _colors[index].withOpacity(0.8),
             shape: BoxShape.circle,
             border: Border.all(
               color: Colors.white.withOpacity(0.5),
