@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math';
 import '../models/user_profile.dart';
+import '../services/user_service.dart';
 
 class MemoryCardGameScreen extends StatefulWidget {
   final UserProfile profile;
@@ -15,8 +16,7 @@ class MemoryCardGameScreen extends StatefulWidget {
   State<MemoryCardGameScreen> createState() => _MemoryCardGameScreenState();
 }
 
-class _MemoryCardGameScreenState extends State<MemoryCardGameScreen>
-    with TickerProviderStateMixin {
+class _MemoryCardGameScreenState extends State<MemoryCardGameScreen> with TickerProviderStateMixin {
   late AnimationController _cardAnimationController;
   late AnimationController _flipAnimationController;
   late Animation<double> _cardScaleAnimation;
@@ -34,20 +34,7 @@ class _MemoryCardGameScreenState extends State<MemoryCardGameScreen>
   bool _isGameComplete = false;
   bool _showInfo = true;
 
-  final List<String> _cardSymbols = [
-    '🌟',
-    '🎈',
-    '🎨',
-    '🎭',
-    '🎪',
-    '🎯',
-    '🎲',
-    '🎮',
-    '🎸',
-    '🎹',
-    '🎺',
-    '🎻'
-  ];
+  final List<String> _cardSymbols = ['🌟', '🎈', '🎨', '🎭', '🎪', '🎯', '🎲', '🎮', '🎸', '🎹', '🎺', '🎻'];
 
   @override
   void initState() {
@@ -183,7 +170,7 @@ class _MemoryCardGameScreenState extends State<MemoryCardGameScreen>
     _canFlip = true;
   }
 
-  void _endGame() {
+  void _endGame() async {
     _isGameComplete = true;
     _gameTimer?.cancel();
 
@@ -192,11 +179,43 @@ class _MemoryCardGameScreenState extends State<MemoryCardGameScreen>
     final moveBonus = (50 - _moves).clamp(0, 100);
     _score += timeBonus + moveBonus;
 
+    // Güncel profili Firestore'dan çek
+    UserProfile? currentProfile;
+    try {
+      currentProfile = await UserService.getCurrentUserProfile();
+    } catch (e) {
+      print('Güncel profil çekme hatası: $e');
+      currentProfile = widget.profile; // Fallback
+    }
+
+    final baseProfile = currentProfile ?? widget.profile;
+
     // Profil güncelleme
-    final updatedProfile = widget.profile.copyWith(
-      points: widget.profile.points + _score,
-      totalGamePoints: (widget.profile.totalGamePoints ?? 0) + _score,
+    final updatedProfile = baseProfile.copyWith(
+      points: baseProfile.points + _score,
+      totalGamePoints: (baseProfile.totalGamePoints ?? 0) + _score,
     );
+
+    // Firestore'a kaydet
+    try {
+      print('🎮 MEMORY CARD BİTTİ - Puan kaydediliyor...');
+      print('   ✨ Kazanılan Puan: $_score');
+      print('   📊 Yeni Oyun Puanı: ${updatedProfile.totalGamePoints ?? 0}');
+
+      await UserService.updateCurrentUserProfile(updatedProfile);
+      print('   ✅ Firestore\'a kaydedildi!');
+
+      await UserService.logActivity(
+        activityType: 'memory_game_completed',
+        data: {
+          'score': _score,
+          'moves': _moves,
+          'time': _elapsedTime,
+        },
+      );
+    } catch (e) {
+      print('❌ Memory card profil kaydetme hatası: $e');
+    }
 
     _showGameCompleteDialog(updatedProfile);
   }
@@ -370,8 +389,7 @@ class _MemoryCardGameScreenState extends State<MemoryCardGameScreen>
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: Colors.blue,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 32, vertical: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                   ),
                   child: const Text('Başla', style: TextStyle(fontSize: 22)),
                 ),
@@ -552,8 +570,7 @@ class _MemoryCardGameScreenState extends State<MemoryCardGameScreen>
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
-                  child:
-                      card.isFlipped ? _buildCardFront(card) : _buildCardBack(),
+                  child: card.isFlipped ? _buildCardFront(card) : _buildCardBack(),
                 ),
               ),
             );

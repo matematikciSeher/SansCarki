@@ -269,7 +269,12 @@ class _MathChallengeGameScreenState extends State<MathChallengeGameScreen> with 
 
   Future<void> _saveProfile(UserProfile profile) async {
     try {
+      print('🎮 MATH CHALLENGE BİTTİ - Puan kaydediliyor...');
+      print('   ✨ Kazanılan Puan: $_score');
+      print('   📊 Yeni Oyun Puanı: ${profile.totalGamePoints ?? 0}');
+
       await UserService.updateCurrentUserProfile(profile);
+      print('   ✅ Firestore\'a kaydedildi!');
 
       // Aktivite logla (opsiyonel)
       await UserService.logActivity(
@@ -281,7 +286,7 @@ class _MathChallengeGameScreenState extends State<MathChallengeGameScreen> with 
         },
       );
     } catch (e) {
-      print('Matematik oyunu profil kaydetme hatası: $e');
+      print('❌ Matematik oyunu profil kaydetme hatası: $e');
     }
   }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/user_profile.dart';
 import 'dart:math';
+import '../services/user_service.dart';
 
 class _Cell {
   bool top;
@@ -8,12 +9,7 @@ class _Cell {
   bool bottom;
   bool left;
   bool visited;
-  _Cell(
-      {this.top = true,
-      this.right = true,
-      this.bottom = true,
-      this.left = true,
-      this.visited = false});
+  _Cell({this.top = true, this.right = true, this.bottom = true, this.left = true, this.visited = false});
 }
 
 class MazeGameScreen extends StatefulWidget {
@@ -121,10 +117,7 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
     final openRight = !_maze[r][c].right;
     final openDown = !_maze[r][c].bottom;
     final openLeft = !_maze[r][c].left;
-    final degree = (openUp ? 1 : 0) +
-        (openRight ? 1 : 0) +
-        (openDown ? 1 : 0) +
-        (openLeft ? 1 : 0);
+    final degree = (openUp ? 1 : 0) + (openRight ? 1 : 0) + (openDown ? 1 : 0) + (openLeft ? 1 : 0);
     if (degree != 2) return false;
     if (dr != 0) {
       // moving vertically: only up/down should be open
@@ -157,11 +150,42 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
     }
   }
 
-  void _showWin() {
+  void _showWin() async {
     final earned = 80 + (_rows + _cols); // daha yüksek puan
-    final updated = widget.profile.copyWith(
-        points: widget.profile.points + earned,
-        totalGamePoints: (widget.profile.totalGamePoints ?? 0) + earned);
+
+    // Güncel profili Firestore'dan çek
+    UserProfile? currentProfile;
+    try {
+      currentProfile = await UserService.getCurrentUserProfile();
+    } catch (e) {
+      print('Güncel profil çekme hatası: $e');
+      currentProfile = widget.profile;
+    }
+
+    final baseProfile = currentProfile ?? widget.profile;
+    final updated = baseProfile.copyWith(
+        points: baseProfile.points + earned, totalGamePoints: (baseProfile.totalGamePoints ?? 0) + earned);
+
+    // Firestore'a kaydet
+    try {
+      print('🎮 MAZE BİTTİ - Puan kaydediliyor...');
+      print('   ✨ Kazanılan Puan: $earned');
+      print('   📊 Yeni Oyun Puanı: ${updated.totalGamePoints ?? 0}');
+
+      await UserService.updateCurrentUserProfile(updated);
+      print('   ✅ Firestore\'a kaydedildi!');
+
+      await UserService.logActivity(
+        activityType: 'maze_completed',
+        data: {
+          'score': earned,
+          'mazeSize': '${_rows}x$_cols',
+        },
+      );
+    } catch (e) {
+      print('❌ Maze profil kaydetme hatası: $e');
+    }
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -255,8 +279,7 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: Colors.blueGrey,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 32, vertical: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                   ),
                   child: const Text('Başla', style: TextStyle(fontSize: 22)),
                 ),
@@ -349,23 +372,20 @@ class _MazeGameScreenState extends State<MazeGameScreen> {
                 children: [
                   IconButton(
                     onPressed: () => _moveAuto(0, -1),
-                    icon: const Icon(Icons.keyboard_arrow_left,
-                        color: Colors.white),
+                    icon: const Icon(Icons.keyboard_arrow_left, color: Colors.white),
                     iconSize: 48,
                   ),
                   const SizedBox(width: 24),
                   IconButton(
                     onPressed: () => _moveAuto(0, 1),
-                    icon: const Icon(Icons.keyboard_arrow_right,
-                        color: Colors.white),
+                    icon: const Icon(Icons.keyboard_arrow_right, color: Colors.white),
                     iconSize: 48,
                   ),
                 ],
               ),
               IconButton(
                 onPressed: () => _moveAuto(1, 0),
-                icon:
-                    const Icon(Icons.keyboard_arrow_down, color: Colors.white),
+                icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white),
                 iconSize: 48,
               ),
             ],
@@ -408,36 +428,23 @@ class _MazePainter extends CustomPainter {
         final x = c * cellW;
         final y = r * cellH;
         final cell = maze[r][c];
-        if (cell.top)
-          canvas.drawLine(Offset(x, y), Offset(x + cellW, y), paintWall);
-        if (cell.right)
-          canvas.drawLine(
-              Offset(x + cellW, y), Offset(x + cellW, y + cellH), paintWall);
-        if (cell.bottom)
-          canvas.drawLine(
-              Offset(x, y + cellH), Offset(x + cellW, y + cellH), paintWall);
-        if (cell.left)
-          canvas.drawLine(Offset(x, y), Offset(x, y + cellH), paintWall);
+        if (cell.top) canvas.drawLine(Offset(x, y), Offset(x + cellW, y), paintWall);
+        if (cell.right) canvas.drawLine(Offset(x + cellW, y), Offset(x + cellW, y + cellH), paintWall);
+        if (cell.bottom) canvas.drawLine(Offset(x, y + cellH), Offset(x + cellW, y + cellH), paintWall);
+        if (cell.left) canvas.drawLine(Offset(x, y), Offset(x, y + cellH), paintWall);
       }
     }
 
-    final goalRect = Rect.fromLTWH(
-        goalC * cellW + 4, goalR * cellH + 4, cellW - 8, cellH - 8);
-    final playerRect = Rect.fromLTWH(
-        playerC * cellW + 6, playerR * cellH + 6, cellW - 12, cellH - 12);
+    final goalRect = Rect.fromLTWH(goalC * cellW + 4, goalR * cellH + 4, cellW - 8, cellH - 8);
+    final playerRect = Rect.fromLTWH(playerC * cellW + 6, playerR * cellH + 6, cellW - 12, cellH - 12);
     final goalPaint = Paint()..color = const Color(0x884CAF50);
     final playerPaint = Paint()..color = const Color(0xFFFFC107);
-    canvas.drawRRect(
-        RRect.fromRectAndRadius(goalRect, const Radius.circular(6)), goalPaint);
-    canvas.drawRRect(
-        RRect.fromRectAndRadius(playerRect, const Radius.circular(6)),
-        playerPaint);
+    canvas.drawRRect(RRect.fromRectAndRadius(goalRect, const Radius.circular(6)), goalPaint);
+    canvas.drawRRect(RRect.fromRectAndRadius(playerRect, const Radius.circular(6)), playerPaint);
   }
 
   @override
   bool shouldRepaint(covariant _MazePainter oldDelegate) {
-    return oldDelegate.playerR != playerR ||
-        oldDelegate.playerC != playerC ||
-        oldDelegate.maze != maze;
+    return oldDelegate.playerR != playerR || oldDelegate.playerC != playerC || oldDelegate.maze != maze;
   }
 }

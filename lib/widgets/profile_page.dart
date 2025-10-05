@@ -88,6 +88,9 @@ class ProfilePage extends StatelessWidget {
 
           const SizedBox(height: 32),
 
+          // Puan istatistikleri
+          _buildPointsStatsCard(),
+
           const SizedBox(height: 24),
 
           // Kanıt Galerisi butonu
@@ -108,10 +111,8 @@ class ProfilePage extends StatelessWidget {
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.orange,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25)),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
               ),
             ),
           ),
@@ -123,8 +124,7 @@ class ProfilePage extends StatelessWidget {
             child: ElevatedButton.icon(
               onPressed: () => Navigator.push(
                 context,
-                MaterialPageRoute(
-                    builder: (context) => BadgesPage(profile: profile)),
+                MaterialPageRoute(builder: (context) => BadgesPage(profile: profile)),
               ),
               icon: const Icon(Icons.emoji_events, color: Colors.white),
               label: const Text(
@@ -159,6 +159,96 @@ class ProfilePage extends StatelessWidget {
           // Son tamamlanan görevler
           _buildRecentTasksSection(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPointsStatsCard() {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '🎯 Puan İstatistikleri',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildStatItem(
+                  icon: Icons.task_alt,
+                  title: 'Görev Puanı',
+                  value: '${profile.points}',
+                  color: Colors.blue,
+                ),
+                _buildStatItem(
+                  icon: Icons.gamepad,
+                  title: 'Oyun Puanı',
+                  value: '${profile.totalGamePoints ?? 0}',
+                  color: Colors.purple,
+                ),
+                _buildStatItem(
+                  icon: Icons.quiz,
+                  title: 'Quiz Puanı',
+                  value: '${profile.totalQuizPoints ?? 0}',
+                  color: Colors.orange,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.amber.shade400,
+                    Colors.orange.shade400,
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.emoji_events, color: Colors.white, size: 32),
+                  const SizedBox(width: 12),
+                  Column(
+                    children: [
+                      const Text(
+                        'Toplam Puan',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white70,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      Text(
+                        '${profile.totalAllPoints}',
+                        style: const TextStyle(
+                          fontSize: 28,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -218,9 +308,7 @@ class ProfilePage extends StatelessWidget {
       '😄 Eğlenceli',
     ];
 
-    final earnedBadges = profile.badges.isNotEmpty
-        ? profile.badges
-        : ['🎯 İlk Görev']; // En az bir rozet
+    final earnedBadges = profile.badges.isNotEmpty ? profile.badges : ['🎯 İlk Görev']; // En az bir rozet
 
     return Card(
       elevation: 1,
@@ -251,9 +339,7 @@ class ProfilePage extends StatelessWidget {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: isEarned
-                        ? Colors.amber.withValues(alpha: 0.2)
-                        : Colors.grey.withValues(alpha: 0.1),
+                    color: isEarned ? Colors.amber.withValues(alpha: 0.2) : Colors.grey.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
                       color: isEarned ? Colors.amber : Colors.grey,
@@ -265,8 +351,7 @@ class ProfilePage extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 16,
                       color: isEarned ? Colors.amber.shade800 : Colors.grey,
-                      fontWeight:
-                          isEarned ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: isEarned ? FontWeight.bold : FontWeight.normal,
                     ),
                   ),
                 );
@@ -509,8 +594,7 @@ class BadgesPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final allBadges =
-        List<app_badge.Badge>.from(app_badge.BadgeData.getAllBadges());
+    final allBadges = List<app_badge.Badge>.from(app_badge.BadgeData.getAllBadges());
     final userBadges = Set<String>.from(profile.badges);
 
     // Dinamik: puan tabanlı rozetleri kullanıcı rozetlerinden üret
@@ -626,11 +710,9 @@ class BadgesPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   LinearProgressIndicator(
-                    value:
-                        (userBadges.length / allBadges.length).clamp(0.0, 1.0),
+                    value: (userBadges.length / allBadges.length).clamp(0.0, 1.0),
                     backgroundColor: Colors.white.withValues(alpha: 0.3),
-                    valueColor:
-                        const AlwaysStoppedAnimation<Color>(Colors.white),
+                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
                 ],
               ),
@@ -668,10 +750,8 @@ class BadgesPage extends StatelessWidget {
     final sortedBadges = List<app_badge.Badge>.from(typeBadges)
       ..sort((a, b) => (a.tier?.index ?? 0).compareTo(b.tier?.index ?? 0));
 
-    final earnedBadges =
-        sortedBadges.where((b) => userBadges.contains(b.id)).toList();
-    final unearnedBadges =
-        sortedBadges.where((b) => !userBadges.contains(b.id)).toList();
+    final earnedBadges = sortedBadges.where((b) => userBadges.contains(b.id)).toList();
+    final unearnedBadges = sortedBadges.where((b) => !userBadges.contains(b.id)).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -713,13 +793,11 @@ class BadgesPage extends StatelessWidget {
                     ),
                   ),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: _getTypeColor(type).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                          color: _getTypeColor(type).withValues(alpha: 0.3)),
+                      border: Border.all(color: _getTypeColor(type).withValues(alpha: 0.3)),
                     ),
                     child: Text(
                       '${earnedBadges.length}/${typeBadges.length}',
@@ -734,9 +812,7 @@ class BadgesPage extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               LinearProgressIndicator(
-                value: typeBadges.isNotEmpty
-                    ? (earnedBadges.length / typeBadges.length).clamp(0.0, 1.0)
-                    : 0,
+                value: typeBadges.isNotEmpty ? (earnedBadges.length / typeBadges.length).clamp(0.0, 1.0) : 0,
                 backgroundColor: _getTypeColor(type).withValues(alpha: 0.2),
                 valueColor: AlwaysStoppedAnimation<Color>(_getTypeColor(type)),
               ),
@@ -777,9 +853,7 @@ class BadgesPage extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: isEarned
-            ? badge.color.withValues(alpha: 0.1)
-            : Colors.grey.withValues(alpha: 0.05),
+        color: isEarned ? badge.color.withValues(alpha: 0.1) : Colors.grey.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isEarned ? badge.color : Colors.grey.withValues(alpha: 0.3),
@@ -798,8 +872,7 @@ class BadgesPage extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () =>
-              _showBadgeDetails(context, badge, isEarned, nextTierInfo),
+          onTap: () => _showBadgeDetails(context, badge, isEarned, nextTierInfo),
           borderRadius: BorderRadius.circular(16),
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -823,8 +896,7 @@ class BadgesPage extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color:
-                                  isEarned ? badge.color : Colors.grey.shade700,
+                              color: isEarned ? badge.color : Colors.grey.shade700,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -877,13 +949,11 @@ class BadgesPage extends StatelessWidget {
                 if (badge.id.startsWith('points_')) ...[
                   const SizedBox(height: 6),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
                       color: Colors.orange.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                          color: Colors.orange.withValues(alpha: 0.4)),
+                      border: Border.all(color: Colors.orange.withValues(alpha: 0.4)),
                     ),
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
@@ -921,8 +991,7 @@ class BadgesPage extends StatelessWidget {
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.trending_up,
-                                color: Colors.blue, size: 20),
+                            const Icon(Icons.trending_up, color: Colors.blue, size: 20),
                             const SizedBox(width: 8),
                             Text(
                               'Bir Üst Rozete Doğru',
@@ -936,12 +1005,9 @@ class BadgesPage extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         Builder(builder: (context) {
-                          final remaining = (nextTierInfo.requiredCount -
-                                  nextTierInfo.currentCount)
+                          final remaining = (nextTierInfo.requiredCount - nextTierInfo.currentCount)
                               .clamp(0, nextTierInfo.requiredCount);
-                          final text = remaining == 0
-                              ? 'Hazır! Şartlar tamamlandı'
-                              : '$remaining görev kaldı';
+                          final text = remaining == 0 ? 'Hazır! Şartlar tamamlandı' : '$remaining görev kaldı';
                           return Text(
                             text,
                             style: TextStyle(
@@ -952,12 +1018,9 @@ class BadgesPage extends StatelessWidget {
                         }),
                         const SizedBox(height: 4),
                         LinearProgressIndicator(
-                          value: (nextTierInfo.currentCount /
-                                  nextTierInfo.requiredCount)
-                              .clamp(0.0, 1.0),
+                          value: (nextTierInfo.currentCount / nextTierInfo.requiredCount).clamp(0.0, 1.0),
                           backgroundColor: Colors.blue.withValues(alpha: 0.2),
-                          valueColor:
-                              const AlwaysStoppedAnimation<Color>(Colors.blue),
+                          valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
                         ),
                       ],
                     ),
@@ -965,8 +1028,7 @@ class BadgesPage extends StatelessWidget {
                 ],
 
                 // Gereksinim bilgisi
-                if (badge.requiredCount != null &&
-                    badge.requiredCount! > 0) ...[
+                if (badge.requiredCount != null && badge.requiredCount! > 0) ...[
                   const SizedBox(height: 8),
                   Row(
                     children: [
@@ -1021,9 +1083,7 @@ class BadgesPage extends StatelessWidget {
     }
 
     // Bir üst tier'daki rozetleri bul
-    final nextTierBadges = allTypeBadges
-        .where((b) => b.tier == nextTier && b.type == badge.type)
-        .toList();
+    final nextTierBadges = allTypeBadges.where((b) => b.tier == nextTier && b.type == badge.type).toList();
 
     if (nextTierBadges.isEmpty) return null;
 
@@ -1038,8 +1098,7 @@ class BadgesPage extends StatelessWidget {
       // Kullanıcının bu rozet için yaptığı görevleri say
       if (nextBadge.type == app_badge.BadgeType.zorluk) {
         // Zorluk rozetleri için mevcut görev sayısını hesapla
-        currentCount =
-            _getCompletedTasksByDifficulty(nextBadge.requiredDifficulty);
+        currentCount = _getCompletedTasksByDifficulty(nextBadge.requiredDifficulty);
       } else if (nextBadge.type == app_badge.BadgeType.kategori) {
         // Kategori rozetleri için mevcut görev sayısını hesapla
         currentCount = _getCompletedTasksByCategory(nextBadge.categoryId);
@@ -1101,8 +1160,7 @@ class BadgesPage extends StatelessWidget {
                 badge.name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style:
-                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -1141,20 +1199,17 @@ class BadgesPage extends StatelessWidget {
 
               // Gereksinim bilgileri
               if (badge.requiredCount != null && badge.requiredCount! > 0) ...[
-                _buildRequirementInfo(
-                    'Gerekli Görev', '${badge.requiredCount} görev'),
+                _buildRequirementInfo('Gerekli Görev', '${badge.requiredCount} görev'),
                 const SizedBox(height: 8),
               ],
 
               if (badge.categoryId != null) ...[
-                _buildRequirementInfo(
-                    'Kategori', _getCategoryName(badge.categoryId!)),
+                _buildRequirementInfo('Kategori', _getCategoryName(badge.categoryId!)),
                 const SizedBox(height: 8),
               ],
 
               if (badge.requiredDifficulty != null) ...[
-                _buildRequirementInfo(
-                    'Zorluk', _getDifficultyName(badge.requiredDifficulty!)),
+                _buildRequirementInfo('Zorluk', _getDifficultyName(badge.requiredDifficulty!)),
                 const SizedBox(height: 8),
               ],
 
@@ -1175,9 +1230,7 @@ class BadgesPage extends StatelessWidget {
                     final safeTotal = total <= 0 ? 1 : total;
                     final progress = (current / safeTotal).clamp(0.0, 1.0);
                     final remaining = (safeTotal - current).clamp(0, safeTotal);
-                    final remainText = remaining == 0
-                        ? 'Hazır! Şartlar tamamlandı'
-                        : '$remaining görev kaldı';
+                    final remainText = remaining == 0 ? 'Hazır! Şartlar tamamlandı' : '$remaining görev kaldı';
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1206,15 +1259,13 @@ class BadgesPage extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           remainText,
-                          style: TextStyle(
-                              color: Colors.blue.shade600, fontSize: 12),
+                          style: TextStyle(color: Colors.blue.shade600, fontSize: 12),
                         ),
                         const SizedBox(height: 4),
                         LinearProgressIndicator(
                           value: progress,
                           backgroundColor: Colors.blue.withValues(alpha: 0.2),
-                          valueColor:
-                              const AlwaysStoppedAnimation<Color>(Colors.blue),
+                          valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
                         ),
                       ],
                     );
@@ -1229,9 +1280,7 @@ class BadgesPage extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: isEarned
-                      ? Colors.green.withValues(alpha: 0.1)
-                      : Colors.grey.withValues(alpha: 0.1),
+                  color: isEarned ? Colors.green.withValues(alpha: 0.1) : Colors.grey.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
                     color: isEarned ? Colors.green : Colors.grey,
@@ -1246,9 +1295,7 @@ class BadgesPage extends StatelessWidget {
                     const SizedBox(width: 8),
                     Flexible(
                       child: Text(
-                        isEarned
-                            ? 'Hazır — Kazanıldı'
-                            : 'Bu rozeti henüz kazanamadın',
+                        isEarned ? 'Hazır — Kazanıldı' : 'Bu rozeti henüz kazanamadın',
                         style: TextStyle(
                           fontSize: isEarned ? 14 : 12,
                           fontWeight: FontWeight.bold,
@@ -1459,25 +1506,21 @@ Widget _buildProofsByTaskSection() {
                     children: [
                       Text(
                         taskTitle,
-                        style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w600),
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 6),
                       ...proofs.map((p) {
                         final imagePath = p['imagePath'] as String?;
                         final docPath = p['docPath'] as String?;
                         final note = p['note'] as String?;
-                        final createdAt =
-                            DateTime.tryParse(p['createdAt'] ?? '') ??
-                                DateTime.now();
+                        final createdAt = DateTime.tryParse(p['createdAt'] ?? '') ?? DateTime.now();
                         return Container(
                           margin: const EdgeInsets.only(bottom: 8),
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
                             color: Colors.orange.withOpacity(0.06),
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                                color: Colors.orange.withOpacity(0.2)),
+                            border: Border.all(color: Colors.orange.withOpacity(0.2)),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1494,15 +1537,12 @@ Widget _buildProofsByTaskSection() {
                               ),
                               if (note != null && note.isNotEmpty) ...[
                                 const SizedBox(height: 6),
-                                Text(note,
-                                    style: const TextStyle(fontSize: 13)),
+                                Text(note, style: const TextStyle(fontSize: 13)),
                               ],
-                              if (imagePath != null &&
-                                  imagePath.isNotEmpty) ...[
+                              if (imagePath != null && imagePath.isNotEmpty) ...[
                                 const SizedBox(height: 8),
                                 GestureDetector(
-                                  onTap: () =>
-                                      _openFullscreen(context, File(imagePath)),
+                                  onTap: () => _openFullscreen(context, File(imagePath)),
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(8),
                                     child: Image.file(
@@ -1547,8 +1587,7 @@ Widget _buildProofsByTaskSection() {
   );
 }
 
-Future<Map<String, List<Map<String, dynamic>>>>
-    _loadProofsGroupedByTask() async {
+Future<Map<String, List<Map<String, dynamic>>>> _loadProofsGroupedByTask() async {
   final prefs = await SharedPreferences.getInstance();
   final log = prefs.getStringList('proof_log') ?? [];
   final map = <String, List<Map<String, dynamic>>>{};

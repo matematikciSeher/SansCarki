@@ -122,6 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadAssetTasks() async {
     try {
       final combined = await TaskRepository.loadAllCombined();
+      if (!mounted) return;
       setState(() {
         _assetTasks = combined;
       });
@@ -136,6 +137,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final raw = prefs.getString('category_last_spin_dates');
       if (raw != null) {
         final Map<String, dynamic> map = json.decode(raw) as Map<String, dynamic>;
+        if (!mounted) return;
         setState(() {
           _categoryLastSpin = map.map((key, value) => MapEntry(key, DateTime.parse(value as String)));
         });
@@ -146,6 +148,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadCooldowns() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      if (!mounted) return;
       setState(() {
         _categoryCooldownDays = prefs.getInt('category_cooldown_days') ?? 12;
         _taskCooldownDays = prefs.getInt('task_cooldown_days') ?? 480;
@@ -246,13 +249,22 @@ class _HomeScreenState extends State<HomeScreen> {
       // Firestore'dan profili çek
       final profile = await UserService.getCurrentUserProfile();
       if (profile != null) {
+        print('✅ Firestore\'dan profil yüklendi:');
+        print('   - Görev Puanı: ${profile.points}');
+        print('   - Oyun Puanı: ${profile.totalGamePoints ?? 0}');
+        print('   - Quiz Puanı: ${profile.totalQuizPoints ?? 0}');
+        print('   - Toplam: ${profile.totalAllPoints}');
+
+        if (!mounted) return;
         setState(() {
           _profile = profile;
         });
         // Oyun/quiz/görev toplam puanına göre rozetleri garanti et
         await _ensurePointBadges();
       } else {
+        print('⚠️ Profil bulunamadı, yeni profil oluşturuluyor...');
         // Profil yoksa yeni bir tane oluştur
+        if (!mounted) return;
         setState(() {
           _profile = UserProfile();
         });
@@ -260,7 +272,8 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     } catch (e) {
       // Hata durumunda varsayılan profil kullan
-      print('Profil yükleme hatası: $e');
+      print('❌ Profil yükleme hatası: $e');
+      if (!mounted) return;
       setState(() {
         _profile = UserProfile();
       });
@@ -309,6 +322,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     if (newBadges.isNotEmpty) {
+      if (!mounted) return;
       setState(() {
         _profile = _profile.copyWith(badges: [..._profile.badges, ...newBadges]);
       });
@@ -318,6 +332,7 @@ class _HomeScreenState extends State<HomeScreen> {
     // Oyun puanına özel rozet örneği: 30K+ oyun puanı
     final int gamePts = _profile.totalGamePoints ?? 0;
     if (gamePts >= _extraSpinThreshold && !current.contains('game_30k')) {
+      if (!mounted) return;
       setState(() {
         _profile = _profile.copyWith(badges: [..._profile.badges, 'game_30k']);
       });
@@ -329,8 +344,12 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       // Firestore'a kaydet
       await UserService.updateCurrentUserProfile(_profile);
+      print('✅ Profil Firestore\'a kaydedildi:');
+      print('   - Görev Puanı: ${_profile.points}');
+      print('   - Oyun Puanı: ${_profile.totalGamePoints ?? 0}');
+      print('   - Quiz Puanı: ${_profile.totalQuizPoints ?? 0}');
     } catch (e) {
-      print('Profil kaydetme hatası: $e');
+      print('❌ Profil kaydetme hatası: $e');
       // Hata durumunda da devam et
     }
   }
@@ -361,6 +380,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadCompletedTasks() async {
     final prefs = await SharedPreferences.getInstance();
     final tasksJson = prefs.getStringList('completed_tasks') ?? [];
+    if (!mounted) return;
     setState(() {
       _completedTasks = tasksJson.map((json) => Task.fromJson(jsonDecode(json))).toList();
     });
@@ -722,6 +742,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Sadece çark sayfasından tamamlanan görevler için kategori seçimine geri dön
     if (specificTask == null) {
+      if (!mounted) return;
       setState(() {
         _selectedCategory = null;
         _selectedTask = null;
@@ -843,15 +864,80 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Düz metin olarak puan/başlıklar (alt alta)
-            Text('🏆 ${_profile.level}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            Text('⭐ Görev Puanı: ${_profile.points}', style: const TextStyle(fontSize: 14)),
-            Text('🎮 Oyun Puanı: ${_profile.totalGamePoints ?? 0}', style: const TextStyle(fontSize: 14)),
-            Text('🧠 Quiz Puanı: ${_profile.totalQuizPoints ?? 0}', style: const TextStyle(fontSize: 14)),
-            Text('💎 Toplam Puan: ${_profile.totalAllPoints}', style: const TextStyle(fontSize: 14)),
+            // Puan Kartı
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.deepPurple.shade400,
+                    Colors.purple.shade600,
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.purple.withOpacity(0.3),
+                    blurRadius: 15,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  // Seviye ve toplam puan
+                  Text(
+                    '🏆 ${_profile.level}',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          '💎',
+                          style: TextStyle(fontSize: 20),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${_profile.totalAllPoints} Toplam Puan',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Puan detayları - 3 sütun
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildPointChip('⭐', 'Görev', _profile.points, Colors.blue),
+                      _buildPointChip('🎮', 'Oyun', _profile.totalGamePoints ?? 0, Colors.green),
+                      _buildPointChip('🧠', 'Quiz', _profile.totalQuizPoints ?? 0, Colors.orange),
+                    ],
+                  ),
+                ],
+              ),
+            ),
 
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
 
             // Seçilen kategori bilgisi
             if (_selectedCategory != null)
@@ -986,6 +1072,45 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildPointChip(String emoji, String label, int value, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          Text(
+            emoji,
+            style: const TextStyle(fontSize: 24),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '$value',
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.white.withOpacity(0.9),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
       ),
     );
   }

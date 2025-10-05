@@ -5,6 +5,7 @@ import 'quiz_arena_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../models/user_profile.dart';
+import '../services/user_service.dart';
 import 'memory_card_game_screen.dart';
 // import 'puzzle_game_screen.dart';
 import 'word_scramble_game_screen.dart';
@@ -34,8 +35,7 @@ class GameSelectionScreen extends StatefulWidget {
   State<GameSelectionScreen> createState() => _GameSelectionScreenState();
 }
 
-class _GameSelectionScreenState extends State<GameSelectionScreen>
-    with TickerProviderStateMixin {
+class _GameSelectionScreenState extends State<GameSelectionScreen> with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -230,21 +230,43 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
         );
         break;
     }
-    if (result is UserProfile) {
-      setState(() {
-        _profile = result;
-      });
-    } else {
-      // Son profil durumunu tercihlerden çek (oyunlar kendi kendine kaydedebilir)
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        final raw = prefs.getString('user_profile');
-        if (raw != null) {
-          setState(() {
-            _profile = UserProfile.fromJson(json.decode(raw));
-          });
-        }
-      } catch (_) {}
+
+    // Oyundan döndükten sonra güncel profili Firestore'dan çek
+    print('🎮 Oyundan dönüldü, profil güncelleniyor...');
+    try {
+      final updatedProfile = await UserService.getCurrentUserProfile();
+      if (updatedProfile != null) {
+        print('✅ Güncel profil Firestore\'dan alındı:');
+        print('   - Oyun Puanı: ${updatedProfile.totalGamePoints ?? 0}');
+        print('   - Quiz Puanı: ${updatedProfile.totalQuizPoints ?? 0}');
+        print('   - Görev Puanı: ${updatedProfile.points}');
+        print('   - Toplam: ${updatedProfile.totalAllPoints}');
+
+        if (!mounted) return;
+        setState(() {
+          _profile = updatedProfile;
+        });
+      }
+    } catch (e) {
+      print('❌ Profil güncelleme hatası: $e');
+      // Hata durumunda eski yöntemi dene
+      if (result is UserProfile) {
+        if (!mounted) return;
+        setState(() {
+          _profile = result;
+        });
+      } else {
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          final raw = prefs.getString('user_profile');
+          if (raw != null) {
+            if (!mounted) return;
+            setState(() {
+              _profile = UserProfile.fromJson(json.decode(raw));
+            });
+          }
+        } catch (_) {}
+      }
     }
   }
 
@@ -318,8 +340,7 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
           color: Colors.transparent,
           elevation: 0,
           child: FancyBottomButtons(
-            onWheelTap: () =>
-                Navigator.popUntil(context, (route) => route.isFirst),
+            onWheelTap: () => Navigator.popUntil(context, (route) => route.isFirst),
             onGamesTap: () {},
             onQuizTap: () async {
               final updatedProfile = await Navigator.push(
@@ -405,8 +426,7 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _buildStatItem('🎮', 'Toplam Oyun', '${_games.length}'),
-              _buildStatItem(
-                  '🏆', 'En Yüksek', '${_profile.highestQuizScore ?? 0}'),
+              _buildStatItem('🏆', 'En Yüksek', '${_profile.highestQuizScore ?? 0}'),
               _buildStatItem('⭐', 'Görev Puanı', '${_profile.points}'),
             ],
           ),
@@ -414,10 +434,8 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildStatItem(
-                  '🎲', 'Oyun Puanı', '${_profile.totalGamePoints ?? 0}'),
-              _buildStatItem(
-                  '🧠', 'Quiz Puanı', '${_profile.totalQuizPoints ?? 0}'),
+              _buildStatItem('🎲', 'Oyun Puanı', '${_profile.totalGamePoints ?? 0}'),
+              _buildStatItem('🧠', 'Quiz Puanı', '${_profile.totalQuizPoints ?? 0}'),
               _buildStatItem('💎', 'Toplam', '${_profile.totalAllPoints}'),
             ],
           ),
@@ -603,10 +621,8 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             _buildProfileInfo('⭐ Puan', '${_profile.points}'),
-            _buildProfileInfo(
-                '🏆 En Yüksek Quiz', '${_profile.highestQuizScore ?? 0}'),
-            _buildProfileInfo(
-                '🎯 Tamamlanan Görev', '${_profile.completedTasks}'),
+            _buildProfileInfo('🏆 En Yüksek Quiz', '${_profile.highestQuizScore ?? 0}'),
+            _buildProfileInfo('🎯 Tamamlanan Görev', '${_profile.completedTasks}'),
           ],
         ),
         actions: [

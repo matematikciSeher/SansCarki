@@ -3,6 +3,7 @@ import 'dart:math';
 import '../models/user_profile.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import '../services/user_service.dart';
 
 class SudokuGameScreen extends StatefulWidget {
   final UserProfile profile;
@@ -32,8 +33,7 @@ class _SudokuGameScreenState extends State<SudokuGameScreen> {
   void _generateNewSudoku() {
     _solution = _generateSudokuSolution(_size);
     _puzzle = _generateSudokuPuzzle(_solution, _size);
-    _fixed = List.generate(
-        _size, (i) => List.generate(_size, (j) => _puzzle[i][j] != 0));
+    _fixed = List.generate(_size, (i) => List.generate(_size, (j) => _puzzle[i][j] != 0));
     _board = _puzzle.map((row) => List<int>.from(row)).toList();
     setState(() {});
   }
@@ -76,8 +76,7 @@ class _SudokuGameScreenState extends State<SudokuGameScreen> {
 
   List<List<int>> _generateSudokuPuzzle(List<List<int>> solution, int size) {
     // Çözümden rastgele hücreleri silerek puzzle üret (grade tabanlı zorluk)
-    List<List<int>> puzzle =
-        solution.map((row) => List<int>.from(row)).toList();
+    List<List<int>> puzzle = solution.map((row) => List<int>.from(row)).toList();
 
     final g = widget.profile.grade;
     int holes;
@@ -181,14 +180,36 @@ class _SudokuGameScreenState extends State<SudokuGameScreen> {
   }
 
   Future<void> _saveProfile(UserProfile profile) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user_profile', jsonEncode(profile.toJson()));
+    try {
+      print('🎮 SUDOKU BİTTİ - Puan kaydediliyor...');
+      print('   ✨ Kazanılan Puan: 100');
+      print('   📊 Yeni Oyun Puanı: ${profile.totalGamePoints ?? 0}');
+
+      await UserService.updateCurrentUserProfile(profile);
+      print('   ✅ Firestore\'a kaydedildi!');
+
+      await UserService.logActivity(
+        activityType: 'sudoku_completed',
+        data: {'score': 100},
+      );
+    } catch (e) {
+      print('❌ Sudoku profil kaydetme hatası: $e');
+    }
   }
 
-  void _showWinDialog() {
-    final updated = widget.profile.copyWith(
-        points: widget.profile.points + 100,
-        totalGamePoints: (widget.profile.totalGamePoints ?? 0) + 100);
+  void _showWinDialog() async {
+    // Güncel profili Firestore'dan çek
+    UserProfile? currentProfile;
+    try {
+      currentProfile = await UserService.getCurrentUserProfile();
+    } catch (e) {
+      print('Güncel profil çekme hatası: $e');
+      currentProfile = widget.profile;
+    }
+
+    final baseProfile = currentProfile ?? widget.profile;
+    final updated = baseProfile.copyWith(
+        points: baseProfile.points + 100, totalGamePoints: (baseProfile.totalGamePoints ?? 0) + 100);
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -289,8 +310,7 @@ class _SudokuGameScreenState extends State<SudokuGameScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: Colors.indigo,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 32, vertical: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                   ),
                   child: const Text('Başla', style: TextStyle(fontSize: 22)),
                 ),

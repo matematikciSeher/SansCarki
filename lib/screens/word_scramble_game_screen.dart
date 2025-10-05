@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:math';
 import '../models/user_profile.dart';
 import 'dart:convert';
+import '../services/user_service.dart';
 
 class WordBombGameScreen extends StatefulWidget {
   final UserProfile profile;
@@ -16,8 +17,7 @@ class WordBombGameScreen extends StatefulWidget {
   State<WordBombGameScreen> createState() => _WordBombGameScreenState();
 }
 
-class _WordBombGameScreenState extends State<WordBombGameScreen>
-    with TickerProviderStateMixin {
+class _WordBombGameScreenState extends State<WordBombGameScreen> with TickerProviderStateMixin {
   late AnimationController _balloonAnimationController;
   late AnimationController _explosionController;
   late Animation<double> _explosionScaleAnimation;
@@ -256,16 +256,13 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
   void _recomputePools() {
     // Kolay: 5 harf ve altı, Orta: 6-7 harf, Zor: 8+ harf
     _easyWords = _allWords.where((w) => w.english.length <= 5).toList();
-    _mediumWords = _allWords
-        .where((w) => w.english.length > 5 && w.english.length <= 7)
-        .toList();
+    _mediumWords = _allWords.where((w) => w.english.length > 5 && w.english.length <= 7).toList();
     _hardWords = _allWords.where((w) => w.english.length > 7).toList();
   }
 
   Future<void> _loadExternalWords() async {
     try {
-      final jsonStr = await DefaultAssetBundle.of(context)
-          .loadString('assets/word_bomb_words.json');
+      final jsonStr = await DefaultAssetBundle.of(context).loadString('assets/word_bomb_words.json');
       final decoded = json.decode(jsonStr);
       List<dynamic> items;
       if (decoded is List) {
@@ -346,8 +343,7 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
   }
 
   void _startBalloonMovement() {
-    _balloonMovementTimer =
-        Timer.periodic(const Duration(milliseconds: 50), (timer) {
+    _balloonMovementTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
       if (mounted && !_isExploding) {
         _updateBalloonPositions();
       }
@@ -361,8 +357,7 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
       final double separationDistance = _getSeparationDistance(balloonSize);
       final screenWidth = MediaQuery.of(context).size.width;
       final screenHeight = MediaQuery.of(context).size.height * 0.6;
-      final squareSize =
-          screenWidth < screenHeight ? screenWidth * 0.6 : screenHeight * 0.6;
+      final squareSize = screenWidth < screenHeight ? screenWidth * 0.6 : screenHeight * 0.6;
       final squareLeft = (screenWidth - squareSize) / 2;
       final squareTop = (screenHeight - squareSize) / 2;
       const double minSpeed = 85.6;
@@ -424,8 +419,7 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
         }
 
         // Hız sınırlarını uygula (min ve max)
-        final double speed =
-            sqrt(balloon.dx * balloon.dx + balloon.dy * balloon.dy);
+        final double speed = sqrt(balloon.dx * balloon.dx + balloon.dy * balloon.dy);
         if (speed < minSpeed) {
           final r = Random();
           double ndx = (r.nextDouble() - 0.5);
@@ -481,14 +475,10 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
                 ny = dy / dist;
               }
               final double push = (separationDistance - dist) / 2.0;
-              bi.x = (bi.x - nx * push)
-                  .clamp(squareLeft, squareLeft + squareSize - balloonSize);
-              bi.y = (bi.y - ny * push)
-                  .clamp(squareTop, squareTop + squareSize - balloonSize);
-              bj.x = (bj.x + nx * push)
-                  .clamp(squareLeft, squareLeft + squareSize - balloonSize);
-              bj.y = (bj.y + ny * push)
-                  .clamp(squareTop, squareTop + squareSize - balloonSize);
+              bi.x = (bi.x - nx * push).clamp(squareLeft, squareLeft + squareSize - balloonSize);
+              bi.y = (bi.y - ny * push).clamp(squareTop, squareTop + squareSize - balloonSize);
+              bj.x = (bj.x + nx * push).clamp(squareLeft, squareLeft + squareSize - balloonSize);
+              bj.y = (bj.y + ny * push).clamp(squareTop, squareTop + squareSize - balloonSize);
             }
           }
         }
@@ -571,8 +561,7 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
     // Kare alan boyutu
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height * 0.6;
-    final squareSize =
-        screenWidth < screenHeight ? screenWidth * 0.6 : screenHeight * 0.6;
+    final squareSize = screenWidth < screenHeight ? screenWidth * 0.6 : screenHeight * 0.6;
     final squareLeft = (screenWidth - squareSize) / 2;
     final squareTop = (screenHeight - squareSize) / 2;
     final double balloonSize = _getBalloonSize();
@@ -590,20 +579,15 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
         if (idx < 4) {
           final corners = [
             Offset(squareLeft + pad, squareTop + pad),
-            Offset(
-                squareLeft + squareSize - balloonSize - pad, squareTop + pad),
-            Offset(
-                squareLeft + pad, squareTop + squareSize - balloonSize - pad),
-            Offset(squareLeft + squareSize - balloonSize - pad,
-                squareTop + squareSize - balloonSize - pad),
+            Offset(squareLeft + squareSize - balloonSize - pad, squareTop + pad),
+            Offset(squareLeft + pad, squareTop + squareSize - balloonSize - pad),
+            Offset(squareLeft + squareSize - balloonSize - pad, squareTop + squareSize - balloonSize - pad),
           ];
           // Köşeler arası indeks eşlemesini her tur karıştır (köşeler -> 0..3)
           final List<int> cornerOrder = [0, 1, 2, 3]..shuffle(random);
           final base = corners[cornerOrder[idx]];
-          x = (base.dx + (random.nextDouble() - 0.5) * 10)
-              .clamp(squareLeft, squareLeft + squareSize - balloonSize);
-          y = (base.dy + (random.nextDouble() - 0.5) * 10)
-              .clamp(squareTop, squareTop + squareSize - balloonSize);
+          x = (base.dx + (random.nextDouble() - 0.5) * 10).clamp(squareLeft, squareLeft + squareSize - balloonSize);
+          y = (base.dy + (random.nextDouble() - 0.5) * 10).clamp(squareTop, squareTop + squareSize - balloonSize);
         } else {
           x = squareLeft + random.nextDouble() * (squareSize - balloonSize);
           y = squareTop + random.nextDouble() * (squareSize - balloonSize);
@@ -644,10 +628,8 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
         double bestMinDist = -1;
         for (int gx = 0; gx < gridN; gx++) {
           for (int gy = 0; gy < gridN; gy++) {
-            final double x =
-                squareLeft + gx * ((squareSize - balloonSize) / (gridN - 1));
-            final double y =
-                squareTop + gy * ((squareSize - balloonSize) / (gridN - 1));
+            final double x = squareLeft + gx * ((squareSize - balloonSize) / (gridN - 1));
+            final double y = squareTop + gy * ((squareSize - balloonSize) / (gridN - 1));
             bool hasCollision = false;
             double minDist = double.infinity;
             for (var b in newBalloons) {
@@ -748,14 +730,11 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
       usedWords.add(_currentWord!.turkish);
 
       // Kullanılmamış kelimeleri bul
-      final availableWords = _allWords
-          .where((word) =>
-              !usedWords.contains(word.turkish) && word != _currentWord)
-          .toList();
+      final availableWords =
+          _allWords.where((word) => !usedWords.contains(word.turkish) && word != _currentWord).toList();
 
       if (availableWords.isNotEmpty) {
-        final selectedWord =
-            availableWords[random.nextInt(availableWords.length)];
+        final selectedWord = availableWords[random.nextInt(availableWords.length)];
 
         // Hızları daha yüksek ver
         double fastDx = (random.nextDouble() - 0.5) * 3.0;
@@ -763,8 +742,7 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
         // Kare alanı hesapla
         final screenWidth = MediaQuery.of(context).size.width;
         final screenHeight = MediaQuery.of(context).size.height * 0.6;
-        final squareSize =
-            screenWidth < screenHeight ? screenWidth * 0.6 : screenHeight * 0.6;
+        final squareSize = screenWidth < screenHeight ? screenWidth * 0.6 : screenHeight * 0.6;
         final squareLeft = (screenWidth - squareSize) / 2;
         final squareTop = (screenHeight - squareSize) / 2;
         final double balloonSize = _getBalloonSize();
@@ -784,9 +762,7 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
           final b = _balloons[i];
           final bxLeft = b.x + balloonSize / 2 < centerX;
           final byTop = b.y + balloonSize / 2 < centerY;
-          if ((bxLeft != explodedLeft) &&
-              (byTop != explodedTop) &&
-              !b.isCorrect) {
+          if ((bxLeft != explodedLeft) && (byTop != explodedTop) && !b.isCorrect) {
             chosenIdx = i;
             break;
           }
@@ -836,10 +812,8 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
             }
             final angle = (k * pi / 8);
             final radius = 3.0 + k * 0.8;
-            targetX = (_explosionX + cos(angle) * radius)
-                .clamp(squareLeft, squareLeft + squareSize - balloonSize);
-            targetY = (_explosionY + sin(angle) * radius)
-                .clamp(squareTop, squareTop + squareSize - balloonSize);
+            targetX = (_explosionX + cos(angle) * radius).clamp(squareLeft, squareLeft + squareSize - balloonSize);
+            targetY = (_explosionY + sin(angle) * radius).clamp(squareTop, squareTop + squareSize - balloonSize);
           }
           if (!movedPlaced) {
             const int gridNMove = 7;
@@ -848,10 +822,8 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
             double bestMinDist = -1;
             for (int gx = 0; gx < gridNMove; gx++) {
               for (int gy = 0; gy < gridNMove; gy++) {
-                final double gxPos = squareLeft +
-                    gx * ((squareSize - balloonSize) / (gridNMove - 1));
-                final double gyPos = squareTop +
-                    gy * ((squareSize - balloonSize) / (gridNMove - 1));
+                final double gxPos = squareLeft + gx * ((squareSize - balloonSize) / (gridNMove - 1));
+                final double gyPos = squareTop + gy * ((squareSize - balloonSize) / (gridNMove - 1));
                 bool hasCollision = false;
                 double minDist = double.infinity;
                 for (int i2 = 0; i2 < _balloons.length; i2++) {
@@ -909,10 +881,8 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
             }
             final angle = (k * pi / 8);
             final radius = 3.0 + k * 0.8;
-            spawnX = (srcX + cos(angle) * radius)
-                .clamp(squareLeft, squareLeft + squareSize - balloonSize);
-            spawnY = (srcY + sin(angle) * radius)
-                .clamp(squareTop, squareTop + squareSize - balloonSize);
+            spawnX = (srcX + cos(angle) * radius).clamp(squareLeft, squareLeft + squareSize - balloonSize);
+            spawnY = (srcY + sin(angle) * radius).clamp(squareTop, squareTop + squareSize - balloonSize);
           }
           if (!placed) {
             const int gridN = 7;
@@ -921,10 +891,8 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
             double bestMinDist = -1;
             for (int gx = 0; gx < gridN; gx++) {
               for (int gy = 0; gy < gridN; gy++) {
-                final double gxPos = squareLeft +
-                    gx * ((squareSize - balloonSize) / (gridN - 1));
-                final double gyPos =
-                    squareTop + gy * ((squareSize - balloonSize) / (gridN - 1));
+                final double gxPos = squareLeft + gx * ((squareSize - balloonSize) / (gridN - 1));
+                final double gyPos = squareTop + gy * ((squareSize - balloonSize) / (gridN - 1));
                 bool hasCollision = false;
                 double minDist = double.infinity;
                 for (var b in _balloons) {
@@ -957,10 +925,8 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
           spawnY = squareTop;
           while (!placed && attempts < 1000) {
             attempts++;
-            spawnX =
-                squareLeft + random.nextDouble() * (squareSize - balloonSize);
-            spawnY =
-                squareTop + random.nextDouble() * (squareSize - balloonSize);
+            spawnX = squareLeft + random.nextDouble() * (squareSize - balloonSize);
+            spawnY = squareTop + random.nextDouble() * (squareSize - balloonSize);
             bool hasCollision = false;
             for (var b in _balloons) {
               final cx1 = spawnX + balloonSize / 2;
@@ -982,10 +948,8 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
             double bestMinDist = -1;
             for (int gx = 0; gx < gridN; gx++) {
               for (int gy = 0; gy < gridN; gy++) {
-                final double gxPos = squareLeft +
-                    gx * ((squareSize - balloonSize) / (gridN - 1));
-                final double gyPos =
-                    squareTop + gy * ((squareSize - balloonSize) / (gridN - 1));
+                final double gxPos = squareLeft + gx * ((squareSize - balloonSize) / (gridN - 1));
+                final double gyPos = squareTop + gy * ((squareSize - balloonSize) / (gridN - 1));
                 bool hasCollision = false;
                 double minDist = double.infinity;
                 for (var b in _balloons) {
@@ -1045,8 +1009,7 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
 
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height * 0.6;
-    final squareSize =
-        screenWidth < screenHeight ? screenWidth * 0.6 : screenHeight * 0.6;
+    final squareSize = screenWidth < screenHeight ? screenWidth * 0.6 : screenHeight * 0.6;
     final squareLeft = (screenWidth - squareSize) / 2;
     final squareTop = (screenHeight - squareSize) / 2;
     final centerX = squareLeft + squareSize / 2;
@@ -1057,22 +1020,17 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
     indices.sort((a, b) {
       final ba = _balloons[a];
       final bb = _balloons[b];
-      final angleA = atan2((ba.y + _getBalloonSize() / 2) - centerY,
-          (ba.x + _getBalloonSize() / 2) - centerX);
-      final angleB = atan2((bb.y + _getBalloonSize() / 2) - centerY,
-          (bb.x + _getBalloonSize() / 2) - centerX);
+      final angleA = atan2((ba.y + _getBalloonSize() / 2) - centerY, (ba.x + _getBalloonSize() / 2) - centerX);
+      final angleB = atan2((bb.y + _getBalloonSize() / 2) - centerY, (bb.x + _getBalloonSize() / 2) - centerX);
       return angleA.compareTo(angleB);
     });
 
-    final List<Offset> orderedPositions = indices
-        .map((i) => Offset(_balloons[i].x, _balloons[i].y))
-        .toList(growable: false);
+    final List<Offset> orderedPositions =
+        indices.map((i) => Offset(_balloons[i].x, _balloons[i].y)).toList(growable: false);
 
     for (int k = 0; k < indices.length; k++) {
       final int toIdx = indices[k];
-      final int fromOrder = rotateLeft
-          ? (k + 1) % indices.length
-          : (k - 1 + indices.length) % indices.length;
+      final int fromOrder = rotateLeft ? (k + 1) % indices.length : (k - 1 + indices.length) % indices.length;
       final Offset src = orderedPositions[fromOrder];
       _balloons[toIdx].x = src.dx;
       _balloons[toIdx].y = src.dy;
@@ -1085,9 +1043,7 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: Text(finishedAll
-            ? '🎉 Tüm Seviyeler Tamamlandı!'
-            : '🎉 Etap $_currentStage Tamamlandı!'),
+        title: Text(finishedAll ? '🎉 Tüm Seviyeler Tamamlandı!' : '🎉 Etap $_currentStage Tamamlandı!'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1112,9 +1068,7 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
                   const Icon(Icons.star, color: Colors.green),
                   const SizedBox(width: 8),
                   Text(
-                    finishedAll
-                        ? 'Tüm etap bonusları eklendi!'
-                        : 'Etap bonusu: +${_currentStage * 200} puan!',
+                    finishedAll ? 'Tüm etap bonusları eklendi!' : 'Etap bonusu: +${_currentStage * 200} puan!',
                     style: TextStyle(
                       color: Colors.green.shade700,
                       fontWeight: FontWeight.bold,
@@ -1135,8 +1089,7 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('🏆 Final İstatistikleri:',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    const Text('🏆 Final İstatistikleri:', style: TextStyle(fontWeight: FontWeight.bold)),
                     Text('Toplam Tamamlanan Kelime: ${_currentStage * 5}'),
                     Text('Toplam Puan: $_score'),
                     Text('Toplam Patlama: $_bombCount'),
@@ -1149,15 +1102,46 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
         ),
         actions: [
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              Navigator.pop(
-                  context,
-                  widget.profile.copyWith(
-                    points: widget.profile.points + _score,
-                    totalGamePoints:
-                        (widget.profile.totalGamePoints ?? 0) + _score,
-                  ));
+
+              // Güncel profili Firestore'dan çek
+              UserProfile? currentProfile;
+              try {
+                currentProfile = await UserService.getCurrentUserProfile();
+              } catch (e) {
+                print('Güncel profil çekme hatası: $e');
+                currentProfile = widget.profile;
+              }
+
+              final baseProfile = currentProfile ?? widget.profile;
+              final updatedProfile = baseProfile.copyWith(
+                points: baseProfile.points + _score,
+                totalGamePoints: (baseProfile.totalGamePoints ?? 0) + _score,
+              );
+
+              // Firestore'a kaydet
+              try {
+                print('🎮 WORD BOMB BİTTİ - Puan kaydediliyor...');
+                print('   ✨ Kazanılan Puan: $_score');
+                print('   📊 Yeni Oyun Puanı: ${updatedProfile.totalGamePoints ?? 0}');
+
+                await UserService.updateCurrentUserProfile(updatedProfile);
+                print('   ✅ Firestore\'a kaydedildi!');
+
+                await UserService.logActivity(
+                  activityType: 'word_bomb_completed',
+                  data: {
+                    'score': _score,
+                    'stage': _currentStage,
+                    'bombCount': _bombCount,
+                  },
+                );
+              } catch (e) {
+                print('❌ Word Bomb profil kaydetme hatası: $e');
+              }
+
+              Navigator.pop(context, updatedProfile);
             },
             child: const Text('Ana Menüye Dön'),
           ),
@@ -1309,8 +1293,7 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
                   foregroundColor: Colors.red,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 40, vertical: 18),
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 18),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(25),
                   ),
@@ -1716,10 +1699,7 @@ class _WordBombGameScreenState extends State<WordBombGameScreen>
                     style: TextStyle(
                       fontSize: balloonSize * 0.36,
                       shadows: const [
-                        Shadow(
-                            blurRadius: 6,
-                            color: Colors.black26,
-                            offset: Offset(0, 1)),
+                        Shadow(blurRadius: 6, color: Colors.black26, offset: Offset(0, 1)),
                       ],
                     ),
                   ),

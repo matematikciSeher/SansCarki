@@ -8,6 +8,7 @@ import '../widgets/fancy_bottom_buttons.dart';
 import 'game_selection_screen.dart';
 import 'quiz_game_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/user_service.dart';
 
 class QuizArenaScreen extends StatefulWidget {
   final UserProfile profile;
@@ -21,8 +22,7 @@ class QuizArenaScreen extends StatefulWidget {
   State<QuizArenaScreen> createState() => _QuizArenaScreenState();
 }
 
-class _QuizArenaScreenState extends State<QuizArenaScreen>
-    with TickerProviderStateMixin {
+class _QuizArenaScreenState extends State<QuizArenaScreen> with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -149,14 +149,12 @@ class _QuizArenaScreenState extends State<QuizArenaScreen>
         color: Colors.transparent,
         elevation: 0,
         child: FancyBottomButtons(
-          onWheelTap: () =>
-              Navigator.popUntil(context, (route) => route.isFirst),
+          onWheelTap: () => Navigator.popUntil(context, (route) => route.isFirst),
           onGamesTap: () async {
             final updatedProfile = await Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) =>
-                    GameSelectionScreen(profile: widget.profile),
+                builder: (context) => GameSelectionScreen(profile: widget.profile),
               ),
             );
             if (updatedProfile != null) {
@@ -284,8 +282,7 @@ class _QuizArenaScreenState extends State<QuizArenaScreen>
     );
   }
 
-  Widget _buildStatCard(
-      String label, String value, Color color, IconData icon) {
+  Widget _buildStatCard(String label, String value, Color color, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -462,8 +459,7 @@ class _QuizArenaScreenState extends State<QuizArenaScreen>
 
     if (selected.length < 5) {
       final usedIds = selected.map((e) => e.id).toSet();
-      final remaining = filtered.where((q) => !usedIds.contains(q.id)).toList()
-        ..shuffle();
+      final remaining = filtered.where((q) => !usedIds.contains(q.id)).toList()..shuffle();
       selected.addAll(remaining.take(5 - selected.length));
     }
 
@@ -472,8 +468,7 @@ class _QuizArenaScreenState extends State<QuizArenaScreen>
       final prefs = await SharedPreferences.getInstance();
       final recent = prefs.getStringList('quiz_recent_ids') ?? <String>[];
       final recentSet = recent.toSet();
-      final filteredSelected =
-          selected.where((q) => !recentSet.contains(q.id)).toList();
+      final filteredSelected = selected.where((q) => !recentSet.contains(q.id)).toList();
       if (filteredSelected.length >= 5) {
         selected
           ..clear()
@@ -482,7 +477,7 @@ class _QuizArenaScreenState extends State<QuizArenaScreen>
     } catch (_) {}
 
     final quizQuestions = selected;
-    final updatedProfile = await Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => QuizGameScreen(
@@ -491,8 +486,22 @@ class _QuizArenaScreenState extends State<QuizArenaScreen>
         ),
       ),
     );
-    if (updatedProfile != null && updatedProfile is UserProfile) {
-      Navigator.pop(context, updatedProfile);
+
+    // Quiz'den döndükten sonra güncel profili Firestore'dan çek
+    print('🧠 Quiz\'den dönüldü, profil güncelleniyor...');
+    try {
+      final updatedProfile = await UserService.getCurrentUserProfile();
+      if (updatedProfile != null) {
+        print('✅ Güncel profil Firestore\'dan alındı:');
+        print('   - Oyun Puanı: ${updatedProfile.totalGamePoints ?? 0}');
+        print('   - Quiz Puanı: ${updatedProfile.totalQuizPoints ?? 0}');
+        print('   - Görev Puanı: ${updatedProfile.points}');
+        print('   - Toplam: ${updatedProfile.totalAllPoints}');
+
+        Navigator.pop(context, updatedProfile);
+      }
+    } catch (e) {
+      print('❌ Profil güncelleme hatası: $e');
     }
   }
 

@@ -277,7 +277,19 @@ class _QuizGameScreenState extends State<QuizGameScreen> with TickerProviderStat
 
     // UserProfile'ı Firestore'a kaydet
     try {
+      print('🎮 QUIZ BİTTİ - Puan kaydediliyor...');
+      print('   📊 Eski profil:');
+      print('      - Görev: ${baseProfile.points}');
+      print('      - Oyun: ${baseProfile.totalGamePoints ?? 0}');
+      print('      - Quiz: ${baseProfile.totalQuizPoints ?? 0}');
+      print('   ✨ Kazanılan Quiz Puanı: $_totalPoints');
+      print('   📊 Yeni profil:');
+      print('      - Görev: ${updatedProfile.points}');
+      print('      - Oyun: ${updatedProfile.totalGamePoints ?? 0}');
+      print('      - Quiz: ${updatedProfile.totalQuizPoints ?? 0}');
+
       await UserService.updateCurrentUserProfile(updatedProfile);
+      print('   ✅ Firestore\'a kaydedildi!');
 
       // Aktivite logla (opsiyonel)
       await UserService.logActivity(
@@ -290,7 +302,7 @@ class _QuizGameScreenState extends State<QuizGameScreen> with TickerProviderStat
         },
       );
     } catch (e) {
-      print('Quiz profil kaydetme hatası: $e');
+      print('❌ Quiz profil kaydetme hatası: $e');
     }
 
     showDialog(

@@ -4,6 +4,7 @@ import 'package:flutter/scheduler.dart' show Ticker;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../models/user_profile.dart';
+import '../services/user_service.dart';
 
 enum LogicDifficulty { easy, medium, hard }
 
@@ -32,8 +33,7 @@ class LogicGatesPuzzleScreen extends StatefulWidget {
   State<LogicGatesPuzzleScreen> createState() => _LogicGatesPuzzleScreenState();
 }
 
-class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
-    with TickerProviderStateMixin {
+class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen> with TickerProviderStateMixin {
   late List<LogicPuzzle> _puzzles;
   int _level = 1; // game level index
   int _roundInLevel = 1; // 1..5 questions per level
@@ -72,24 +72,14 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
     'OR': 'Girişlerden en az biri açık olursa çıkış açık.',
     'NOT': 'Giriş terslenir (açık → kapalı, kapalı → açık).',
     'XOR': 'Girişler farklıysa çıkış açık (biri açık biri kapalı).',
-    'NAND':
-        "AND'in tersi; iki giriş de açıkken çıkış kapalı, diğer durumlarda açık.",
+    'NAND': "AND'in tersi; iki giriş de açıkken çıkış kapalı, diğer durumlarda açık.",
     'XNOR': "XOR'un tersi; girişler aynıysa çıkış açık.",
-    'NOR':
-        "OR'un tersi; en az bir giriş açıkken çıkış kapalı, her ikisi kapalıysa açık.",
+    'NOR': "OR'un tersi; en az bir giriş açıkken çıkış kapalı, her ikisi kapalıysa açık.",
   };
 
   List<String> _getGateDefinitionsFor(String description) {
     final String upper = description.toUpperCase();
-    final List<String> order = [
-      'XNOR',
-      'NAND',
-      'XOR',
-      'NOR',
-      'AND',
-      'OR',
-      'NOT'
-    ];
+    final List<String> order = ['XNOR', 'NAND', 'XOR', 'NOR', 'AND', 'OR', 'NOT'];
     final List<String> results = [];
     for (final gate in order) {
       final regex = RegExp('\\b$gate\\b');
@@ -123,12 +113,9 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
   }
 
   void _prepareSessionOrder() {
-    final easy = _dedupeByDescription(
-        _puzzles.where((p) => p.difficulty == LogicDifficulty.easy).toList());
-    final medium = _dedupeByDescription(
-        _puzzles.where((p) => p.difficulty == LogicDifficulty.medium).toList());
-    final hard = _dedupeByDescription(
-        _puzzles.where((p) => p.difficulty == LogicDifficulty.hard).toList());
+    final easy = _dedupeByDescription(_puzzles.where((p) => p.difficulty == LogicDifficulty.easy).toList());
+    final medium = _dedupeByDescription(_puzzles.where((p) => p.difficulty == LogicDifficulty.medium).toList());
+    final hard = _dedupeByDescription(_puzzles.where((p) => p.difficulty == LogicDifficulty.hard).toList());
     easy.shuffle(_random);
     medium.shuffle(_random);
     hard.shuffle(_random);
@@ -255,32 +242,28 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
         difficulty: LogicDifficulty.medium,
         inputs: ['A', 'B', 'C'],
         description: 'Çıkış = (A AND B) OR C',
-        evaluate: (v) =>
-            ((v['A'] ?? false) && (v['B'] ?? false)) || (v['C'] ?? false),
+        evaluate: (v) => ((v['A'] ?? false) && (v['B'] ?? false)) || (v['C'] ?? false),
       ),
       LogicPuzzle(
         id: 'M2',
         difficulty: LogicDifficulty.medium,
         inputs: ['A', 'B', 'C'],
         description: 'Çıkış = (A OR B) AND (NOT C)',
-        evaluate: (v) =>
-            ((v['A'] ?? false) || (v['B'] ?? false)) && !(v['C'] ?? false),
+        evaluate: (v) => ((v['A'] ?? false) || (v['B'] ?? false)) && !(v['C'] ?? false),
       ),
       LogicPuzzle(
         id: 'M3',
         difficulty: LogicDifficulty.medium,
         inputs: ['A', 'B', 'C'],
         description: 'Çıkış = NOT(A AND (B OR C))',
-        evaluate: (v) =>
-            !((v['A'] ?? false) && ((v['B'] ?? false) || (v['C'] ?? false))),
+        evaluate: (v) => !((v['A'] ?? false) && ((v['B'] ?? false) || (v['C'] ?? false))),
       ),
       LogicPuzzle(
         id: 'M4',
         difficulty: LogicDifficulty.medium,
         inputs: ['A', 'B', 'C'],
         description: 'Çıkış = (A AND NOT B) OR C',
-        evaluate: (v) =>
-            ((v['A'] ?? false) && !(v['B'] ?? false)) || (v['C'] ?? false),
+        evaluate: (v) => ((v['A'] ?? false) && !(v['B'] ?? false)) || (v['C'] ?? false),
       ),
       LogicPuzzle(
         id: 'M5',
@@ -336,48 +319,42 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
         difficulty: LogicDifficulty.medium,
         inputs: ['A', 'B', 'C'],
         description: 'Çıkış = (NOT A AND NOT B) OR C',
-        evaluate: (v) =>
-            (!(v['A'] ?? false) && !(v['B'] ?? false)) || (v['C'] ?? false),
+        evaluate: (v) => (!(v['A'] ?? false) && !(v['B'] ?? false)) || (v['C'] ?? false),
       ),
       LogicPuzzle(
         id: 'M10',
         difficulty: LogicDifficulty.medium,
         inputs: ['A', 'B', 'C'],
         description: 'Çıkış = A OR (B AND NOT C)',
-        evaluate: (v) =>
-            (v['A'] ?? false) || ((v['B'] ?? false) && !(v['C'] ?? false)),
+        evaluate: (v) => (v['A'] ?? false) || ((v['B'] ?? false) && !(v['C'] ?? false)),
       ),
       LogicPuzzle(
         id: 'M11',
         difficulty: LogicDifficulty.medium,
         inputs: ['A', 'B', 'C'],
         description: 'Çıkış = (NOT A) OR (B AND C)',
-        evaluate: (v) =>
-            !(v['A'] ?? false) || ((v['B'] ?? false) && (v['C'] ?? false)),
+        evaluate: (v) => !(v['A'] ?? false) || ((v['B'] ?? false) && (v['C'] ?? false)),
       ),
       LogicPuzzle(
         id: 'M12',
         difficulty: LogicDifficulty.medium,
         inputs: ['A', 'B', 'C'],
         description: 'Çıkış = A AND (NOT B OR C)',
-        evaluate: (v) =>
-            (v['A'] ?? false) && (!(v['B'] ?? false) || (v['C'] ?? false)),
+        evaluate: (v) => (v['A'] ?? false) && (!(v['B'] ?? false) || (v['C'] ?? false)),
       ),
       LogicPuzzle(
         id: 'M13',
         difficulty: LogicDifficulty.medium,
         inputs: ['A', 'B', 'C'],
         description: 'Çıkış = (NOT A) AND (NOT B OR C)',
-        evaluate: (v) =>
-            !(v['A'] ?? false) && (!(v['B'] ?? false) || (v['C'] ?? false)),
+        evaluate: (v) => !(v['A'] ?? false) && (!(v['B'] ?? false) || (v['C'] ?? false)),
       ),
       LogicPuzzle(
         id: 'M14',
         difficulty: LogicDifficulty.medium,
         inputs: ['A', 'B', 'C'],
         description: 'Çıkış = (A XOR B) AND (NOT C)',
-        evaluate: (v) =>
-            _xor2(v['A'] ?? false, v['B'] ?? false) && !(v['C'] ?? false),
+        evaluate: (v) => _xor2(v['A'] ?? false, v['B'] ?? false) && !(v['C'] ?? false),
       ),
       LogicPuzzle(
         id: 'M15',
@@ -396,8 +373,7 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
         difficulty: LogicDifficulty.medium,
         inputs: ['A', 'B', 'C'],
         description: 'Çıkış = NOT(A XOR B) OR C',
-        evaluate: (v) =>
-            _xnor2(v['A'] ?? false, v['B'] ?? false) || (v['C'] ?? false),
+        evaluate: (v) => _xnor2(v['A'] ?? false, v['B'] ?? false) || (v['C'] ?? false),
       ),
       LogicPuzzle(
         id: 'M17',
@@ -478,8 +454,7 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
         id: 'H5',
         difficulty: LogicDifficulty.hard,
         inputs: ['A', 'B', 'C'],
-        description:
-            'Çıkış = ((A AND B AND NOT C) OR (A AND C AND NOT B) OR (B AND C AND NOT A))',
+        description: 'Çıkış = ((A AND B AND NOT C) OR (A AND C AND NOT B) OR (B AND C AND NOT A))',
         evaluate: (v) {
           final a = v['A'] ?? false;
           final b = v['B'] ?? false;
@@ -547,8 +522,7 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
         difficulty: LogicDifficulty.hard,
         inputs: ['A', 'B', 'C'],
         description: 'Çıkış = (A XNOR B) AND (NOT C)',
-        evaluate: (v) =>
-            _xnor2(v['A'] ?? false, v['B'] ?? false) && !(v['C'] ?? false),
+        evaluate: (v) => _xnor2(v['A'] ?? false, v['B'] ?? false) && !(v['C'] ?? false),
       ),
       LogicPuzzle(
         id: 'H12',
@@ -604,8 +578,7 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
         difficulty: LogicDifficulty.medium,
         inputs: ['A', 'B', 'C'],
         description: 'Çıkış = ((A AND B) OR (NOT C))',
-        evaluate: (v) =>
-            ((v['A'] ?? false) && (v['B'] ?? false)) || !(v['C'] ?? false),
+        evaluate: (v) => ((v['A'] ?? false) && (v['B'] ?? false)) || !(v['C'] ?? false),
       ),
 
       // Set 2
@@ -628,8 +601,7 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
         difficulty: LogicDifficulty.medium,
         inputs: ['A', 'B', 'C'],
         description: 'Çıkış = ((A OR B) AND C)',
-        evaluate: (v) =>
-            (((v['A'] ?? false) || (v['B'] ?? false)) && (v['C'] ?? false)),
+        evaluate: (v) => (((v['A'] ?? false) || (v['B'] ?? false)) && (v['C'] ?? false)),
       ),
       LogicPuzzle(
         id: 'U9',
@@ -643,8 +615,7 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
         difficulty: LogicDifficulty.hard,
         inputs: ['A', 'B', 'C'],
         description: 'Çıkış = ((A XOR B) AND (NOT C))',
-        evaluate: (v) =>
-            _xor2(v['A'] ?? false, v['B'] ?? false) && !(v['C'] ?? false),
+        evaluate: (v) => _xor2(v['A'] ?? false, v['B'] ?? false) && !(v['C'] ?? false),
       ),
 
       // Set 3
@@ -653,16 +624,14 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
         difficulty: LogicDifficulty.medium,
         inputs: ['A', 'B', 'C'],
         description: 'Çıkış = ((A AND B) AND C)',
-        evaluate: (v) =>
-            ((v['A'] ?? false) && (v['B'] ?? false) && (v['C'] ?? false)),
+        evaluate: (v) => ((v['A'] ?? false) && (v['B'] ?? false) && (v['C'] ?? false)),
       ),
       LogicPuzzle(
         id: 'U12',
         difficulty: LogicDifficulty.medium,
         inputs: ['A', 'B', 'C'],
         description: 'Çıkış = ((A OR B) OR C)',
-        evaluate: (v) =>
-            ((v['A'] ?? false) || (v['B'] ?? false) || (v['C'] ?? false)),
+        evaluate: (v) => ((v['A'] ?? false) || (v['B'] ?? false) || (v['C'] ?? false)),
       ),
       LogicPuzzle(
         id: 'U13',
@@ -683,8 +652,7 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
         difficulty: LogicDifficulty.medium,
         inputs: ['A', 'B', 'C'],
         description: 'Çıkış = ((A AND (NOT B)) OR C)',
-        evaluate: (v) =>
-            ((v['A'] ?? false) && !(v['B'] ?? false)) || (v['C'] ?? false),
+        evaluate: (v) => ((v['A'] ?? false) && !(v['B'] ?? false)) || (v['C'] ?? false),
       ),
 
       // Set 4
@@ -693,16 +661,14 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
         difficulty: LogicDifficulty.medium,
         inputs: ['A', 'B', 'C'],
         description: 'Çıkış = ((A OR B) AND (NOT C))',
-        evaluate: (v) =>
-            (((v['A'] ?? false) || (v['B'] ?? false)) && !(v['C'] ?? false)),
+        evaluate: (v) => (((v['A'] ?? false) || (v['B'] ?? false)) && !(v['C'] ?? false)),
       ),
       LogicPuzzle(
         id: 'U17',
         difficulty: LogicDifficulty.medium,
         inputs: ['A', 'B', 'C'],
         description: 'Çıkış = ((A AND (NOT B)) AND C)',
-        evaluate: (v) =>
-            ((v['A'] ?? false) && !(v['B'] ?? false) && (v['C'] ?? false)),
+        evaluate: (v) => ((v['A'] ?? false) && !(v['B'] ?? false) && (v['C'] ?? false)),
       ),
       LogicPuzzle(
         id: 'U18',
@@ -716,16 +682,14 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
         difficulty: LogicDifficulty.hard,
         inputs: ['A', 'B', 'C'],
         description: 'Çıkış = ((A NAND B) OR C)',
-        evaluate: (v) =>
-            (!((v['A'] ?? false) && (v['B'] ?? false))) || (v['C'] ?? false),
+        evaluate: (v) => (!((v['A'] ?? false) && (v['B'] ?? false))) || (v['C'] ?? false),
       ),
       LogicPuzzle(
         id: 'U20',
         difficulty: LogicDifficulty.hard,
         inputs: ['A', 'B', 'C'],
         description: 'Çıkış = ((A XOR B) OR (NOT C))',
-        evaluate: (v) =>
-            _xor2(v['A'] ?? false, v['B'] ?? false) || !(v['C'] ?? false),
+        evaluate: (v) => _xor2(v['A'] ?? false, v['B'] ?? false) || !(v['C'] ?? false),
       ),
 
       // Set 5
@@ -734,17 +698,14 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
         difficulty: LogicDifficulty.medium,
         inputs: ['A', 'B', 'C'],
         description: 'Çıkış = ((A AND B) OR (B AND C))',
-        evaluate: (v) =>
-            ((v['A'] ?? false) && (v['B'] ?? false)) ||
-            ((v['B'] ?? false) && (v['C'] ?? false)),
+        evaluate: (v) => ((v['A'] ?? false) && (v['B'] ?? false)) || ((v['B'] ?? false) && (v['C'] ?? false)),
       ),
       LogicPuzzle(
         id: 'U22',
         difficulty: LogicDifficulty.medium,
         inputs: ['A', 'B', 'C'],
         description: 'Çıkış = ((A OR B) AND (B OR C))',
-        evaluate: (v) => (((v['A'] ?? false) || (v['B'] ?? false)) &&
-            ((v['B'] ?? false) || (v['C'] ?? false))),
+        evaluate: (v) => (((v['A'] ?? false) || (v['B'] ?? false)) && ((v['B'] ?? false) || (v['C'] ?? false))),
       ),
       LogicPuzzle(
         id: 'U23',
@@ -758,16 +719,14 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
         difficulty: LogicDifficulty.hard,
         inputs: ['A', 'B', 'C'],
         description: 'Çıkış = ((A NOR B) AND (NOT C))',
-        evaluate: (v) =>
-            (!((v['A'] ?? false) || (v['B'] ?? false)) && !(v['C'] ?? false)),
+        evaluate: (v) => (!((v['A'] ?? false) || (v['B'] ?? false)) && !(v['C'] ?? false)),
       ),
       LogicPuzzle(
         id: 'U25',
         difficulty: LogicDifficulty.hard,
         inputs: ['A', 'B', 'C'],
         description: 'Çıkış = ((A XNOR B) OR C)',
-        evaluate: (v) =>
-            _xnor2(v['A'] ?? false, v['B'] ?? false) || (v['C'] ?? false),
+        evaluate: (v) => _xnor2(v['A'] ?? false, v['B'] ?? false) || (v['C'] ?? false),
       ),
 
       // Set 6
@@ -776,42 +735,35 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
         difficulty: LogicDifficulty.medium,
         inputs: ['A', 'B', 'C'],
         description: 'Çıkış = ((A AND (NOT C)) OR B)',
-        evaluate: (v) =>
-            ((v['A'] ?? false) && !(v['C'] ?? false)) || (v['B'] ?? false),
+        evaluate: (v) => ((v['A'] ?? false) && !(v['C'] ?? false)) || (v['B'] ?? false),
       ),
       LogicPuzzle(
         id: 'U27',
         difficulty: LogicDifficulty.medium,
         inputs: ['A', 'B', 'C'],
         description: 'Çıkış = ((A OR (NOT B)) AND C)',
-        evaluate: (v) =>
-            (((v['A'] ?? false) || !(v['B'] ?? false)) && (v['C'] ?? false)),
+        evaluate: (v) => (((v['A'] ?? false) || !(v['B'] ?? false)) && (v['C'] ?? false)),
       ),
       LogicPuzzle(
         id: 'U28',
         difficulty: LogicDifficulty.medium,
         inputs: ['A', 'B', 'C'],
         description: 'Çıkış = ((NOT A) OR (B AND C))',
-        evaluate: (v) =>
-            (!(v['A'] ?? false) || ((v['B'] ?? false) && (v['C'] ?? false))),
+        evaluate: (v) => (!(v['A'] ?? false) || ((v['B'] ?? false) && (v['C'] ?? false))),
       ),
       LogicPuzzle(
         id: 'U29',
         difficulty: LogicDifficulty.hard,
         inputs: ['A', 'B', 'C'],
         description: 'Çıkış = ((A XOR B) AND (B XOR C))',
-        evaluate: (v) =>
-            _xor2(v['A'] ?? false, v['B'] ?? false) &&
-            _xor2(v['B'] ?? false, v['C'] ?? false),
+        evaluate: (v) => _xor2(v['A'] ?? false, v['B'] ?? false) && _xor2(v['B'] ?? false, v['C'] ?? false),
       ),
       LogicPuzzle(
         id: 'U30',
         difficulty: LogicDifficulty.hard,
         inputs: ['A', 'B', 'C'],
         description: 'Çıkış = ((A NAND B) AND (A OR C))',
-        evaluate: (v) =>
-            (!((v['A'] ?? false) && (v['B'] ?? false))) &&
-            ((v['A'] ?? false) || (v['C'] ?? false)),
+        evaluate: (v) => (!((v['A'] ?? false) && (v['B'] ?? false))) && ((v['A'] ?? false) || (v['C'] ?? false)),
       ),
     ];
   }
@@ -824,36 +776,31 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A AND B) AND (NOT C))',
-          evaluate: (v) =>
-              (v['A'] ?? false) && (v['B'] ?? false) && !(v['C'] ?? false)),
+          evaluate: (v) => (v['A'] ?? false) && (v['B'] ?? false) && !(v['C'] ?? false)),
       LogicPuzzle(
           id: 'U32',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A OR B) OR (NOT C))',
-          evaluate: (v) =>
-              (v['A'] ?? false) || (v['B'] ?? false) || !(v['C'] ?? false)),
+          evaluate: (v) => (v['A'] ?? false) || (v['B'] ?? false) || !(v['C'] ?? false)),
       LogicPuzzle(
           id: 'U33',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((NOT A) AND (B OR C))',
-          evaluate: (v) =>
-              !(v['A'] ?? false) && ((v['B'] ?? false) || (v['C'] ?? false))),
+          evaluate: (v) => !(v['A'] ?? false) && ((v['B'] ?? false) || (v['C'] ?? false))),
       LogicPuzzle(
           id: 'U34',
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A NAND C) OR B)',
-          evaluate: (v) =>
-              (!((v['A'] ?? false) && (v['C'] ?? false))) || (v['B'] ?? false)),
+          evaluate: (v) => (!((v['A'] ?? false) && (v['C'] ?? false))) || (v['B'] ?? false)),
       LogicPuzzle(
           id: 'U35',
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A XOR B) XOR C)',
-          evaluate: (v) =>
-              _xor2(_xor2(v['A'] ?? false, v['B'] ?? false), v['C'] ?? false)),
+          evaluate: (v) => _xor2(_xor2(v['A'] ?? false, v['B'] ?? false), v['C'] ?? false)),
 
       // Set 8
       LogicPuzzle(
@@ -861,16 +808,13 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A AND (NOT B)) OR (B AND C))',
-          evaluate: (v) =>
-              ((v['A'] ?? false) && !(v['B'] ?? false)) ||
-              ((v['B'] ?? false) && (v['C'] ?? false))),
+          evaluate: (v) => ((v['A'] ?? false) && !(v['B'] ?? false)) || ((v['B'] ?? false) && (v['C'] ?? false))),
       LogicPuzzle(
           id: 'U37',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A OR (NOT B)) AND (A OR C))',
-          evaluate: (v) => (((v['A'] ?? false) || !(v['B'] ?? false)) &&
-              ((v['A'] ?? false) || (v['C'] ?? false)))),
+          evaluate: (v) => (((v['A'] ?? false) || !(v['B'] ?? false)) && ((v['A'] ?? false) || (v['C'] ?? false)))),
       LogicPuzzle(
           id: 'U38',
           difficulty: LogicDifficulty.medium,
@@ -882,16 +826,13 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A NOR B) OR (B NOR C))',
-          evaluate: (v) =>
-              (!((v['A'] ?? false) || (v['B'] ?? false))) ||
-              (!((v['B'] ?? false) || (v['C'] ?? false)))),
+          evaluate: (v) => (!((v['A'] ?? false) || (v['B'] ?? false))) || (!((v['B'] ?? false) || (v['C'] ?? false)))),
       LogicPuzzle(
           id: 'U40',
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A XNOR B) AND (NOT C))',
-          evaluate: (v) =>
-              _xnor2(v['A'] ?? false, v['B'] ?? false) && !(v['C'] ?? false)),
+          evaluate: (v) => _xnor2(v['A'] ?? false, v['B'] ?? false) && !(v['C'] ?? false)),
 
       // Set 9
       LogicPuzzle(
@@ -899,39 +840,31 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A AND B) OR (C AND (NOT A)))',
-          evaluate: (v) =>
-              ((v['A'] ?? false) && (v['B'] ?? false)) ||
-              ((v['C'] ?? false) && !(v['A'] ?? false))),
+          evaluate: (v) => ((v['A'] ?? false) && (v['B'] ?? false)) || ((v['C'] ?? false) && !(v['A'] ?? false))),
       LogicPuzzle(
           id: 'U42',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A OR C) AND (B OR (NOT A)))',
-          evaluate: (v) => (((v['A'] ?? false) || (v['C'] ?? false)) &&
-              ((v['B'] ?? false) || !(v['A'] ?? false)))),
+          evaluate: (v) => (((v['A'] ?? false) || (v['C'] ?? false)) && ((v['B'] ?? false) || !(v['A'] ?? false)))),
       LogicPuzzle(
           id: 'U43',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((NOT B) AND (C OR A))',
-          evaluate: (v) =>
-              !(v['B'] ?? false) && ((v['C'] ?? false) || (v['A'] ?? false))),
+          evaluate: (v) => !(v['B'] ?? false) && ((v['C'] ?? false) || (v['A'] ?? false))),
       LogicPuzzle(
           id: 'U44',
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A NAND B) AND (B NAND C))',
-          evaluate: (v) =>
-              (!((v['A'] ?? false) && (v['B'] ?? false))) &&
-              (!((v['B'] ?? false) && (v['C'] ?? false)))),
+          evaluate: (v) => (!((v['A'] ?? false) && (v['B'] ?? false))) && (!((v['B'] ?? false) && (v['C'] ?? false)))),
       LogicPuzzle(
           id: 'U45',
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A XOR C) OR (B AND C))',
-          evaluate: (v) =>
-              _xor2(v['A'] ?? false, v['C'] ?? false) ||
-              ((v['B'] ?? false) && (v['C'] ?? false))),
+          evaluate: (v) => _xor2(v['A'] ?? false, v['C'] ?? false) || ((v['B'] ?? false) && (v['C'] ?? false))),
 
       // Set 10
       LogicPuzzle(
@@ -939,37 +872,31 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B'],
           description: 'Çıkış = ((A AND B) OR (NOT B))',
-          evaluate: (v) =>
-              ((v['A'] ?? false) && (v['B'] ?? false)) || !(v['B'] ?? false)),
+          evaluate: (v) => ((v['A'] ?? false) && (v['B'] ?? false)) || !(v['B'] ?? false)),
       LogicPuzzle(
           id: 'U47',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A OR (NOT C)) AND B)',
-          evaluate: (v) =>
-              (((v['A'] ?? false) || !(v['C'] ?? false)) && (v['B'] ?? false))),
+          evaluate: (v) => (((v['A'] ?? false) || !(v['C'] ?? false)) && (v['B'] ?? false))),
       LogicPuzzle(
           id: 'U48',
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((NOT A) AND (B XOR C))',
-          evaluate: (v) =>
-              !(v['A'] ?? false) && _xor2(v['B'] ?? false, v['C'] ?? false)),
+          evaluate: (v) => !(v['A'] ?? false) && _xor2(v['B'] ?? false, v['C'] ?? false)),
       LogicPuzzle(
           id: 'U49',
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A NAND C) OR (NOT B))',
-          evaluate: (v) =>
-              (!((v['A'] ?? false) && (v['C'] ?? false))) ||
-              !(v['B'] ?? false)),
+          evaluate: (v) => (!((v['A'] ?? false) && (v['C'] ?? false))) || !(v['B'] ?? false)),
       LogicPuzzle(
           id: 'U50',
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A XNOR B) AND C)',
-          evaluate: (v) =>
-              _xnor2(v['A'] ?? false, v['B'] ?? false) && (v['C'] ?? false)),
+          evaluate: (v) => _xnor2(v['A'] ?? false, v['B'] ?? false) && (v['C'] ?? false)),
 
       // Set 11
       LogicPuzzle(
@@ -977,39 +904,31 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A AND (NOT B)) OR (C AND A))',
-          evaluate: (v) =>
-              ((v['A'] ?? false) && !(v['B'] ?? false)) ||
-              ((v['C'] ?? false) && (v['A'] ?? false))),
+          evaluate: (v) => ((v['A'] ?? false) && !(v['B'] ?? false)) || ((v['C'] ?? false) && (v['A'] ?? false))),
       LogicPuzzle(
           id: 'U52',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B'],
           description: 'Çıkış = ((A OR B) AND (NOT A))',
-          evaluate: (v) =>
-              ((v['A'] ?? false) || (v['B'] ?? false)) && !(v['A'] ?? false)),
+          evaluate: (v) => ((v['A'] ?? false) || (v['B'] ?? false)) && !(v['A'] ?? false)),
       LogicPuzzle(
           id: 'U53',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((NOT C) OR (A AND B))',
-          evaluate: (v) =>
-              !(v['C'] ?? false) || ((v['A'] ?? false) && (v['B'] ?? false))),
+          evaluate: (v) => !(v['C'] ?? false) || ((v['A'] ?? false) && (v['B'] ?? false))),
       LogicPuzzle(
           id: 'U54',
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A NOR C) AND (NOT B))',
-          evaluate: (v) =>
-              (!((v['A'] ?? false) || (v['C'] ?? false))) &&
-              !(v['B'] ?? false)),
+          evaluate: (v) => (!((v['A'] ?? false) || (v['C'] ?? false))) && !(v['B'] ?? false)),
       LogicPuzzle(
           id: 'U55',
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A XOR B) AND (A XOR C))',
-          evaluate: (v) =>
-              _xor2(v['A'] ?? false, v['B'] ?? false) &&
-              _xor2(v['A'] ?? false, v['C'] ?? false)),
+          evaluate: (v) => _xor2(v['A'] ?? false, v['B'] ?? false) && _xor2(v['A'] ?? false, v['C'] ?? false)),
 
       // Set 12
       LogicPuzzle(
@@ -1017,38 +936,31 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (A AND B AND C)',
-          evaluate: (v) =>
-              (v['A'] ?? false) && (v['B'] ?? false) && (v['C'] ?? false)),
+          evaluate: (v) => (v['A'] ?? false) && (v['B'] ?? false) && (v['C'] ?? false)),
       LogicPuzzle(
           id: 'U57',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (A OR B OR C)',
-          evaluate: (v) =>
-              (v['A'] ?? false) || (v['B'] ?? false) || (v['C'] ?? false)),
+          evaluate: (v) => (v['A'] ?? false) || (v['B'] ?? false) || (v['C'] ?? false)),
       LogicPuzzle(
           id: 'U58',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((NOT A) OR (NOT B) OR (NOT C))',
-          evaluate: (v) =>
-              !(v['A'] ?? false) || !(v['B'] ?? false) || !(v['C'] ?? false)),
+          evaluate: (v) => !(v['A'] ?? false) || !(v['B'] ?? false) || !(v['C'] ?? false)),
       LogicPuzzle(
           id: 'U59',
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A NAND B) OR (C NAND A))',
-          evaluate: (v) =>
-              (!((v['A'] ?? false) && (v['B'] ?? false))) ||
-              (!((v['C'] ?? false) && (v['A'] ?? false)))),
+          evaluate: (v) => (!((v['A'] ?? false) && (v['B'] ?? false))) || (!((v['C'] ?? false) && (v['A'] ?? false)))),
       LogicPuzzle(
           id: 'U60',
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A XNOR C) OR (B AND C))',
-          evaluate: (v) =>
-              _xnor2(v['A'] ?? false, v['C'] ?? false) ||
-              ((v['B'] ?? false) && (v['C'] ?? false))),
+          evaluate: (v) => _xnor2(v['A'] ?? false, v['C'] ?? false) || ((v['B'] ?? false) && (v['C'] ?? false))),
 
       // Set 13
       LogicPuzzle(
@@ -1056,15 +968,13 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (A AND (B OR C))',
-          evaluate: (v) =>
-              (v['A'] ?? false) && ((v['B'] ?? false) || (v['C'] ?? false))),
+          evaluate: (v) => (v['A'] ?? false) && ((v['B'] ?? false) || (v['C'] ?? false))),
       LogicPuzzle(
           id: 'U62',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (A OR (B AND C))',
-          evaluate: (v) =>
-              (v['A'] ?? false) || ((v['B'] ?? false) && (v['C'] ?? false))),
+          evaluate: (v) => (v['A'] ?? false) || ((v['B'] ?? false) && (v['C'] ?? false))),
       LogicPuzzle(
           id: 'U63',
           difficulty: LogicDifficulty.hard,
@@ -1076,16 +986,13 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (A XOR (B OR C))',
-          evaluate: (v) =>
-              _xor2(v['A'] ?? false, ((v['B'] ?? false) || (v['C'] ?? false)))),
+          evaluate: (v) => _xor2(v['A'] ?? false, ((v['B'] ?? false) || (v['C'] ?? false)))),
       LogicPuzzle(
           id: 'U65',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A AND B) OR (A AND C))',
-          evaluate: (v) =>
-              ((v['A'] ?? false) && (v['B'] ?? false)) ||
-              ((v['A'] ?? false) && (v['C'] ?? false))),
+          evaluate: (v) => ((v['A'] ?? false) && (v['B'] ?? false)) || ((v['A'] ?? false) && (v['C'] ?? false))),
 
       // Set 14
       LogicPuzzle(
@@ -1093,37 +1000,31 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((NOT A) AND (B OR C))',
-          evaluate: (v) =>
-              !(v['A'] ?? false) && ((v['B'] ?? false) || (v['C'] ?? false))),
+          evaluate: (v) => !(v['A'] ?? false) && ((v['B'] ?? false) || (v['C'] ?? false))),
       LogicPuzzle(
           id: 'U67',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (A OR (NOT (B AND C)))',
-          evaluate: (v) =>
-              (v['A'] ?? false) || !((v['B'] ?? false) && (v['C'] ?? false))),
+          evaluate: (v) => (v['A'] ?? false) || !((v['B'] ?? false) && (v['C'] ?? false))),
       LogicPuzzle(
           id: 'U68',
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (A XNOR (B XOR C))',
-          evaluate: (v) =>
-              _xnor2(v['A'] ?? false, _xor2(v['B'] ?? false, v['C'] ?? false))),
+          evaluate: (v) => _xnor2(v['A'] ?? false, _xor2(v['B'] ?? false, v['C'] ?? false))),
       LogicPuzzle(
           id: 'U69',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B'],
           description: 'Çıkış = ((A OR B) AND (NOT (A AND B)))',
-          evaluate: (v) =>
-              ((v['A'] ?? false) || (v['B'] ?? false)) &&
-              !((v['A'] ?? false) && (v['B'] ?? false))),
+          evaluate: (v) => ((v['A'] ?? false) || (v['B'] ?? false)) && !((v['A'] ?? false) && (v['B'] ?? false))),
       LogicPuzzle(
           id: 'U70',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((NOT A) OR (B AND (NOT C)))',
-          evaluate: (v) =>
-              !(v['A'] ?? false) || ((v['B'] ?? false) && !(v['C'] ?? false))),
+          evaluate: (v) => !(v['A'] ?? false) || ((v['B'] ?? false) && !(v['C'] ?? false))),
 
       // Set 15
       LogicPuzzle(
@@ -1131,39 +1032,32 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A AND B) XOR C)',
-          evaluate: (v) =>
-              _xor2(((v['A'] ?? false) && (v['B'] ?? false)), v['C'] ?? false)),
+          evaluate: (v) => _xor2(((v['A'] ?? false) && (v['B'] ?? false)), v['C'] ?? false)),
       LogicPuzzle(
           id: 'U72',
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (A NAND (B OR C))',
-          evaluate: (v) =>
-              !((v['A'] ?? false) && ((v['B'] ?? false) || (v['C'] ?? false)))),
+          evaluate: (v) => !((v['A'] ?? false) && ((v['B'] ?? false) || (v['C'] ?? false)))),
       LogicPuzzle(
           id: 'U73',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A OR B OR (NOT C)) AND (A OR (NOT B)))',
-          evaluate: (v) =>
-              (((v['A'] ?? false) || (v['B'] ?? false) || !(v['C'] ?? false)) &&
-                  ((v['A'] ?? false) || !(v['B'] ?? false)))),
+          evaluate: (v) => (((v['A'] ?? false) || (v['B'] ?? false) || !(v['C'] ?? false)) &&
+              ((v['A'] ?? false) || !(v['B'] ?? false)))),
       LogicPuzzle(
           id: 'U74',
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A AND (B XNOR C)) OR (NOT B))',
-          evaluate: (v) =>
-              ((v['A'] ?? false) && _xnor2(v['B'] ?? false, v['C'] ?? false)) ||
-              !(v['B'] ?? false)),
+          evaluate: (v) => ((v['A'] ?? false) && _xnor2(v['B'] ?? false, v['C'] ?? false)) || !(v['B'] ?? false)),
       LogicPuzzle(
           id: 'U75',
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A XOR B) OR (C NAND A))',
-          evaluate: (v) =>
-              _xor2(v['A'] ?? false, v['B'] ?? false) ||
-              !((v['C'] ?? false) && (v['A'] ?? false))),
+          evaluate: (v) => _xor2(v['A'] ?? false, v['B'] ?? false) || !((v['C'] ?? false) && (v['A'] ?? false))),
 
       // Set 16 (Orta-Kolay)
       LogicPuzzle(
@@ -1195,8 +1089,7 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A AND B) OR C)',
-          evaluate: (v) =>
-              ((v['A'] ?? false) && (v['B'] ?? false)) || (v['C'] ?? false)),
+          evaluate: (v) => ((v['A'] ?? false) && (v['B'] ?? false)) || (v['C'] ?? false)),
 
       // Set 17 (Orta-Kolay)
       LogicPuzzle(
@@ -1254,15 +1147,13 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A XOR B) AND C)',
-          evaluate: (v) =>
-              _xor2(v['A'] ?? false, v['B'] ?? false) && (v['C'] ?? false)),
+          evaluate: (v) => _xor2(v['A'] ?? false, v['B'] ?? false) && (v['C'] ?? false)),
       LogicPuzzle(
           id: 'U90',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A NAND C) OR B)',
-          evaluate: (v) =>
-              (!((v['A'] ?? false) && (v['C'] ?? false))) || (v['B'] ?? false)),
+          evaluate: (v) => (!((v['A'] ?? false) && (v['C'] ?? false))) || (v['B'] ?? false)),
     ];
   }
 
@@ -1306,15 +1197,13 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A AND B) OR C)',
-          evaluate: (v) =>
-              ((v['A'] ?? false) && (v['B'] ?? false)) || (v['C'] ?? false)),
+          evaluate: (v) => ((v['A'] ?? false) && (v['B'] ?? false)) || (v['C'] ?? false)),
       LogicPuzzle(
           id: 'U97',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A OR B) AND (NOT C))',
-          evaluate: (v) =>
-              (((v['A'] ?? false) || (v['B'] ?? false)) && !(v['C'] ?? false))),
+          evaluate: (v) => (((v['A'] ?? false) || (v['B'] ?? false)) && !(v['C'] ?? false))),
       LogicPuzzle(
           id: 'U98',
           difficulty: LogicDifficulty.easy,
@@ -1352,8 +1241,7 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (A OR B OR C)',
-          evaluate: (v) =>
-              (v['A'] ?? false) || (v['B'] ?? false) || (v['C'] ?? false)),
+          evaluate: (v) => (v['A'] ?? false) || (v['B'] ?? false) || (v['C'] ?? false)),
       LogicPuzzle(
           id: 'U104',
           difficulty: LogicDifficulty.medium,
@@ -1373,37 +1261,31 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A AND B) OR (NOT C))',
-          evaluate: (v) =>
-              ((v['A'] ?? false) && (v['B'] ?? false)) || !(v['C'] ?? false)),
+          evaluate: (v) => ((v['A'] ?? false) && (v['B'] ?? false)) || !(v['C'] ?? false)),
       LogicPuzzle(
           id: 'U107',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A OR B) AND (C OR NOT A))',
-          evaluate: (v) => (((v['A'] ?? false) || (v['B'] ?? false)) &&
-              ((v['C'] ?? false) || !(v['A'] ?? false)))),
+          evaluate: (v) => (((v['A'] ?? false) || (v['B'] ?? false)) && ((v['C'] ?? false) || !(v['A'] ?? false)))),
       LogicPuzzle(
           id: 'U108',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A XOR B) OR C)',
-          evaluate: (v) =>
-              _xor2(v['A'] ?? false, v['B'] ?? false) || (v['C'] ?? false)),
+          evaluate: (v) => _xor2(v['A'] ?? false, v['B'] ?? false) || (v['C'] ?? false)),
       LogicPuzzle(
           id: 'U109',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((NOT A AND B) OR (C AND A))',
-          evaluate: (v) =>
-              (!(v['A'] ?? false) && (v['B'] ?? false)) ||
-              ((v['C'] ?? false) && (v['A'] ?? false))),
+          evaluate: (v) => (!(v['A'] ?? false) && (v['B'] ?? false)) || ((v['C'] ?? false) && (v['A'] ?? false))),
       LogicPuzzle(
           id: 'U110',
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A NOR B) AND C)',
-          evaluate: (v) =>
-              (!((v['A'] ?? false) || (v['B'] ?? false))) && (v['C'] ?? false)),
+          evaluate: (v) => (!((v['A'] ?? false) || (v['B'] ?? false))) && (v['C'] ?? false)),
 
       // Set 23 (U111..U115)
       LogicPuzzle(
@@ -1411,38 +1293,31 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A AND NOT B) OR (B AND C))',
-          evaluate: (v) =>
-              ((v['A'] ?? false) && !(v['B'] ?? false)) ||
-              ((v['B'] ?? false) && (v['C'] ?? false))),
+          evaluate: (v) => ((v['A'] ?? false) && !(v['B'] ?? false)) || ((v['B'] ?? false) && (v['C'] ?? false))),
       LogicPuzzle(
           id: 'U112',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A OR NOT C) AND (B OR C))',
-          evaluate: (v) => (((v['A'] ?? false) || !(v['C'] ?? false)) &&
-              ((v['B'] ?? false) || (v['C'] ?? false)))),
+          evaluate: (v) => (((v['A'] ?? false) || !(v['C'] ?? false)) && ((v['B'] ?? false) || (v['C'] ?? false)))),
       LogicPuzzle(
           id: 'U113',
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A XNOR B) OR (NOT C))',
-          evaluate: (v) =>
-              _xnor2(v['A'] ?? false, v['B'] ?? false) || !(v['C'] ?? false)),
+          evaluate: (v) => _xnor2(v['A'] ?? false, v['B'] ?? false) || !(v['C'] ?? false)),
       LogicPuzzle(
           id: 'U114',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((NOT A OR B) AND (A OR C))',
-          evaluate: (v) => ((!(v['A'] ?? false) || (v['B'] ?? false)) &&
-              ((v['A'] ?? false) || (v['C'] ?? false)))),
+          evaluate: (v) => ((!(v['A'] ?? false) || (v['B'] ?? false)) && ((v['A'] ?? false) || (v['C'] ?? false)))),
       LogicPuzzle(
           id: 'U115',
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A XOR C) AND (B OR NOT A))',
-          evaluate: (v) =>
-              _xor2(v['A'] ?? false, v['C'] ?? false) &&
-              ((v['B'] ?? false) || !(v['A'] ?? false))),
+          evaluate: (v) => _xor2(v['A'] ?? false, v['C'] ?? false) && ((v['B'] ?? false) || !(v['A'] ?? false))),
 
       // Set 24 (U116..U120)
       LogicPuzzle(
@@ -1450,38 +1325,31 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A AND B) XOR C)',
-          evaluate: (v) =>
-              _xor2(((v['A'] ?? false) && (v['B'] ?? false)), v['C'] ?? false)),
+          evaluate: (v) => _xor2(((v['A'] ?? false) && (v['B'] ?? false)), v['C'] ?? false)),
       LogicPuzzle(
           id: 'U117',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (A OR (B AND NOT C))',
-          evaluate: (v) =>
-              (v['A'] ?? false) || ((v['B'] ?? false) && !(v['C'] ?? false))),
+          evaluate: (v) => (v['A'] ?? false) || ((v['B'] ?? false) && !(v['C'] ?? false))),
       LogicPuzzle(
           id: 'U118',
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((NOT A OR B) XOR C)',
-          evaluate: (v) => _xor2(
-              (!(v['A'] ?? false) || (v['B'] ?? false)), v['C'] ?? false)),
+          evaluate: (v) => _xor2((!(v['A'] ?? false) || (v['B'] ?? false)), v['C'] ?? false)),
       LogicPuzzle(
           id: 'U119',
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A AND NOT B) OR (B XOR C))',
-          evaluate: (v) =>
-              ((v['A'] ?? false) && !(v['B'] ?? false)) ||
-              _xor2(v['B'] ?? false, v['C'] ?? false)),
+          evaluate: (v) => ((v['A'] ?? false) && !(v['B'] ?? false)) || _xor2(v['B'] ?? false, v['C'] ?? false)),
       LogicPuzzle(
           id: 'U120',
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A NOR C) OR (B AND NOT A))',
-          evaluate: (v) =>
-              (!((v['A'] ?? false) || (v['C'] ?? false))) ||
-              ((v['B'] ?? false) && !(v['A'] ?? false))),
+          evaluate: (v) => (!((v['A'] ?? false) || (v['C'] ?? false))) || ((v['B'] ?? false) && !(v['A'] ?? false))),
 
       // Set 25 (U121..U125)
       LogicPuzzle(
@@ -1521,8 +1389,7 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A AND B) OR C)',
-          evaluate: (v) =>
-              ((v['A'] ?? false) && (v['B'] ?? false)) || (v['C'] ?? false)),
+          evaluate: (v) => ((v['A'] ?? false) && (v['B'] ?? false)) || (v['C'] ?? false)),
       LogicPuzzle(
           id: 'U127',
           difficulty: LogicDifficulty.easy,
@@ -1580,8 +1447,7 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A XOR B) OR C)',
-          evaluate: (v) =>
-              _xor2(v['A'] ?? false, v['B'] ?? false) || (v['C'] ?? false)),
+          evaluate: (v) => _xor2(v['A'] ?? false, v['B'] ?? false) || (v['C'] ?? false)),
 
       // Set 28 (U136..U140)
       LogicPuzzle(
@@ -1725,8 +1591,7 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (A AND B OR C)',
-          evaluate: (v) =>
-              ((v['A'] ?? false) && (v['B'] ?? false)) || (v['C'] ?? false)),
+          evaluate: (v) => ((v['A'] ?? false) && (v['B'] ?? false)) || (v['C'] ?? false)),
       LogicPuzzle(
           id: 'U158',
           difficulty: LogicDifficulty.easy,
@@ -1774,8 +1639,7 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (A XOR B OR C)',
-          evaluate: (v) =>
-              _xor2(v['A'] ?? false, (v['B'] ?? false) || (v['C'] ?? false))),
+          evaluate: (v) => _xor2(v['A'] ?? false, (v['B'] ?? false) || (v['C'] ?? false))),
       LogicPuzzle(
           id: 'U166',
           difficulty: LogicDifficulty.medium,
@@ -1835,15 +1699,13 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (A AND C OR B)',
-          evaluate: (v) =>
-              ((v['A'] ?? false) && (v['C'] ?? false)) || (v['B'] ?? false)),
+          evaluate: (v) => ((v['A'] ?? false) && (v['C'] ?? false)) || (v['B'] ?? false)),
       LogicPuzzle(
           id: 'U176',
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (B XOR C AND A)',
-          evaluate: (v) =>
-              _xor2(v['B'] ?? false, v['C'] ?? false) && (v['A'] ?? false)),
+          evaluate: (v) => _xor2(v['B'] ?? false, v['C'] ?? false) && (v['A'] ?? false)),
       LogicPuzzle(
           id: 'U177',
           difficulty: LogicDifficulty.easy,
@@ -1855,15 +1717,13 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (A OR B OR C)',
-          evaluate: (v) =>
-              (v['A'] ?? false) || (v['B'] ?? false) || (v['C'] ?? false)),
+          evaluate: (v) => (v['A'] ?? false) || (v['B'] ?? false) || (v['C'] ?? false)),
       LogicPuzzle(
           id: 'U179',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (A AND B AND NOT C)',
-          evaluate: (v) =>
-              (v['A'] ?? false) && (v['B'] ?? false) && !(v['C'] ?? false)),
+          evaluate: (v) => (v['A'] ?? false) && (v['B'] ?? false) && !(v['C'] ?? false)),
       LogicPuzzle(
           id: 'U180',
           difficulty: LogicDifficulty.easy,
@@ -1881,92 +1741,79 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (A NAND B OR C)',
-          evaluate: (v) =>
-              (!((v['A'] ?? false) && (v['B'] ?? false))) || (v['C'] ?? false)),
+          evaluate: (v) => (!((v['A'] ?? false) && (v['B'] ?? false))) || (v['C'] ?? false)),
       LogicPuzzle(
           id: 'U183',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (A AND NOT B OR C)',
-          evaluate: (v) =>
-              ((v['A'] ?? false) && !(v['B'] ?? false)) || (v['C'] ?? false)),
+          evaluate: (v) => ((v['A'] ?? false) && !(v['B'] ?? false)) || (v['C'] ?? false)),
       LogicPuzzle(
           id: 'U184',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (NOT A OR B AND C)',
-          evaluate: (v) =>
-              !(v['A'] ?? false) || ((v['B'] ?? false) && (v['C'] ?? false))),
+          evaluate: (v) => !(v['A'] ?? false) || ((v['B'] ?? false) && (v['C'] ?? false))),
       LogicPuzzle(
           id: 'U185',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (A XOR B AND NOT C)',
-          evaluate: (v) =>
-              _xor2(v['A'] ?? false, (v['B'] ?? false) && !(v['C'] ?? false))),
+          evaluate: (v) => _xor2(v['A'] ?? false, (v['B'] ?? false) && !(v['C'] ?? false))),
       LogicPuzzle(
           id: 'U186',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (A NOR B OR C)',
-          evaluate: (v) =>
-              (!((v['A'] ?? false) || (v['B'] ?? false))) || (v['C'] ?? false)),
+          evaluate: (v) => (!((v['A'] ?? false) || (v['B'] ?? false))) || (v['C'] ?? false)),
       LogicPuzzle(
           id: 'U187',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (A AND B OR NOT C)',
-          evaluate: (v) =>
-              ((v['A'] ?? false) && (v['B'] ?? false)) || !(v['C'] ?? false)),
+          evaluate: (v) => ((v['A'] ?? false) && (v['B'] ?? false)) || !(v['C'] ?? false)),
       LogicPuzzle(
           id: 'U188',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (B XOR C OR A)',
-          evaluate: (v) =>
-              _xor2(v['B'] ?? false, v['C'] ?? false) || (v['A'] ?? false)),
+          evaluate: (v) => _xor2(v['B'] ?? false, v['C'] ?? false) || (v['A'] ?? false)),
       LogicPuzzle(
           id: 'U189',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (NOT A AND C OR B)',
-          evaluate: (v) =>
-              (!(v['A'] ?? false) && (v['C'] ?? false)) || (v['B'] ?? false)),
+          evaluate: (v) => (!(v['A'] ?? false) && (v['C'] ?? false)) || (v['B'] ?? false)),
       LogicPuzzle(
           id: 'U190',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (A OR B AND NOT C)',
-          evaluate: (v) =>
-              (v['A'] ?? false) || ((v['B'] ?? false) && !(v['C'] ?? false))),
+          evaluate: (v) => (v['A'] ?? false) || ((v['B'] ?? false) && !(v['C'] ?? false))),
       LogicPuzzle(
           id: 'U191',
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (A XNOR C AND B)',
-          evaluate: (v) =>
-              _xnor2(v['A'] ?? false, v['C'] ?? false) && (v['B'] ?? false)),
+          evaluate: (v) => _xnor2(v['A'] ?? false, v['C'] ?? false) && (v['B'] ?? false)),
       LogicPuzzle(
           id: 'U192',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (NOT B OR A AND C)',
-          evaluate: (v) =>
-              !(v['B'] ?? false) || ((v['A'] ?? false) && (v['C'] ?? false))),
+          evaluate: (v) => !(v['B'] ?? false) || ((v['A'] ?? false) && (v['C'] ?? false))),
       LogicPuzzle(
           id: 'U193',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (A AND NOT C OR B)',
-          evaluate: (v) =>
-              ((v['A'] ?? false) && !(v['C'] ?? false)) || (v['B'] ?? false)),
+          evaluate: (v) => ((v['A'] ?? false) && !(v['C'] ?? false)) || (v['B'] ?? false)),
       LogicPuzzle(
           id: 'U194',
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (B NAND C OR A)',
-          evaluate: (v) =>
-              (!((v['B'] ?? false) && (v['C'] ?? false))) || (v['A'] ?? false)),
+          evaluate: (v) => (!((v['B'] ?? false) && (v['C'] ?? false))) || (v['A'] ?? false)),
       LogicPuzzle(
           id: 'U195',
           difficulty: LogicDifficulty.easy,
@@ -2062,8 +1909,7 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['X', 'Y', 'Z'],
           description: 'Çıkış = (X OR (Y AND Z))',
-          evaluate: (v) =>
-              (v['X'] ?? false) || ((v['Y'] ?? false) && (v['Z'] ?? false))),
+          evaluate: (v) => (v['X'] ?? false) || ((v['Y'] ?? false) && (v['Z'] ?? false))),
       LogicPuzzle(
           id: 'U211',
           difficulty: LogicDifficulty.easy,
@@ -2075,36 +1921,31 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.hard,
           inputs: ['M', 'N', 'O'],
           description: 'Çıkış = (M NOR (N OR O))',
-          evaluate: (v) =>
-              !((v['M'] ?? false) || (v['N'] ?? false) || (v['O'] ?? false))),
+          evaluate: (v) => !((v['M'] ?? false) || (v['N'] ?? false) || (v['O'] ?? false))),
       LogicPuzzle(
           id: 'U213',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A OR B) AND C)',
-          evaluate: (v) =>
-              ((v['A'] ?? false) || (v['B'] ?? false)) && (v['C'] ?? false)),
+          evaluate: (v) => ((v['A'] ?? false) || (v['B'] ?? false)) && (v['C'] ?? false)),
       LogicPuzzle(
           id: 'U214',
           difficulty: LogicDifficulty.medium,
           inputs: ['X', 'Y', 'Z'],
           description: 'Çıkış = ((X NAND Y) OR Z)',
-          evaluate: (v) =>
-              (!((v['X'] ?? false) && (v['Y'] ?? false))) || (v['Z'] ?? false)),
+          evaluate: (v) => (!((v['X'] ?? false) && (v['Y'] ?? false))) || (v['Z'] ?? false)),
       LogicPuzzle(
           id: 'U215',
           difficulty: LogicDifficulty.medium,
           inputs: ['P', 'Q', 'R'],
           description: 'Çıkış = ((P OR R) AND Q)',
-          evaluate: (v) =>
-              ((v['P'] ?? false) || (v['R'] ?? false)) && (v['Q'] ?? false)),
+          evaluate: (v) => ((v['P'] ?? false) || (v['R'] ?? false)) && (v['Q'] ?? false)),
       LogicPuzzle(
           id: 'U216',
           difficulty: LogicDifficulty.hard,
           inputs: ['M', 'N', 'O'],
           description: 'Çıkış = ((M AND N) XOR O)',
-          evaluate: (v) => _xor2(
-              ((v['M'] ?? false) && (v['N'] ?? false)), (v['O'] ?? false))),
+          evaluate: (v) => _xor2(((v['M'] ?? false) && (v['N'] ?? false)), (v['O'] ?? false))),
       LogicPuzzle(
           id: 'U217',
           difficulty: LogicDifficulty.medium,
@@ -2122,15 +1963,13 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['P', 'Q', 'R'],
           description: 'Çıkış = ((P AND Q) OR NOT R)',
-          evaluate: (v) =>
-              ((v['P'] ?? false) && (v['Q'] ?? false)) || !(v['R'] ?? false)),
+          evaluate: (v) => ((v['P'] ?? false) && (v['Q'] ?? false)) || !(v['R'] ?? false)),
       LogicPuzzle(
           id: 'U220',
           difficulty: LogicDifficulty.medium,
           inputs: ['M', 'N', 'O'],
           description: 'Çıkış = ((M XOR N) AND O)',
-          evaluate: (v) =>
-              (_xor2(v['M'] ?? false, v['N'] ?? false)) && (v['O'] ?? false)),
+          evaluate: (v) => (_xor2(v['M'] ?? false, v['N'] ?? false)) && (v['O'] ?? false)),
       LogicPuzzle(
           id: 'U221',
           difficulty: LogicDifficulty.easy,
@@ -2142,50 +1981,43 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['X', 'Y', 'Z'],
           description: 'Çıkış = (X AND (Y OR Z))',
-          evaluate: (v) =>
-              (v['X'] ?? false) && ((v['Y'] ?? false) || (v['Z'] ?? false))),
+          evaluate: (v) => (v['X'] ?? false) && ((v['Y'] ?? false) || (v['Z'] ?? false))),
       LogicPuzzle(
           id: 'U223',
           difficulty: LogicDifficulty.medium,
           inputs: ['P', 'Q', 'R'],
           description: 'Çıkış = ((P OR NOT Q) AND R)',
-          evaluate: (v) =>
-              ((v['P'] ?? false) || !(v['Q'] ?? false)) && (v['R'] ?? false)),
+          evaluate: (v) => ((v['P'] ?? false) || !(v['Q'] ?? false)) && (v['R'] ?? false)),
       LogicPuzzle(
           id: 'U224',
           difficulty: LogicDifficulty.hard,
           inputs: ['M', 'N', 'O'],
           description: 'Çıkış = ((M OR O) NAND N)',
-          evaluate: (v) =>
-              !(((v['M'] ?? false) || (v['O'] ?? false)) && (v['N'] ?? false))),
+          evaluate: (v) => !(((v['M'] ?? false) || (v['O'] ?? false)) && (v['N'] ?? false))),
       LogicPuzzle(
           id: 'U225',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A AND B) OR C)',
-          evaluate: (v) =>
-              ((v['A'] ?? false) && (v['B'] ?? false)) || (v['C'] ?? false)),
+          evaluate: (v) => ((v['A'] ?? false) && (v['B'] ?? false)) || (v['C'] ?? false)),
       LogicPuzzle(
           id: 'U226',
           difficulty: LogicDifficulty.hard,
           inputs: ['X', 'Y', 'Z'],
           description: 'Çıkış = ((X OR NOT Z) XOR Y)',
-          evaluate: (v) => _xor2(
-              ((v['X'] ?? false) || !(v['Z'] ?? false)), (v['Y'] ?? false))),
+          evaluate: (v) => _xor2(((v['X'] ?? false) || !(v['Z'] ?? false)), (v['Y'] ?? false))),
       LogicPuzzle(
           id: 'U227',
           difficulty: LogicDifficulty.medium,
           inputs: ['P', 'Q', 'R'],
           description: 'Çıkış = ((P NAND Q) OR R)',
-          evaluate: (v) =>
-              (!((v['P'] ?? false) && (v['Q'] ?? false))) || (v['R'] ?? false)),
+          evaluate: (v) => (!((v['P'] ?? false) && (v['Q'] ?? false))) || (v['R'] ?? false)),
       LogicPuzzle(
           id: 'U228',
           difficulty: LogicDifficulty.medium,
           inputs: ['M', 'N', 'O'],
           description: 'Çıkış = (M AND (N OR NOT O))',
-          evaluate: (v) =>
-              (v['M'] ?? false) && ((v['N'] ?? false) || !(v['O'] ?? false))),
+          evaluate: (v) => (v['M'] ?? false) && ((v['N'] ?? false) || !(v['O'] ?? false))),
       LogicPuzzle(
           id: 'U229',
           difficulty: LogicDifficulty.medium,
@@ -2197,22 +2029,19 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['X', 'Y', 'Z'],
           description: 'Çıkış = ((X XOR Y) AND Z)',
-          evaluate: (v) =>
-              (_xor2(v['X'] ?? false, v['Y'] ?? false)) && (v['Z'] ?? false)),
+          evaluate: (v) => (_xor2(v['X'] ?? false, v['Y'] ?? false)) && (v['Z'] ?? false)),
       LogicPuzzle(
           id: 'U231',
           difficulty: LogicDifficulty.hard,
           inputs: ['P', 'Q', 'R'],
           description: 'Çıkış = (P NOR (Q AND R))',
-          evaluate: (v) =>
-              !((v['P'] ?? false) || ((v['Q'] ?? false) && (v['R'] ?? false)))),
+          evaluate: (v) => !((v['P'] ?? false) || ((v['Q'] ?? false) && (v['R'] ?? false)))),
       LogicPuzzle(
           id: 'U232',
           difficulty: LogicDifficulty.medium,
           inputs: ['M', 'N', 'O'],
           description: 'Çıkış = ((M OR N) XOR O)',
-          evaluate: (v) => _xor2(
-              ((v['M'] ?? false) || (v['N'] ?? false)), (v['O'] ?? false))),
+          evaluate: (v) => _xor2(((v['M'] ?? false) || (v['N'] ?? false)), (v['O'] ?? false))),
       LogicPuzzle(
           id: 'U233',
           difficulty: LogicDifficulty.easy,
@@ -2224,29 +2053,25 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['X', 'Y', 'Z'],
           description: 'Çıkış = ((X OR Y) NAND Z)',
-          evaluate: (v) =>
-              !(((v['X'] ?? false) || (v['Y'] ?? false)) && (v['Z'] ?? false))),
+          evaluate: (v) => !(((v['X'] ?? false) || (v['Y'] ?? false)) && (v['Z'] ?? false))),
       LogicPuzzle(
           id: 'U235',
           difficulty: LogicDifficulty.medium,
           inputs: ['P', 'Q', 'R'],
           description: 'Çıkış = ((P XOR Q) OR R)',
-          evaluate: (v) =>
-              (_xor2(v['P'] ?? false, v['Q'] ?? false)) || (v['R'] ?? false)),
+          evaluate: (v) => (_xor2(v['P'] ?? false, v['Q'] ?? false)) || (v['R'] ?? false)),
       LogicPuzzle(
           id: 'U236',
           difficulty: LogicDifficulty.medium,
           inputs: ['M', 'N', 'O'],
           description: 'Çıkış = (M AND (N NAND O))',
-          evaluate: (v) =>
-              (v['M'] ?? false) && (!((v['N'] ?? false) && (v['O'] ?? false)))),
+          evaluate: (v) => (v['M'] ?? false) && (!((v['N'] ?? false) && (v['O'] ?? false)))),
       LogicPuzzle(
           id: 'U237',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (A OR (B XOR C))',
-          evaluate: (v) =>
-              (v['A'] ?? false) || (_xor2(v['B'] ?? false, v['C'] ?? false))),
+          evaluate: (v) => (v['A'] ?? false) || (_xor2(v['B'] ?? false, v['C'] ?? false))),
       LogicPuzzle(
           id: 'U238',
           difficulty: LogicDifficulty.medium,
@@ -2258,16 +2083,13 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['P', 'Q', 'R'],
           description: 'Çıkış = (P AND (Q OR R))',
-          evaluate: (v) =>
-              (v['P'] ?? false) && ((v['Q'] ?? false) || (v['R'] ?? false))),
+          evaluate: (v) => (v['P'] ?? false) && ((v['Q'] ?? false) || (v['R'] ?? false))),
       LogicPuzzle(
           id: 'U240',
           difficulty: LogicDifficulty.hard,
           inputs: ['M', 'N', 'O'],
           description: 'Çıkış = ((M XOR N) OR (O AND M))',
-          evaluate: (v) =>
-              (_xor2(v['M'] ?? false, v['N'] ?? false)) ||
-              ((v['O'] ?? false) && (v['M'] ?? false))),
+          evaluate: (v) => (_xor2(v['M'] ?? false, v['N'] ?? false)) || ((v['O'] ?? false) && (v['M'] ?? false))),
       LogicPuzzle(
           id: 'U286',
           difficulty: LogicDifficulty.easy,
@@ -2309,8 +2131,7 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['P', 'R', 'Q'],
           description: 'Çıkış = ((P OR R) AND NOT Q)',
-          evaluate: (v) =>
-              ((v['P'] ?? false) || (v['R'] ?? false)) && !(v['Q'] ?? false)),
+          evaluate: (v) => ((v['P'] ?? false) || (v['R'] ?? false)) && !(v['Q'] ?? false)),
       LogicPuzzle(
           id: 'U293',
           difficulty: LogicDifficulty.medium,
@@ -2322,8 +2143,7 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A XOR B) OR C)',
-          evaluate: (v) =>
-              _xor2(v['A'] ?? false, v['B'] ?? false) || (v['C'] ?? false)),
+          evaluate: (v) => _xor2(v['A'] ?? false, v['B'] ?? false) || (v['C'] ?? false)),
       LogicPuzzle(
           id: 'U295',
           difficulty: LogicDifficulty.medium,
@@ -2341,36 +2161,31 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['M', 'N', 'O'],
           description: 'Çıkış = ((M AND NOT N) OR O)',
-          evaluate: (v) =>
-              ((v['M'] ?? false) && !(v['N'] ?? false)) || (v['O'] ?? false)),
+          evaluate: (v) => ((v['M'] ?? false) && !(v['N'] ?? false)) || (v['O'] ?? false)),
       LogicPuzzle(
           id: 'U298',
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'C', 'B'],
           description: 'Çıkış = ((A OR C) NAND B)',
-          evaluate: (v) =>
-              !(((v['A'] ?? false) || (v['C'] ?? false)) && (v['B'] ?? false))),
+          evaluate: (v) => !(((v['A'] ?? false) || (v['C'] ?? false)) && (v['B'] ?? false))),
       LogicPuzzle(
           id: 'U299',
           difficulty: LogicDifficulty.hard,
           inputs: ['X', 'Y', 'Z'],
           description: 'Çıkış = (X XOR (Y AND Z))',
-          evaluate: (v) =>
-              _xor2(v['X'] ?? false, ((v['Y'] ?? false) && (v['Z'] ?? false)))),
+          evaluate: (v) => _xor2(v['X'] ?? false, ((v['Y'] ?? false) && (v['Z'] ?? false)))),
       LogicPuzzle(
           id: 'U300',
           difficulty: LogicDifficulty.medium,
           inputs: ['P', 'Q', 'R'],
           description: 'Çıkış = ((P AND NOT Q) OR R)',
-          evaluate: (v) =>
-              ((v['P'] ?? false) && !(v['Q'] ?? false)) || (v['R'] ?? false)),
+          evaluate: (v) => ((v['P'] ?? false) && !(v['Q'] ?? false)) || (v['R'] ?? false)),
       LogicPuzzle(
           id: 'U301',
           difficulty: LogicDifficulty.medium,
           inputs: ['M', 'N', 'O'],
           description: 'Çıkış = ((M XOR N) OR O)',
-          evaluate: (v) =>
-              (_xor2(v['M'] ?? false, v['N'] ?? false)) || (v['O'] ?? false)),
+          evaluate: (v) => (_xor2(v['M'] ?? false, v['N'] ?? false)) || (v['O'] ?? false)),
       LogicPuzzle(
           id: 'U302',
           difficulty: LogicDifficulty.medium,
@@ -2382,8 +2197,7 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['X', 'Y', 'Z'],
           description: 'Çıkış = ((X OR Y) AND NOT Z)',
-          evaluate: (v) =>
-              ((v['X'] ?? false) || (v['Y'] ?? false)) && !(v['Z'] ?? false)),
+          evaluate: (v) => ((v['X'] ?? false) || (v['Y'] ?? false)) && !(v['Z'] ?? false)),
       LogicPuzzle(
           id: 'U304',
           difficulty: LogicDifficulty.medium,
@@ -2395,8 +2209,7 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['M', 'O', 'N'],
           description: 'Çıkış = ((M OR O) XOR N)',
-          evaluate: (v) => _xor2(
-              ((v['M'] ?? false) || (v['O'] ?? false)), (v['N'] ?? false))),
+          evaluate: (v) => _xor2(((v['M'] ?? false) || (v['O'] ?? false)), (v['N'] ?? false))),
       LogicPuzzle(
           id: 'U306',
           difficulty: LogicDifficulty.easy,
@@ -2414,15 +2227,13 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['P', 'Q', 'R'],
           description: 'Çıkış = ((P OR Q) OR NOT R)',
-          evaluate: (v) =>
-              (v['P'] ?? false) || (v['Q'] ?? false) || !(v['R'] ?? false)),
+          evaluate: (v) => (v['P'] ?? false) || (v['Q'] ?? false) || !(v['R'] ?? false)),
       LogicPuzzle(
           id: 'U309',
           difficulty: LogicDifficulty.hard,
           inputs: ['M', 'N', 'O'],
           description: 'Çıkış = ((M AND N) NAND O)',
-          evaluate: (v) =>
-              !(((v['M'] ?? false) && (v['N'] ?? false)) && (v['O'] ?? false))),
+          evaluate: (v) => !(((v['M'] ?? false) && (v['N'] ?? false)) && (v['O'] ?? false))),
       LogicPuzzle(
           id: 'U310',
           difficulty: LogicDifficulty.medium,
@@ -2434,29 +2245,25 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['X', 'Y', 'Z'],
           description: 'Çıkış = ((X OR NOT Y) AND Z)',
-          evaluate: (v) =>
-              ((v['X'] ?? false) || !(v['Y'] ?? false)) && (v['Z'] ?? false)),
+          evaluate: (v) => ((v['X'] ?? false) || !(v['Y'] ?? false)) && (v['Z'] ?? false)),
       LogicPuzzle(
           id: 'U312',
           difficulty: LogicDifficulty.hard,
           inputs: ['P', 'Q', 'R'],
           description: 'Çıkış = (P NOR (Q OR R))',
-          evaluate: (v) =>
-              !((v['P'] ?? false) || (v['Q'] ?? false) || (v['R'] ?? false))),
+          evaluate: (v) => !((v['P'] ?? false) || (v['Q'] ?? false) || (v['R'] ?? false))),
       LogicPuzzle(
           id: 'U313',
           difficulty: LogicDifficulty.medium,
           inputs: ['M', 'O', 'N'],
           description: 'Çıkış = ((M AND O) OR N)',
-          evaluate: (v) =>
-              ((v['M'] ?? false) && (v['O'] ?? false)) || (v['N'] ?? false)),
+          evaluate: (v) => ((v['M'] ?? false) && (v['O'] ?? false)) || (v['N'] ?? false)),
       LogicPuzzle(
           id: 'U314',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (A OR (B AND NOT C))',
-          evaluate: (v) =>
-              (v['A'] ?? false) || ((v['B'] ?? false) && !(v['C'] ?? false))),
+          evaluate: (v) => (v['A'] ?? false) || ((v['B'] ?? false) && !(v['C'] ?? false))),
       LogicPuzzle(
           id: 'U315',
           difficulty: LogicDifficulty.medium,
@@ -2468,43 +2275,37 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.hard,
           inputs: ['P', 'Q', 'R'],
           description: 'Çıkış = ((NOT P OR Q) NAND R)',
-          evaluate: (v) => !(((!(v['P'] ?? false) || (v['Q'] ?? false)) &&
-              (v['R'] ?? false)))),
+          evaluate: (v) => !(((!(v['P'] ?? false) || (v['Q'] ?? false)) && (v['R'] ?? false)))),
       LogicPuzzle(
           id: 'U317',
           difficulty: LogicDifficulty.medium,
           inputs: ['M', 'N', 'O'],
           description: 'Çıkış = ((M OR N) OR NOT O)',
-          evaluate: (v) =>
-              (v['M'] ?? false) || (v['N'] ?? false) || !(v['O'] ?? false)),
+          evaluate: (v) => (v['M'] ?? false) || (v['N'] ?? false) || !(v['O'] ?? false)),
       LogicPuzzle(
           id: 'U318',
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (A NAND (B AND C))',
-          evaluate: (v) =>
-              !((v['A'] ?? false) && ((v['B'] ?? false) && (v['C'] ?? false)))),
+          evaluate: (v) => !((v['A'] ?? false) && ((v['B'] ?? false) && (v['C'] ?? false)))),
       LogicPuzzle(
           id: 'U319',
           difficulty: LogicDifficulty.hard,
           inputs: ['X', 'Y', 'Z'],
           description: 'Çıkış = (X OR (Y XOR NOT Z))',
-          evaluate: (v) =>
-              (v['X'] ?? false) || _xor2(v['Y'] ?? false, !(v['Z'] ?? false))),
+          evaluate: (v) => (v['X'] ?? false) || _xor2(v['Y'] ?? false, !(v['Z'] ?? false))),
       LogicPuzzle(
           id: 'U320',
           difficulty: LogicDifficulty.medium,
           inputs: ['P', 'Q', 'R'],
           description: 'Çıkış = (P AND (NOT Q OR R))',
-          evaluate: (v) =>
-              (v['P'] ?? false) && ((!(v['Q'] ?? false)) || (v['R'] ?? false))),
+          evaluate: (v) => (v['P'] ?? false) && ((!(v['Q'] ?? false)) || (v['R'] ?? false))),
       LogicPuzzle(
           id: 'U321',
           difficulty: LogicDifficulty.hard,
           inputs: ['M', 'O', 'N'],
           description: 'Çıkış = ((M NOR O) AND N)',
-          evaluate: (v) =>
-              (!((v['M'] ?? false) || (v['O'] ?? false))) && (v['N'] ?? false)),
+          evaluate: (v) => (!((v['M'] ?? false) || (v['O'] ?? false))) && (v['N'] ?? false)),
       LogicPuzzle(
           id: 'U322',
           difficulty: LogicDifficulty.medium,
@@ -2516,8 +2317,7 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['X', 'Z', 'Y'],
           description: 'Çıkış = ((X NAND Z) OR Y)',
-          evaluate: (v) =>
-              (!((v['X'] ?? false) && (v['Z'] ?? false))) || (v['Y'] ?? false)),
+          evaluate: (v) => (!((v['X'] ?? false) && (v['Z'] ?? false))) || (v['Y'] ?? false)),
       LogicPuzzle(
           id: 'U324',
           difficulty: LogicDifficulty.medium,
@@ -2529,22 +2329,19 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['M', 'N', 'O'],
           description: 'Çıkış = (M AND (N OR O))',
-          evaluate: (v) =>
-              (v['M'] ?? false) && ((v['N'] ?? false) || (v['O'] ?? false))),
+          evaluate: (v) => (v['M'] ?? false) && ((v['N'] ?? false) || (v['O'] ?? false))),
       LogicPuzzle(
           id: 'U326',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A OR NOT B) AND C)',
-          evaluate: (v) =>
-              ((v['A'] ?? false) || !(v['B'] ?? false)) && (v['C'] ?? false)),
+          evaluate: (v) => ((v['A'] ?? false) || !(v['B'] ?? false)) && (v['C'] ?? false)),
       LogicPuzzle(
           id: 'U327',
           difficulty: LogicDifficulty.hard,
           inputs: ['X', 'Y', 'Z'],
           description: 'Çıkış = ((X XOR Y) NAND Z)',
-          evaluate: (v) => !((_xor2(v['X'] ?? false, v['Y'] ?? false)) &&
-              (v['Z'] ?? false))),
+          evaluate: (v) => !((_xor2(v['X'] ?? false, v['Y'] ?? false)) && (v['Z'] ?? false))),
       LogicPuzzle(
           id: 'U328',
           difficulty: LogicDifficulty.medium,
@@ -2556,15 +2353,13 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.hard,
           inputs: ['M', 'N', 'O'],
           description: 'Çıkış = ((M OR N) XOR (NOT O))',
-          evaluate: (v) => _xor2(
-              ((v['M'] ?? false) || (v['N'] ?? false)), !(v['O'] ?? false))),
+          evaluate: (v) => _xor2(((v['M'] ?? false) || (v['N'] ?? false)), !(v['O'] ?? false))),
       LogicPuzzle(
           id: 'U330',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A AND B) OR (NOT C))',
-          evaluate: (v) =>
-              ((v['A'] ?? false) && (v['B'] ?? false)) || !(v['C'] ?? false)),
+          evaluate: (v) => ((v['A'] ?? false) && (v['B'] ?? false)) || !(v['C'] ?? false)),
       LogicPuzzle(
           id: 'U241',
           difficulty: LogicDifficulty.easy,
@@ -2618,8 +2413,7 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (A XOR (B OR C))',
-          evaluate: (v) =>
-              _xor2(v['A'] ?? false, (v['B'] ?? false) || (v['C'] ?? false))),
+          evaluate: (v) => _xor2(v['A'] ?? false, (v['B'] ?? false) || (v['C'] ?? false))),
       LogicPuzzle(
           id: 'U250',
           difficulty: LogicDifficulty.easy,
@@ -2643,29 +2437,25 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A AND B) OR (NOT C))',
-          evaluate: (v) =>
-              ((v['A'] ?? false) && (v['B'] ?? false)) || !(v['C'] ?? false)),
+          evaluate: (v) => ((v['A'] ?? false) && (v['B'] ?? false)) || !(v['C'] ?? false)),
       LogicPuzzle(
           id: 'U254',
           difficulty: LogicDifficulty.medium,
           inputs: ['X', 'Y', 'Z'],
           description: 'Çıkış = (X OR (Y XOR Z))',
-          evaluate: (v) =>
-              (v['X'] ?? false) || (_xor2(v['Y'] ?? false, v['Z'] ?? false))),
+          evaluate: (v) => (v['X'] ?? false) || (_xor2(v['Y'] ?? false, v['Z'] ?? false))),
       LogicPuzzle(
           id: 'U255',
           difficulty: LogicDifficulty.medium,
           inputs: ['P', 'Q', 'R'],
           description: 'Çıkış = ((NOT P AND Q) OR R)',
-          evaluate: (v) =>
-              ((!(v['P'] ?? false) && (v['Q'] ?? false)) || (v['R'] ?? false))),
+          evaluate: (v) => ((!(v['P'] ?? false) && (v['Q'] ?? false)) || (v['R'] ?? false))),
       LogicPuzzle(
           id: 'U256',
           difficulty: LogicDifficulty.hard,
           inputs: ['M', 'N', 'O'],
           description: 'Çıkış = (M NAND (N AND O))',
-          evaluate: (v) =>
-              !((v['M'] ?? false) && ((v['N'] ?? false) && (v['O'] ?? false)))),
+          evaluate: (v) => !((v['M'] ?? false) && ((v['N'] ?? false) && (v['O'] ?? false)))),
       LogicPuzzle(
           id: 'U257',
           difficulty: LogicDifficulty.medium,
@@ -2677,8 +2467,7 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['X', 'Y', 'Z'],
           description: 'Çıkış = ((X OR Y) AND NOT Z)',
-          evaluate: (v) =>
-              ((v['X'] ?? false) || (v['Y'] ?? false)) && !(v['Z'] ?? false)),
+          evaluate: (v) => ((v['X'] ?? false) || (v['Y'] ?? false)) && !(v['Z'] ?? false)),
       LogicPuzzle(
           id: 'U259',
           difficulty: LogicDifficulty.medium,
@@ -2690,8 +2479,7 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['M', 'O', 'N'],
           description: 'Çıkış = ((M XOR O) OR N)',
-          evaluate: (v) =>
-              (_xor2(v['M'] ?? false, v['O'] ?? false)) || (v['N'] ?? false)),
+          evaluate: (v) => (_xor2(v['M'] ?? false, v['O'] ?? false)) || (v['N'] ?? false)),
       LogicPuzzle(
           id: 'U261',
           difficulty: LogicDifficulty.easy,
@@ -2703,8 +2491,7 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['X', 'Y', 'Z'],
           description: 'Çıkış = ((X AND Y) OR Z)',
-          evaluate: (v) =>
-              ((v['X'] ?? false) && (v['Y'] ?? false)) || (v['Z'] ?? false)),
+          evaluate: (v) => ((v['X'] ?? false) && (v['Y'] ?? false)) || (v['Z'] ?? false)),
       LogicPuzzle(
           id: 'U263',
           difficulty: LogicDifficulty.medium,
@@ -2716,43 +2503,37 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['M', 'N', 'O'],
           description: 'Çıkış = (M OR (N AND O))',
-          evaluate: (v) =>
-              (v['M'] ?? false) || ((v['N'] ?? false) && (v['O'] ?? false))),
+          evaluate: (v) => (v['M'] ?? false) || ((v['N'] ?? false) && (v['O'] ?? false))),
       LogicPuzzle(
           id: 'U265',
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (A NAND (B OR C))',
-          evaluate: (v) =>
-              !((v['A'] ?? false) && ((v['B'] ?? false) || (v['C'] ?? false)))),
+          evaluate: (v) => !((v['A'] ?? false) && ((v['B'] ?? false) || (v['C'] ?? false)))),
       LogicPuzzle(
           id: 'U266',
           difficulty: LogicDifficulty.medium,
           inputs: ['X', 'Y', 'Z'],
           description: 'Çıkış = ((X XOR Y) OR NOT Z)',
-          evaluate: (v) =>
-              (_xor2(v['X'] ?? false, v['Y'] ?? false)) || !(v['Z'] ?? false)),
+          evaluate: (v) => (_xor2(v['X'] ?? false, v['Y'] ?? false)) || !(v['Z'] ?? false)),
       LogicPuzzle(
           id: 'U267',
           difficulty: LogicDifficulty.medium,
           inputs: ['P', 'Q', 'R'],
           description: 'Çıkış = (P OR (Q AND NOT R))',
-          evaluate: (v) =>
-              (v['P'] ?? false) || ((v['Q'] ?? false) && !(v['R'] ?? false))),
+          evaluate: (v) => (v['P'] ?? false) || ((v['Q'] ?? false) && !(v['R'] ?? false))),
       LogicPuzzle(
           id: 'U268',
           difficulty: LogicDifficulty.medium,
           inputs: ['M', 'N', 'O'],
           description: 'Çıkış = ((M AND N) OR NOT O)',
-          evaluate: (v) =>
-              ((v['M'] ?? false) && (v['N'] ?? false)) || !(v['O'] ?? false)),
+          evaluate: (v) => ((v['M'] ?? false) && (v['N'] ?? false)) || !(v['O'] ?? false)),
       LogicPuzzle(
           id: 'U269',
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A OR B) NAND C)',
-          evaluate: (v) =>
-              !(((v['A'] ?? false) || (v['B'] ?? false)) && (v['C'] ?? false))),
+          evaluate: (v) => !(((v['A'] ?? false) || (v['B'] ?? false)) && (v['C'] ?? false))),
       LogicPuzzle(
           id: 'U270',
           difficulty: LogicDifficulty.medium,
@@ -2764,8 +2545,7 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['P', 'Q', 'R'],
           description: 'Çıkış = ((NOT P OR Q) AND R)',
-          evaluate: (v) =>
-              ((!(v['P'] ?? false) || (v['Q'] ?? false)) && (v['R'] ?? false))),
+          evaluate: (v) => ((!(v['P'] ?? false) || (v['Q'] ?? false)) && (v['R'] ?? false))),
       LogicPuzzle(
           id: 'U272',
           difficulty: LogicDifficulty.medium,
@@ -2777,8 +2557,7 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'C', 'B'],
           description: 'Çıkış = ((A AND C) OR B)',
-          evaluate: (v) =>
-              ((v['A'] ?? false) && (v['C'] ?? false)) || (v['B'] ?? false)),
+          evaluate: (v) => ((v['A'] ?? false) && (v['C'] ?? false)) || (v['B'] ?? false)),
       LogicPuzzle(
           id: 'U274',
           difficulty: LogicDifficulty.easy,
@@ -2790,15 +2569,13 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['P', 'Q', 'R'],
           description: 'Çıkış = (P XOR (Q OR R))',
-          evaluate: (v) =>
-              _xor2(v['P'] ?? false, (v['Q'] ?? false) || (v['R'] ?? false))),
+          evaluate: (v) => _xor2(v['P'] ?? false, (v['Q'] ?? false) || (v['R'] ?? false))),
       LogicPuzzle(
           id: 'U276',
           difficulty: LogicDifficulty.hard,
           inputs: ['M', 'O', 'N'],
           description: 'Çıkış = ((M AND O) NAND N)',
-          evaluate: (v) =>
-              !(((v['M'] ?? false) && (v['O'] ?? false)) && (v['N'] ?? false))),
+          evaluate: (v) => !(((v['M'] ?? false) && (v['O'] ?? false)) && (v['N'] ?? false))),
       LogicPuzzle(
           id: 'U277',
           difficulty: LogicDifficulty.medium,
@@ -2810,22 +2587,19 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['X', 'Y', 'Z'],
           description: 'Çıkış = ((X OR Y) XOR Z)',
-          evaluate: (v) => _xor2(
-              ((v['X'] ?? false) || (v['Y'] ?? false)), (v['Z'] ?? false))),
+          evaluate: (v) => _xor2(((v['X'] ?? false) || (v['Y'] ?? false)), (v['Z'] ?? false))),
       LogicPuzzle(
           id: 'U279',
           difficulty: LogicDifficulty.medium,
           inputs: ['P', 'R', 'Q'],
           description: 'Çıkış = ((P AND R) OR Q)',
-          evaluate: (v) =>
-              ((v['P'] ?? false) && (v['R'] ?? false)) || (v['Q'] ?? false)),
+          evaluate: (v) => ((v['P'] ?? false) && (v['R'] ?? false)) || (v['Q'] ?? false)),
       LogicPuzzle(
           id: 'U280',
           difficulty: LogicDifficulty.medium,
           inputs: ['M', 'N', 'O'],
           description: 'Çıkış = ((M XOR N) AND NOT O)',
-          evaluate: (v) =>
-              (_xor2(v['M'] ?? false, v['N'] ?? false)) && !(v['O'] ?? false)),
+          evaluate: (v) => (_xor2(v['M'] ?? false, v['N'] ?? false)) && !(v['O'] ?? false)),
       LogicPuzzle(
           id: 'U281',
           difficulty: LogicDifficulty.easy,
@@ -2837,8 +2611,7 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.hard,
           inputs: ['X', 'Y', 'Z'],
           description: 'Çıkış = (X NAND (Y AND Z))',
-          evaluate: (v) =>
-              !((v['X'] ?? false) && ((v['Y'] ?? false) && (v['Z'] ?? false)))),
+          evaluate: (v) => !((v['X'] ?? false) && ((v['Y'] ?? false) && (v['Z'] ?? false)))),
       LogicPuzzle(
           id: 'U283',
           difficulty: LogicDifficulty.medium,
@@ -2850,15 +2623,13 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['M', 'N', 'O'],
           description: 'Çıkış = ((M OR N) AND (NOT O))',
-          evaluate: (v) =>
-              ((v['M'] ?? false) || (v['N'] ?? false)) && !(v['O'] ?? false)),
+          evaluate: (v) => ((v['M'] ?? false) || (v['N'] ?? false)) && !(v['O'] ?? false)),
       LogicPuzzle(
           id: 'U285',
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A AND B) XOR (C))',
-          evaluate: (v) => _xor2(
-              ((v['A'] ?? false) && (v['B'] ?? false)), (v['C'] ?? false))),
+          evaluate: (v) => _xor2(((v['A'] ?? false) && (v['B'] ?? false)), (v['C'] ?? false))),
       LogicPuzzle(
           id: 'U331',
           difficulty: LogicDifficulty.easy,
@@ -2870,8 +2641,7 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['X', 'Y', 'Z'],
           description: 'Çıkış = (X OR (Y AND NOT Z))',
-          evaluate: (v) =>
-              (v['X'] ?? false) || ((v['Y'] ?? false) && !(v['Z'] ?? false))),
+          evaluate: (v) => (v['X'] ?? false) || ((v['Y'] ?? false) && !(v['Z'] ?? false))),
       LogicPuzzle(
           id: 'U333',
           difficulty: LogicDifficulty.medium,
@@ -2883,8 +2653,7 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['M', 'N', 'O'],
           description: 'Çıkış = (M OR (N AND O))',
-          evaluate: (v) =>
-              (v['M'] ?? false) || ((v['N'] ?? false) && (v['O'] ?? false))),
+          evaluate: (v) => (v['M'] ?? false) || ((v['N'] ?? false) && (v['O'] ?? false))),
       LogicPuzzle(
           id: 'U335',
           difficulty: LogicDifficulty.medium,
@@ -2896,107 +2665,91 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['X', 'Y', 'Z'],
           description: 'Çıkış = (X AND (NOT Y OR Z))',
-          evaluate: (v) =>
-              (v['X'] ?? false) && (!(v['Y'] ?? false) || (v['Z'] ?? false))),
+          evaluate: (v) => (v['X'] ?? false) && (!(v['Y'] ?? false) || (v['Z'] ?? false))),
       LogicPuzzle(
           id: 'U337',
           difficulty: LogicDifficulty.medium,
           inputs: ['P', 'Q', 'R'],
           description: 'Çıkış = ((P OR R) AND NOT Q)',
-          evaluate: (v) =>
-              ((v['P'] ?? false) || (v['R'] ?? false)) && !(v['Q'] ?? false)),
+          evaluate: (v) => ((v['P'] ?? false) || (v['R'] ?? false)) && !(v['Q'] ?? false)),
       LogicPuzzle(
           id: 'U338',
           difficulty: LogicDifficulty.hard,
           inputs: ['M', 'N', 'O'],
           description: 'Çıkış = (M XOR (N OR NOT O))',
-          evaluate: (v) =>
-              _xor2(v['M'] ?? false, (v['N'] ?? false) || !(v['O'] ?? false))),
+          evaluate: (v) => _xor2(v['M'] ?? false, (v['N'] ?? false) || !(v['O'] ?? false))),
       LogicPuzzle(
           id: 'U339',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = ((A NAND B) OR C)',
-          evaluate: (v) =>
-              (!((v['A'] ?? false) && (v['B'] ?? false))) || (v['C'] ?? false)),
+          evaluate: (v) => (!((v['A'] ?? false) && (v['B'] ?? false))) || (v['C'] ?? false)),
       LogicPuzzle(
           id: 'U340',
           difficulty: LogicDifficulty.hard,
           inputs: ['X', 'Y', 'Z'],
           description: 'Çıkış = (X NOR (Y AND Z))',
-          evaluate: (v) =>
-              !((v['X'] ?? false) || ((v['Y'] ?? false) && (v['Z'] ?? false)))),
+          evaluate: (v) => !((v['X'] ?? false) || ((v['Y'] ?? false) && (v['Z'] ?? false)))),
       LogicPuzzle(
           id: 'U341',
           difficulty: LogicDifficulty.medium,
           inputs: ['P', 'Q', 'R'],
           description: 'Çıkış = ((NOT P AND R) OR Q)',
-          evaluate: (v) =>
-              ((!(v['P'] ?? false) && (v['R'] ?? false)) || (v['Q'] ?? false))),
+          evaluate: (v) => ((!(v['P'] ?? false) && (v['R'] ?? false)) || (v['Q'] ?? false))),
       LogicPuzzle(
           id: 'U342',
           difficulty: LogicDifficulty.hard,
           inputs: ['M', 'N', 'O'],
           description: 'Çıkış = (M AND (N NOR O))',
-          evaluate: (v) =>
-              (v['M'] ?? false) && !((v['N'] ?? false) || (v['O'] ?? false))),
+          evaluate: (v) => (v['M'] ?? false) && !((v['N'] ?? false) || (v['O'] ?? false))),
       LogicPuzzle(
           id: 'U343',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (A OR (B NAND C))',
-          evaluate: (v) =>
-              (v['A'] ?? false) || (!((v['B'] ?? false) && (v['C'] ?? false)))),
+          evaluate: (v) => (v['A'] ?? false) || (!((v['B'] ?? false) && (v['C'] ?? false)))),
       LogicPuzzle(
           id: 'U344',
           difficulty: LogicDifficulty.medium,
           inputs: ['X', 'Z', 'Y'],
           description: 'Çıkış = ((X XOR NOT Z) AND Y)',
-          evaluate: (v) =>
-              _xor2(v['X'] ?? false, !(v['Z'] ?? false)) && (v['Y'] ?? false)),
+          evaluate: (v) => _xor2(v['X'] ?? false, !(v['Z'] ?? false)) && (v['Y'] ?? false)),
       LogicPuzzle(
           id: 'U345',
           difficulty: LogicDifficulty.medium,
           inputs: ['P', 'Q', 'R'],
           description: 'Çıkış = (P OR (NOT Q AND R))',
-          evaluate: (v) =>
-              (v['P'] ?? false) || ((!(v['Q'] ?? false)) && (v['R'] ?? false))),
+          evaluate: (v) => (v['P'] ?? false) || ((!(v['Q'] ?? false)) && (v['R'] ?? false))),
       LogicPuzzle(
           id: 'U346',
           difficulty: LogicDifficulty.medium,
           inputs: ['M', 'N', 'O'],
           description: 'Çıkış = ((M NAND N) OR NOT O)',
-          evaluate: (v) =>
-              (!((v['M'] ?? false) && (v['N'] ?? false))) ||
-              !(v['O'] ?? false)),
+          evaluate: (v) => (!((v['M'] ?? false) && (v['N'] ?? false))) || !(v['O'] ?? false)),
       LogicPuzzle(
           id: 'U347',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (A XOR (B AND NOT C))',
-          evaluate: (v) => _xor2(
-              v['A'] ?? false, ((v['B'] ?? false) && !(v['C'] ?? false)))),
+          evaluate: (v) => _xor2(v['A'] ?? false, ((v['B'] ?? false) && !(v['C'] ?? false)))),
       LogicPuzzle(
           id: 'U348',
           difficulty: LogicDifficulty.hard,
           inputs: ['X', 'Y', 'Z'],
           description: 'Çıkış = ((X OR NOT Y) NAND Z)',
-          evaluate: (v) => !(((v['X'] ?? false) || !(v['Y'] ?? false)) &&
-              (v['Z'] ?? false))),
+          evaluate: (v) => !(((v['X'] ?? false) || !(v['Y'] ?? false)) && (v['Z'] ?? false))),
       LogicPuzzle(
           id: 'U349',
           difficulty: LogicDifficulty.medium,
           inputs: ['P', 'Q', 'R'],
           description: 'Çıkış = ((P AND Q) OR (NOT R))',
-          evaluate: (v) =>
-              ((v['P'] ?? false) && (v['Q'] ?? false)) || !(v['R'] ?? false)),
+          evaluate: (v) => ((v['P'] ?? false) && (v['Q'] ?? false)) || !(v['R'] ?? false)),
       LogicPuzzle(
           id: 'U350',
           difficulty: LogicDifficulty.medium,
           inputs: ['M', 'O', 'N'],
           description: 'Çıkış = ((M OR O) XNOR N)',
-          evaluate: (v) => _xnor2(
-              ((v['M'] ?? false) || (v['O'] ?? false)), (v['N'] ?? false))),
+          evaluate: (v) => _xnor2(((v['M'] ?? false) || (v['O'] ?? false)), (v['N'] ?? false))),
       LogicPuzzle(
           id: 'U351',
           difficulty: LogicDifficulty.medium,
@@ -3008,171 +2761,145 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
           difficulty: LogicDifficulty.medium,
           inputs: ['X', 'Z', 'Y'],
           description: 'Çıkış = ((X OR Z) AND NOT Y)',
-          evaluate: (v) =>
-              (((v['X'] ?? false) || (v['Z'] ?? false)) && !(v['Y'] ?? false))),
+          evaluate: (v) => (((v['X'] ?? false) || (v['Z'] ?? false)) && !(v['Y'] ?? false))),
       LogicPuzzle(
           id: 'U353',
           difficulty: LogicDifficulty.hard,
           inputs: ['P', 'Q', 'R'],
           description: 'Çıkış = (P NOR (Q XOR R))',
-          evaluate: (v) => !((v['P'] ?? false) ||
-              (_xor2(v['Q'] ?? false, v['R'] ?? false)))),
+          evaluate: (v) => !((v['P'] ?? false) || (_xor2(v['Q'] ?? false, v['R'] ?? false)))),
       LogicPuzzle(
           id: 'U354',
           difficulty: LogicDifficulty.medium,
           inputs: ['M', 'N', 'O'],
           description: 'Çıkış = ((M AND NOT N) OR (O))',
-          evaluate: (v) =>
-              ((v['M'] ?? false) && !(v['N'] ?? false)) || (v['O'] ?? false)),
+          evaluate: (v) => ((v['M'] ?? false) && !(v['N'] ?? false)) || (v['O'] ?? false)),
       LogicPuzzle(
           id: 'U355',
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (A XNOR (B OR NOT C))',
-          evaluate: (v) => _xnor2(
-              v['A'] ?? false, ((v['B'] ?? false) || !(v['C'] ?? false)))),
+          evaluate: (v) => _xnor2(v['A'] ?? false, ((v['B'] ?? false) || !(v['C'] ?? false)))),
       LogicPuzzle(
           id: 'U356',
           difficulty: LogicDifficulty.medium,
           inputs: ['X', 'Y', 'Z'],
           description: 'Çıkış = ((X NAND Y) AND Z)',
-          evaluate: (v) =>
-              (!((v['X'] ?? false) && (v['Y'] ?? false))) && (v['Z'] ?? false)),
+          evaluate: (v) => (!((v['X'] ?? false) && (v['Y'] ?? false))) && (v['Z'] ?? false)),
       LogicPuzzle(
           id: 'U357',
           difficulty: LogicDifficulty.medium,
           inputs: ['P', 'Q', 'R'],
           description: 'Çıkış = ((NOT P OR Q) XOR R)',
-          evaluate: (v) => _xor2(
-              (!(v['P'] ?? false) || (v['Q'] ?? false)), (v['R'] ?? false))),
+          evaluate: (v) => _xor2((!(v['P'] ?? false) || (v['Q'] ?? false)), (v['R'] ?? false))),
       LogicPuzzle(
           id: 'U358',
           difficulty: LogicDifficulty.medium,
           inputs: ['M', 'N', 'O'],
           description: 'Çıkış = ((M OR N) AND (NOT O))',
-          evaluate: (v) =>
-              ((v['M'] ?? false) || (v['N'] ?? false)) && !(v['O'] ?? false)),
+          evaluate: (v) => ((v['M'] ?? false) || (v['N'] ?? false)) && !(v['O'] ?? false)),
       LogicPuzzle(
           id: 'U359',
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (A NOR (B AND C))',
-          evaluate: (v) =>
-              !((v['A'] ?? false) || ((v['B'] ?? false) && (v['C'] ?? false)))),
+          evaluate: (v) => !((v['A'] ?? false) || ((v['B'] ?? false) && (v['C'] ?? false)))),
       LogicPuzzle(
           id: 'U360',
           difficulty: LogicDifficulty.medium,
           inputs: ['X', 'Y', 'Z'],
           description: 'Çıkış = ((X OR Y) XOR NOT Z)',
-          evaluate: (v) => _xor2(
-              ((v['X'] ?? false) || (v['Y'] ?? false)), !(v['Z'] ?? false))),
+          evaluate: (v) => _xor2(((v['X'] ?? false) || (v['Y'] ?? false)), !(v['Z'] ?? false))),
       LogicPuzzle(
           id: 'U361',
           difficulty: LogicDifficulty.hard,
           inputs: ['P', 'R', 'Q'],
           description: 'Çıkış = ((P AND R) NAND Q)',
-          evaluate: (v) =>
-              !(((v['P'] ?? false) && (v['R'] ?? false)) && (v['Q'] ?? false))),
+          evaluate: (v) => !(((v['P'] ?? false) && (v['R'] ?? false)) && (v['Q'] ?? false))),
       LogicPuzzle(
           id: 'U362',
           difficulty: LogicDifficulty.medium,
           inputs: ['M', 'N', 'O'],
           description: 'Çıkış = (M OR (N XOR NOT O))',
-          evaluate: (v) =>
-              (v['M'] ?? false) ||
-              (_xor2(v['N'] ?? false, !(v['O'] ?? false)))),
+          evaluate: (v) => (v['M'] ?? false) || (_xor2(v['N'] ?? false, !(v['O'] ?? false)))),
       LogicPuzzle(
           id: 'U363',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'C', 'B'],
           description: 'Çıkış = ((A XOR C) AND B)',
-          evaluate: (v) =>
-              _xor2(v['A'] ?? false, v['C'] ?? false) && (v['B'] ?? false)),
+          evaluate: (v) => _xor2(v['A'] ?? false, v['C'] ?? false) && (v['B'] ?? false)),
       LogicPuzzle(
           id: 'U364',
           difficulty: LogicDifficulty.medium,
           inputs: ['X', 'Z', 'Y'],
           description: 'Çıkış = (X AND (NOT Z OR Y))',
-          evaluate: (v) =>
-              (v['X'] ?? false) && (!(v['Z'] ?? false) || (v['Y'] ?? false))),
+          evaluate: (v) => (v['X'] ?? false) && (!(v['Z'] ?? false) || (v['Y'] ?? false))),
       LogicPuzzle(
           id: 'U365',
           difficulty: LogicDifficulty.medium,
           inputs: ['P', 'Q', 'R'],
           description: 'Çıkış = ((P NAND Q) OR (NOT R))',
-          evaluate: (v) =>
-              (!((v['P'] ?? false) && (v['Q'] ?? false))) ||
-              !(v['R'] ?? false)),
+          evaluate: (v) => (!((v['P'] ?? false) && (v['Q'] ?? false))) || !(v['R'] ?? false)),
       LogicPuzzle(
           id: 'U366',
           difficulty: LogicDifficulty.hard,
           inputs: ['M', 'N', 'O'],
           description: 'Çıkış = (M XNOR (N AND O))',
-          evaluate: (v) => _xnor2(
-              v['M'] ?? false, ((v['N'] ?? false) && (v['O'] ?? false)))),
+          evaluate: (v) => _xnor2(v['M'] ?? false, ((v['N'] ?? false) && (v['O'] ?? false)))),
       LogicPuzzle(
           id: 'U367',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (A OR (NOT B AND C))',
-          evaluate: (v) =>
-              (v['A'] ?? false) || ((!(v['B'] ?? false)) && (v['C'] ?? false))),
+          evaluate: (v) => (v['A'] ?? false) || ((!(v['B'] ?? false)) && (v['C'] ?? false))),
       LogicPuzzle(
           id: 'U368',
           difficulty: LogicDifficulty.medium,
           inputs: ['X', 'Y', 'Z'],
           description: 'Çıkış = ((X XOR Y) OR NOT Z)',
-          evaluate: (v) =>
-              (_xor2(v['X'] ?? false, v['Y'] ?? false)) || !(v['Z'] ?? false)),
+          evaluate: (v) => (_xor2(v['X'] ?? false, v['Y'] ?? false)) || !(v['Z'] ?? false)),
       LogicPuzzle(
           id: 'U369',
           difficulty: LogicDifficulty.hard,
           inputs: ['P', 'R', 'Q'],
           description: 'Çıkış = ((P OR R) NAND (NOT Q))',
-          evaluate: (v) => !(((v['P'] ?? false) || (v['R'] ?? false)) &&
-              !(v['Q'] ?? false))),
+          evaluate: (v) => !(((v['P'] ?? false) || (v['R'] ?? false)) && !(v['Q'] ?? false))),
       LogicPuzzle(
           id: 'U370',
           difficulty: LogicDifficulty.hard,
           inputs: ['M', 'N', 'O'],
           description: 'Çıkış = (M NOR (N OR NOT O))',
-          evaluate: (v) =>
-              !((v['M'] ?? false) || (v['N'] ?? false) || !(v['O'] ?? false))),
+          evaluate: (v) => !((v['M'] ?? false) || (v['N'] ?? false) || !(v['O'] ?? false))),
       LogicPuzzle(
           id: 'U371',
           difficulty: LogicDifficulty.hard,
           inputs: ['A', 'C', 'B'],
           description: 'Çıkış = ((A NAND C) AND B)',
-          evaluate: (v) =>
-              (!((v['A'] ?? false) && (v['C'] ?? false))) && (v['B'] ?? false)),
+          evaluate: (v) => (!((v['A'] ?? false) && (v['C'] ?? false))) && (v['B'] ?? false)),
       LogicPuzzle(
           id: 'U372',
           difficulty: LogicDifficulty.medium,
           inputs: ['X', 'Y', 'Z'],
           description: 'Çıkış = ((X OR Y) AND (NOT Z))',
-          evaluate: (v) =>
-              ((v['X'] ?? false) || (v['Y'] ?? false)) && !(v['Z'] ?? false)),
+          evaluate: (v) => ((v['X'] ?? false) || (v['Y'] ?? false)) && !(v['Z'] ?? false)),
       LogicPuzzle(
           id: 'U373',
           difficulty: LogicDifficulty.medium,
           inputs: ['P', 'Q', 'R'],
           description: 'Çıkış = (P XOR (Q OR NOT R))',
-          evaluate: (v) => _xor2(
-              v['P'] ?? false, ((v['Q'] ?? false) || !(v['R'] ?? false)))),
+          evaluate: (v) => _xor2(v['P'] ?? false, ((v['Q'] ?? false) || !(v['R'] ?? false)))),
       LogicPuzzle(
           id: 'U374',
           difficulty: LogicDifficulty.medium,
           inputs: ['M', 'O', 'N'],
           description: 'Çıkış = ((M AND O) OR (NOT N))',
-          evaluate: (v) =>
-              ((v['M'] ?? false) && (v['O'] ?? false)) || !(v['N'] ?? false)),
+          evaluate: (v) => ((v['M'] ?? false) && (v['O'] ?? false)) || !(v['N'] ?? false)),
       LogicPuzzle(
           id: 'U375',
           difficulty: LogicDifficulty.medium,
           inputs: ['A', 'B', 'C'],
           description: 'Çıkış = (A OR (B XNOR C))',
-          evaluate: (v) =>
-              (v['A'] ?? false) || _xnor2(v['B'] ?? false, v['C'] ?? false)),
+          evaluate: (v) => (v['A'] ?? false) || _xnor2(v['B'] ?? false, v['C'] ?? false)),
     ];
   }
 
@@ -3199,14 +2926,11 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
       _prepareSessionOrder();
     }
     // Select random puzzle with advanced rarity constraints
-    LogicPuzzle pickRandom() =>
-        (_shuffledByTier[_currentDifficulty]!..shuffle(_random)).first;
+    LogicPuzzle pickRandom() => (_shuffledByTier[_currentDifficulty]!..shuffle(_random)).first;
     LogicPuzzle p = pickRandom();
     if (_currentDifficulty == LogicDifficulty.easy && _isAdvancedGate(p)) {
       // avoid advanced on easy
-      final nonAdv = (_shuffledByTier[_currentDifficulty] ?? [])
-          .where((e) => !_isAdvancedGate(e))
-          .toList();
+      final nonAdv = (_shuffledByTier[_currentDifficulty] ?? []).where((e) => !_isAdvancedGate(e)).toList();
       if (nonAdv.isNotEmpty) {
         nonAdv.shuffle(_random);
         p = nonAdv.first;
@@ -3215,9 +2939,7 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
     if (_currentDifficulty == LogicDifficulty.medium) {
       final bool allowAdv = _random.nextDouble() < 0.03; // 3%
       if (!allowAdv && _isAdvancedGate(p)) {
-        final nonAdv = (_shuffledByTier[_currentDifficulty] ?? [])
-            .where((e) => !_isAdvancedGate(e))
-            .toList();
+        final nonAdv = (_shuffledByTier[_currentDifficulty] ?? []).where((e) => !_isAdvancedGate(e)).toList();
         if (nonAdv.isNotEmpty) {
           nonAdv.shuffle(_random);
           p = nonAdv.first;
@@ -3227,9 +2949,7 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
     if (_currentDifficulty == LogicDifficulty.hard) {
       final bool allowAdv = _random.nextDouble() < 0.08; // 8%
       if (!allowAdv && _isAdvancedGate(p)) {
-        final nonAdv = (_shuffledByTier[_currentDifficulty] ?? [])
-            .where((e) => !_isAdvancedGate(e))
-            .toList();
+        final nonAdv = (_shuffledByTier[_currentDifficulty] ?? []).where((e) => !_isAdvancedGate(e)).toList();
         if (nonAdv.isNotEmpty) {
           nonAdv.shuffle(_random);
           p = nonAdv.first;
@@ -3237,9 +2957,7 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
       }
     }
     // Avoid repeats within a 5-question session when possible
-    final pool = (_shuffledByTier[_currentDifficulty] ?? [])
-        .where((e) => !_usedPuzzleIds.contains(e.id))
-        .toList();
+    final pool = (_shuffledByTier[_currentDifficulty] ?? []).where((e) => !_usedPuzzleIds.contains(e.id)).toList();
     if (pool.isNotEmpty) {
       pool.shuffle(_random);
       p = pool.first;
@@ -3274,8 +2992,7 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
   }
 
   LogicPuzzle get _currentPuzzle {
-    return _activePuzzle ??
-        (_shuffledByTier[_currentDifficulty]?.first ?? _puzzles.first);
+    return _activePuzzle ?? (_shuffledByTier[_currentDifficulty]?.first ?? _puzzles.first);
   }
 
   void _submit() {
@@ -3362,9 +3079,20 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
     );
   }
 
-  void _showEndDialog() {
-    final updated = widget.profile.copyWith(
-      totalGamePoints: (widget.profile.totalGamePoints ?? 0) + _score,
+  void _showEndDialog() async {
+    // Güncel profili Firestore'dan çek
+    UserProfile? currentProfile;
+    try {
+      currentProfile = await UserService.getCurrentUserProfile();
+    } catch (e) {
+      print('Güncel profil çekme hatası: $e');
+      currentProfile = widget.profile;
+    }
+
+    final baseProfile = currentProfile ?? widget.profile;
+    final updated = baseProfile.copyWith(
+      points: baseProfile.points + _score,
+      totalGamePoints: (baseProfile.totalGamePoints ?? 0) + _score,
     );
     showDialog(
       context: context,
@@ -3413,9 +3141,23 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
 
   Future<void> _saveProfile(UserProfile profile) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('user_profile', json.encode(profile.toJson()));
-    } catch (_) {}
+      print('🎮 LOGIC GATES BİTTİ - Puan kaydediliyor...');
+      print('   ✨ Kazanılan Puan: $_score');
+      print('   📊 Yeni Oyun Puanı: ${profile.totalGamePoints ?? 0}');
+
+      await UserService.updateCurrentUserProfile(profile);
+      print('   ✅ Firestore\'a kaydedildi!');
+
+      await UserService.logActivity(
+        activityType: 'logic_gates_completed',
+        data: {
+          'score': _score,
+          'level': _level,
+        },
+      );
+    } catch (e) {
+      print('❌ Logic Gates profil kaydetme hatası: $e');
+    }
   }
 
   @override
@@ -3485,8 +3227,7 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: Colors.blueGrey,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 32, vertical: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                   ),
                   child: const Text('Başla', style: TextStyle(fontSize: 22)),
                 ),
@@ -3522,12 +3263,9 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('Oturum Skoru: $_score',
-                      style: const TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.w600)),
-                  Text(
-                      'Kayıtlı Oyun Puanı: ${(widget.profile.totalGamePoints ?? 0)}',
-                      style: const TextStyle(
-                          color: Colors.white70, fontWeight: FontWeight.w500)),
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                  Text('Kayıtlı Oyun Puanı: ${(widget.profile.totalGamePoints ?? 0)}',
+                      style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w500)),
                 ],
               ),
             ),
@@ -3548,21 +3286,16 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text('Seviye: $_level',
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold)),
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                           Text('Skor: $_score',
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold)),
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                         ],
                       ),
                       if (_isTimed)
                         Padding(
                           padding: const EdgeInsets.only(top: 8),
-                          child: Text('Süre: $_timeLeft sn',
-                              style: const TextStyle(
-                                  color: Colors.white70, fontSize: 14)),
+                          child:
+                              Text('Süre: $_timeLeft sn', style: const TextStyle(color: Colors.white70, fontSize: 14)),
                         ),
                       const SizedBox(height: 12),
                       Text(
@@ -3596,8 +3329,7 @@ class _LogicGatesPuzzleScreenState extends State<LogicGatesPuzzleScreen>
                               (k) => FilterChip(
                                 selected: _values[k] ?? false,
                                 onSelected: (_) => _toggleInput(k),
-                                label: Text(
-                                    '$k: ${(_values[k] ?? false) ? 'Açık' : 'Kapalı'}'),
+                                label: Text('$k: ${(_values[k] ?? false) ? 'Açık' : 'Kapalı'}'),
                                 selectedColor: Colors.lightGreen,
                               ),
                             )
