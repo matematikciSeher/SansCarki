@@ -22,7 +22,8 @@ class QuizArenaScreen extends StatefulWidget {
   State<QuizArenaScreen> createState() => _QuizArenaScreenState();
 }
 
-class _QuizArenaScreenState extends State<QuizArenaScreen> with TickerProviderStateMixin {
+class _QuizArenaScreenState extends State<QuizArenaScreen>
+    with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -149,12 +150,14 @@ class _QuizArenaScreenState extends State<QuizArenaScreen> with TickerProviderSt
         color: Colors.transparent,
         elevation: 0,
         child: FancyBottomButtons(
-          onWheelTap: () => Navigator.popUntil(context, (route) => route.isFirst),
+          onWheelTap: () =>
+              Navigator.popUntil(context, (route) => route.isFirst),
           onGamesTap: () async {
             final updatedProfile = await Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => GameSelectionScreen(profile: widget.profile),
+                builder: (context) =>
+                    GameSelectionScreen(profile: widget.profile),
               ),
             );
             if (updatedProfile != null) {
@@ -162,7 +165,6 @@ class _QuizArenaScreenState extends State<QuizArenaScreen> with TickerProviderSt
             }
           },
           onQuizTap: () {},
-          onProfileTap: () => _showProfile(context),
         ),
       ),
     );
@@ -282,7 +284,8 @@ class _QuizArenaScreenState extends State<QuizArenaScreen> with TickerProviderSt
     );
   }
 
-  Widget _buildStatCard(String label, String value, Color color, IconData icon) {
+  Widget _buildStatCard(
+      String label, String value, Color color, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -459,7 +462,8 @@ class _QuizArenaScreenState extends State<QuizArenaScreen> with TickerProviderSt
 
     if (selected.length < 5) {
       final usedIds = selected.map((e) => e.id).toSet();
-      final remaining = filtered.where((q) => !usedIds.contains(q.id)).toList()..shuffle();
+      final remaining = filtered.where((q) => !usedIds.contains(q.id)).toList()
+        ..shuffle();
       selected.addAll(remaining.take(5 - selected.length));
     }
 
@@ -468,7 +472,8 @@ class _QuizArenaScreenState extends State<QuizArenaScreen> with TickerProviderSt
       final prefs = await SharedPreferences.getInstance();
       final recent = prefs.getStringList('quiz_recent_ids') ?? <String>[];
       final recentSet = recent.toSet();
-      final filteredSelected = selected.where((q) => !recentSet.contains(q.id)).toList();
+      final filteredSelected =
+          selected.where((q) => !recentSet.contains(q.id)).toList();
       if (filteredSelected.length >= 5) {
         selected
           ..clear()

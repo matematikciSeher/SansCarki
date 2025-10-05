@@ -4,7 +4,6 @@ class FancyBottomButtons extends StatelessWidget {
   final VoidCallback onWheelTap;
   final VoidCallback onGamesTap;
   final VoidCallback onQuizTap;
-  final VoidCallback onProfileTap;
   final bool isTaskActive;
 
   const FancyBottomButtons({
@@ -12,7 +11,6 @@ class FancyBottomButtons extends StatelessWidget {
     required this.onWheelTap,
     required this.onGamesTap,
     required this.onQuizTap,
-    required this.onProfileTap,
     this.isTaskActive = false,
   });
 
@@ -44,13 +42,6 @@ class FancyBottomButtons extends StatelessWidget {
               icon: Icons.psychology,
               colors: [Colors.orangeAccent, Colors.deepOrange],
               onTap: onQuizTap,
-            ),
-            const SizedBox(width: 4),
-            _FancyButton(
-              label: 'Profil',
-              icon: Icons.person,
-              colors: [Colors.teal, Colors.green],
-              onTap: onProfileTap,
             ),
           ],
         ),

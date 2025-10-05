@@ -35,7 +35,8 @@ class GameSelectionScreen extends StatefulWidget {
   State<GameSelectionScreen> createState() => _GameSelectionScreenState();
 }
 
-class _GameSelectionScreenState extends State<GameSelectionScreen> with TickerProviderStateMixin {
+class _GameSelectionScreenState extends State<GameSelectionScreen>
+    with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -340,7 +341,8 @@ class _GameSelectionScreenState extends State<GameSelectionScreen> with TickerPr
           color: Colors.transparent,
           elevation: 0,
           child: FancyBottomButtons(
-            onWheelTap: () => Navigator.popUntil(context, (route) => route.isFirst),
+            onWheelTap: () =>
+                Navigator.popUntil(context, (route) => route.isFirst),
             onGamesTap: () {},
             onQuizTap: () async {
               final updatedProfile = await Navigator.push(
@@ -353,7 +355,6 @@ class _GameSelectionScreenState extends State<GameSelectionScreen> with TickerPr
                 Navigator.pop(context, updatedProfile);
               }
             },
-            onProfileTap: () => _showProfile(context),
           ),
         ),
       ),
@@ -426,7 +427,8 @@ class _GameSelectionScreenState extends State<GameSelectionScreen> with TickerPr
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _buildStatItem('🎮', 'Toplam Oyun', '${_games.length}'),
-              _buildStatItem('🏆', 'En Yüksek', '${_profile.highestQuizScore ?? 0}'),
+              _buildStatItem(
+                  '🏆', 'En Yüksek', '${_profile.highestQuizScore ?? 0}'),
               _buildStatItem('⭐', 'Görev Puanı', '${_profile.points}'),
             ],
           ),
@@ -434,8 +436,10 @@ class _GameSelectionScreenState extends State<GameSelectionScreen> with TickerPr
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildStatItem('🎲', 'Oyun Puanı', '${_profile.totalGamePoints ?? 0}'),
-              _buildStatItem('🧠', 'Quiz Puanı', '${_profile.totalQuizPoints ?? 0}'),
+              _buildStatItem(
+                  '🎲', 'Oyun Puanı', '${_profile.totalGamePoints ?? 0}'),
+              _buildStatItem(
+                  '🧠', 'Quiz Puanı', '${_profile.totalQuizPoints ?? 0}'),
               _buildStatItem('💎', 'Toplam', '${_profile.totalAllPoints}'),
             ],
           ),
@@ -621,8 +625,10 @@ class _GameSelectionScreenState extends State<GameSelectionScreen> with TickerPr
           mainAxisSize: MainAxisSize.min,
           children: [
             _buildProfileInfo('⭐ Puan', '${_profile.points}'),
-            _buildProfileInfo('🏆 En Yüksek Quiz', '${_profile.highestQuizScore ?? 0}'),
-            _buildProfileInfo('🎯 Tamamlanan Görev', '${_profile.completedTasks}'),
+            _buildProfileInfo(
+                '🏆 En Yüksek Quiz', '${_profile.highestQuizScore ?? 0}'),
+            _buildProfileInfo(
+                '🎯 Tamamlanan Görev', '${_profile.completedTasks}'),
           ],
         ),
         actions: [
