@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'dart:ui' show lerpDouble;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
@@ -20,8 +21,8 @@ class AnimatedLoginWheel extends StatefulWidget {
   const AnimatedLoginWheel({
     super.key,
     this.size = 220,
-    this.entryDuration = const Duration(milliseconds: 4800),
-    this.spinDuration = const Duration(milliseconds: 6400),
+    this.entryDuration = const Duration(milliseconds: 50000),
+    this.spinDuration = const Duration(milliseconds: 90000),
     this.enableIdleSpin = true,
     this.idlePeriod = const Duration(seconds: 12),
     this.labels,
@@ -29,15 +30,16 @@ class AnimatedLoginWheel extends StatefulWidget {
     this.labelStyle,
     this.labelRadiusFactor = 0.62,
     this.iconSize = 18,
-    this.idleRampDuration = const Duration(milliseconds: 4000),
-    this.iconDropDuration = const Duration(milliseconds: 5600),
+    this.idleRampDuration = const Duration(milliseconds: 10000),
+    this.iconDropDuration = const Duration(milliseconds: 90000),
   });
 
   @override
   State<AnimatedLoginWheel> createState() => _AnimatedLoginWheelState();
 }
 
-class _AnimatedLoginWheelState extends State<AnimatedLoginWheel> with TickerProviderStateMixin {
+class _AnimatedLoginWheelState extends State<AnimatedLoginWheel>
+    with TickerProviderStateMixin {
   static const int _sliceCount = 8;
   late final AnimationController _assembleController;
   late final Ticker _ticker;
@@ -68,39 +70,58 @@ class _AnimatedLoginWheelState extends State<AnimatedLoginWheel> with TickerProv
 
     // Staggered slice assembly animations (corners first, then edges)
     final List<int> order = const <int>[0, 2, 5, 7, 1, 3, 4, 6];
-    final double span = 0.5; // use first 50% for staggering
-    final double perSliceStartGap = _sliceCount > 1 ? span / (_sliceCount - 1) : 0.0;
+    final double span = 0.95; // use first 95% for staggering (çok çok yavaş)
+    final double perSliceStartGap =
+        _sliceCount > 1 ? span / (_sliceCount - 1) : 0.0;
     _sliceProgress = List<Animation<double>>.generate(_sliceCount, (int i) {
       final int pos = order.indexOf(i);
       final double start = (pos * perSliceStartGap).clamp(0.0, 1.0);
-      final double end = min(1.0, start + 0.2); // each slice animates 20%
+      final double end =
+          min(1.0, start + 0.2); // each slice animates 20% (çok yavaş)
       return CurvedAnimation(
         parent: _assembleController,
-        curve: Interval(start, end, curve: Curves.elasticOut),
+        curve: Interval(start, end, curve: Curves.easeInOut),
       );
     });
 
     _capOpacity = CurvedAnimation(
       parent: _assembleController,
-      curve: const Interval(0.75, 1.0, curve: Curves.easeIn),
+      curve: const Interval(0.92, 1.0, curve: Curves.easeIn),
     );
 
     _assembleController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         _idleOmega = (2 * pi) / (widget.idlePeriod.inMilliseconds / 1000.0);
         // High initial speed proportional to requested spinDuration
-        _startOmega = (2 * pi * 1.8) / (widget.spinDuration.inMilliseconds / 1000.0);
+        _startOmega =
+            (2 * pi * 1.8) / (widget.spinDuration.inMilliseconds / 1000.0);
         _omega = _startOmega;
         _decelElapsed = 0.0;
         _decelStarted = true;
         _lastTick = Duration.zero;
         _ticker.start();
-        if ((widget.icons?.isNotEmpty ?? false) || (widget.labels?.isNotEmpty ?? false)) {
+        if ((widget.icons?.isNotEmpty ?? false) ||
+            (widget.labels?.isNotEmpty ?? false)) {
           _iconDropController.forward(from: 0);
         }
       }
     });
-    _assembleController.forward();
+
+    // Animasyonu hemen başlat ve release modunda güvenilir olması için
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _assembleController.forward();
+        // Release modunda ek güvenlik için kısa bir gecikme sonrası da kontrol et
+        if (kReleaseMode) {
+          Future.delayed(const Duration(milliseconds: 100), () {
+            if (mounted &&
+                _assembleController.status == AnimationStatus.dismissed) {
+              _assembleController.forward();
+            }
+          });
+        }
+      }
+    });
   }
 
   @override
@@ -120,7 +141,8 @@ class _AnimatedLoginWheelState extends State<AnimatedLoginWheel> with TickerProv
     _lastTick = elapsed;
 
     if (_decelStarted) {
-      final double rampSeconds = widget.idleRampDuration.inMilliseconds / 1000.0;
+      final double rampSeconds =
+          widget.idleRampDuration.inMilliseconds / 1000.0;
       _decelElapsed += dt;
       final double t = (_decelElapsed / rampSeconds).clamp(0.0, 1.0);
       final double k = Curves.easeOutCubic.transform(t);
@@ -165,7 +187,8 @@ class _AnimatedLoginWheelState extends State<AnimatedLoginWheel> with TickerProv
                     ),
                   ),
                   // Optional overlays (labels/icons)
-                  if ((widget.labels?.isNotEmpty ?? false) || (widget.icons?.isNotEmpty ?? false))
+                  if ((widget.labels?.isNotEmpty ?? false) ||
+                      (widget.icons?.isNotEmpty ?? false))
                     ..._buildOverlays(radius),
                 ],
               ),
@@ -184,22 +207,27 @@ class _AnimatedLoginWheelState extends State<AnimatedLoginWheel> with TickerProv
     // Motion path: each slice comes from different screen directions
     // Directions mapped to corners/edges: TL, Top, TR, Left, Right, BL, Bottom, BR
     Offset entryDir = _entryDirectionFor(sliceIndex);
-    final double mag = sqrt(entryDir.dx * entryDir.dx + entryDir.dy * entryDir.dy);
+    final double mag =
+        sqrt(entryDir.dx * entryDir.dx + entryDir.dy * entryDir.dy);
     if (mag != 0) entryDir = Offset(entryDir.dx / mag, entryDir.dy / mag);
 
     // Travel distance large enough to start outside widget bounds
-    final double travel = radius * 2.6;
+    final double travel = radius * 5.0; // Çok çok daha uzak mesafeden başla
     // Slight curved drift using perpendicular to entry direction
     final Offset perp = Offset(-entryDir.dy, entryDir.dx);
-    final double drift = sin(progress * pi) * radius * 0.28 * (sliceIndex.isEven ? 1.0 : -1.0);
+    final double drift = sin(progress * pi) *
+        radius *
+        0.4 *
+        (sliceIndex.isEven ? 1.0 : -1.0); // Daha belirgin drift
     final Offset offset = entryDir * ((1 - progress) * travel) + perp * drift;
 
     // A stronger wobble rotation as it arrives
     final double wobbleSign = sliceIndex.isEven ? 1.0 : -1.0;
-    final double wobble = (1 - progress) * 0.6 * wobbleSign;
+    final double wobble =
+        (1 - progress) * 1.0 * wobbleSign; // Daha güçlü wobble
 
     // Scale and opacity for a more organic arrival
-    final double scale = 0.8 + 0.25 * progress;
+    final double scale = 0.5 + 0.5 * progress; // Daha belirgin scale değişimi
     final double opacity = progress;
 
     return Transform.translate(
@@ -255,8 +283,9 @@ class _AnimatedLoginWheelState extends State<AnimatedLoginWheel> with TickerProv
         ? _iconDropProgress
         : List<Animation<double>>.generate(count, (int i) {
             final double gap = 1.0 / count;
-            final double start = i * gap * 0.6;
-            final double end = (start + gap * 0.7).clamp(0.0, 1.0);
+            final double start = i * gap * 0.3; // Daha yavaş başla
+            final double end =
+                (start + gap * 0.7).clamp(0.0, 1.0); // Daha yumuşak
             return CurvedAnimation(
               parent: _iconDropController,
               curve: Interval(start, end, curve: Curves.easeInCubic),
@@ -266,11 +295,17 @@ class _AnimatedLoginWheelState extends State<AnimatedLoginWheel> with TickerProv
       final double angle = i * sweep + sweep / 2;
       final Offset pos = Offset(cos(angle) * r, sin(angle) * r);
 
-      final String? label = (widget.labels != null && i < widget.labels!.length) ? widget.labels![i] : null;
-      final IconData? icon = (widget.icons != null && i < widget.icons!.length) ? widget.icons![i] : null;
+      final String? label = (widget.labels != null && i < widget.labels!.length)
+          ? widget.labels![i]
+          : null;
+      final IconData? icon = (widget.icons != null && i < widget.icons!.length)
+          ? widget.icons![i]
+          : null;
       if (label == null && icon == null) continue;
 
-      final double p = (_iconDropProgress.isNotEmpty ? _iconDropProgress[i].value : 0.0).clamp(0.0, 1.0);
+      final double p =
+          (_iconDropProgress.isNotEmpty ? _iconDropProgress[i].value : 0.0)
+              .clamp(0.0, 1.0);
       // gravity-like easing for vertical fall
       final double fall = Curves.easeInCubic.transform(p);
       // start higher for sky-like effect
@@ -290,7 +325,8 @@ class _AnimatedLoginWheelState extends State<AnimatedLoginWheel> with TickerProv
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (icon != null) Icon(icon, size: widget.iconSize, color: Colors.white),
+                  if (icon != null)
+                    Icon(icon, size: widget.iconSize, color: Colors.white),
                   if (label != null)
                     Text(
                       label,
@@ -299,7 +335,9 @@ class _AnimatedLoginWheelState extends State<AnimatedLoginWheel> with TickerProv
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: Colors.white,
-                            shadows: [Shadow(color: Colors.black54, blurRadius: 2)],
+                            shadows: [
+                              Shadow(color: Colors.black54, blurRadius: 2)
+                            ],
                           ),
                     ),
                 ],
@@ -352,7 +390,9 @@ class _SlicePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _SlicePainter oldDelegate) {
-    return oldDelegate.startAngle != startAngle || oldDelegate.sweepAngle != sweepAngle || oldDelegate.color != color;
+    return oldDelegate.startAngle != startAngle ||
+        oldDelegate.sweepAngle != sweepAngle ||
+        oldDelegate.color != color;
   }
 }
 
