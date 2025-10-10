@@ -21,8 +21,8 @@ class AnimatedLoginWheel extends StatefulWidget {
   const AnimatedLoginWheel({
     super.key,
     this.size = 220,
-    this.entryDuration = const Duration(milliseconds: 50000),
-    this.spinDuration = const Duration(milliseconds: 90000),
+    this.entryDuration = const Duration(milliseconds: 3000),
+    this.spinDuration = const Duration(milliseconds: 4000),
     this.enableIdleSpin = true,
     this.idlePeriod = const Duration(seconds: 12),
     this.labels,
@@ -30,8 +30,8 @@ class AnimatedLoginWheel extends StatefulWidget {
     this.labelStyle,
     this.labelRadiusFactor = 0.62,
     this.iconSize = 18,
-    this.idleRampDuration = const Duration(milliseconds: 10000),
-    this.iconDropDuration = const Duration(milliseconds: 90000),
+    this.idleRampDuration = const Duration(milliseconds: 2000),
+    this.iconDropDuration = const Duration(milliseconds: 2500),
   });
 
   @override
