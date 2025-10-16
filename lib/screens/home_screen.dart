@@ -13,6 +13,7 @@ import 'game_selection_screen.dart';
 import '../widgets/app_header.dart';
 import '../widgets/fancy_bottom_buttons.dart';
 import 'feedback_screen.dart';
+import 'performance_settings_screen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
@@ -1351,6 +1352,18 @@ class _HomeScreenState extends State<HomeScreen> {
         title: '🎯 ÇARKIGO!',
         subtitle: 'Öğren, oyna, keşfet',
         actions: [
+          IconButton(
+            icon: const Icon(Icons.settings, color: Colors.white),
+            tooltip: 'Performans Ayarları',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PerformanceSettingsScreen(),
+                ),
+              );
+            },
+          ),
           if (_extraSpinsRemaining > 0)
             Stack(
               alignment: Alignment.topRight,

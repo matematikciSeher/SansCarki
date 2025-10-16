@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../models/task.dart';
 import '../data/task_data.dart';
+import '../services/performance_service.dart';
 
 class FortuneWheel extends StatefulWidget {
   final Function(Task) onTaskSelected;
@@ -32,7 +33,7 @@ class _FortuneWheelState extends State<FortuneWheel>
   void initState() {
     super.initState();
     _rotationController = AnimationController(
-      duration: const Duration(seconds: 3),
+      duration: PerformanceService.instance.getFortuneWheelDuration(),
       vsync: this,
     );
     _bounceController = AnimationController(
@@ -45,7 +46,7 @@ class _FortuneWheelState extends State<FortuneWheel>
     );
 
     _rotationAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _rotationController, curve: Curves.easeOutCubic),
+      CurvedAnimation(parent: _rotationController, curve: PerformanceService.instance.getAnimationCurve()),
     );
 
     _bounceAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(

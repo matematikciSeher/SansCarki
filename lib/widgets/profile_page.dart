@@ -3,6 +3,7 @@ import '../models/user_profile.dart';
 import '../models/task.dart';
 import '../models/badge.dart' as app_badge;
 import '../screens/proof_gallery_screen.dart';
+import '../screens/welcome_info_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'dart:io';
@@ -147,6 +148,37 @@ class ProfilePage extends StatelessWidget {
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.orange,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(25)),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Uygulama Tanıtımı butonu
+                  Center(
+                    child: ElevatedButton.icon(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              const WelcomeInfoScreen(isFromSettings: true),
+                        ),
+                      ),
+                      icon: const Icon(Icons.info_outline, color: Colors.white),
+                      label: const Text(
+                        'Uygulama Tanıtımı',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
                         padding: const EdgeInsets.symmetric(
                             horizontal: 24, vertical: 12),
                         shape: RoundedRectangleBorder(

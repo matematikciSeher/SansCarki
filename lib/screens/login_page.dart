@@ -4,6 +4,8 @@ import '../widgets/animated_login_wheel.dart';
 import 'admin_quiz_panel_screen.dart';
 import 'register_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../services/pixel_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -17,11 +19,42 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passwordController = TextEditingController();
   String? _errorText;
   bool _isLoading = false;
+  bool _rememberPassword = false;
 
   @override
   void initState() {
     super.initState();
-    // Otomatik giriş devre dışı: kullanıcı her zaman giriş ekranını görür
+    _loadSavedCredentials();
+  }
+
+  Future<void> _loadSavedCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedEmail = prefs.getString('saved_email');
+    final savedPassword = prefs.getString('saved_password');
+    final rememberPassword = prefs.getBool('remember_password') ?? false;
+
+    if (mounted) {
+      setState(() {
+        if (savedEmail != null) _emailController.text = savedEmail;
+        if (savedPassword != null && rememberPassword) {
+          _passwordController.text = savedPassword;
+        }
+        _rememberPassword = rememberPassword;
+      });
+    }
+  }
+
+  Future<void> _saveCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (_rememberPassword) {
+      await prefs.setString('saved_email', _emailController.text.trim());
+      await prefs.setString('saved_password', _passwordController.text.trim());
+      await prefs.setBool('remember_password', true);
+    } else {
+      await prefs.remove('saved_email');
+      await prefs.remove('saved_password');
+      await prefs.setBool('remember_password', false);
+    }
   }
 
   // _maybeAutoEnter() kaldırıldı
@@ -40,7 +73,10 @@ class _LoginPageState extends State<LoginPage> {
       _isLoading = true;
     });
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: pass);
+      await FirebaseAuth.instance
+          .signInWithEmailAndPassword(email: email, password: pass);
+      // Şifre kaydetme seçeneği varsa kaydet
+      await _saveCredentials();
       // AuthWrapper otomatik olarak HomeScreen'e yönlendirecek
       // Navigator kullanmaya gerek yok
     } on FirebaseAuthException catch (e) {
@@ -185,7 +221,10 @@ class _LoginPageState extends State<LoginPage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     AnimatedLoginWheel(
-                      size: MediaQuery.of(context).size.width * 0.55,
+                      size: PixelService.instance.getResponsiveSize(
+                        context,
+                        MediaQuery.of(context).size.width * 0.55,
+                      ),
                       enableIdleSpin: true,
                       icons: const [
                         Icons.star,
@@ -197,7 +236,8 @@ class _LoginPageState extends State<LoginPage> {
                         Icons.palette,
                         Icons.lightbulb,
                       ],
-                      iconSize: 20,
+                      iconSize: PixelService.instance
+                          .getResponsiveIconSize(context, 20),
                     ),
                     const SizedBox(height: 16),
                     const Text('ÇARKI ÇEVİR, EĞLENCEYE GÖMÜL!'),
@@ -207,7 +247,12 @@ class _LoginPageState extends State<LoginPage> {
                       keyboardType: TextInputType.emailAddress,
                       decoration: InputDecoration(
                         labelText: 'E-posta',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(
+                            PixelService.instance
+                                .getResponsiveBorderRadius(context, 16),
+                          ),
+                        ),
                         errorText: _errorText,
                         prefixIcon: const Icon(Icons.email_outlined),
                       ),
@@ -219,18 +264,35 @@ class _LoginPageState extends State<LoginPage> {
                       obscureText: true,
                       decoration: InputDecoration(
                         labelText: 'Şifre',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(
+                            PixelService.instance
+                                .getResponsiveBorderRadius(context, 16),
+                          ),
+                        ),
                         prefixIcon: const Icon(Icons.lock_outline),
                       ),
                       onSubmitted: (_) => _login(),
                     ),
                     const SizedBox(height: 8),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: _forgotPassword,
-                        child: const Text('Şifremi Unuttum'),
-                      ),
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: _rememberPassword,
+                          onChanged: (value) {
+                            setState(() {
+                              _rememberPassword = value ?? false;
+                            });
+                          },
+                          activeColor: Colors.purpleAccent,
+                        ),
+                        const Text('Şifremi Kaydet'),
+                        const Spacer(),
+                        TextButton(
+                          onPressed: _forgotPassword,
+                          child: const Text('Şifremi Unuttum'),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                     SizedBox(
@@ -239,19 +301,31 @@ class _LoginPageState extends State<LoginPage> {
                         onPressed: _isLoading ? null : _login,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.purpleAccent,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          padding: PixelService.instance.getResponsivePadding(
+                            context,
+                            basePadding: 14,
+                            top: 14,
+                            bottom: 14,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              PixelService.instance
+                                  .getResponsiveBorderRadius(context, 16),
+                            ),
+                          ),
                           elevation: 2,
                         ),
                         child: _isLoading
                             ? const SizedBox(
                                 height: 20,
                                 width: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white),
                               )
                             : const Text(
                                 'GİRİŞ YAP',
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.bold),
                               ),
                       ),
                     ),
@@ -264,7 +338,8 @@ class _LoginPageState extends State<LoginPage> {
                           onPressed: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                              MaterialPageRoute(
+                                  builder: (_) => const RegisterScreen()),
                             );
                           },
                           child: const Text('Üye Ol'),

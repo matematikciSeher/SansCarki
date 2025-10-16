@@ -3,6 +3,7 @@ import 'dart:ui' show lerpDouble;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import '../services/performance_service.dart';
 
 class AnimatedLoginWheel extends StatefulWidget {
   final double size;
@@ -92,9 +93,10 @@ class _AnimatedLoginWheelState extends State<AnimatedLoginWheel>
     _assembleController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         _idleOmega = (2 * pi) / (widget.idlePeriod.inMilliseconds / 1000.0);
-        // High initial speed proportional to requested spinDuration
+        // High initial speed proportional to requested spinDuration with performance adjustment
+        final performanceSpeed = PerformanceService.instance.getLoginWheelSpeed();
         _startOmega =
-            (2 * pi * 1.8) / (widget.spinDuration.inMilliseconds / 1000.0);
+            (2 * pi * 1.8 * performanceSpeed) / (widget.spinDuration.inMilliseconds / 1000.0);
         _omega = _startOmega;
         _decelElapsed = 0.0;
         _decelStarted = true;
