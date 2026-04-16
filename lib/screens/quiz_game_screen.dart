@@ -5,6 +5,7 @@ import '../models/quiz.dart';
 // Quiz questions are now provided by caller (e.g., fetched from Firestore)
 import 'package:shared_preferences/shared_preferences.dart';
 import '../data/quiz_repository.dart';
+import '../services/admob_service.dart';
 import '../services/user_service.dart';
 
 class QuizGameScreen extends StatefulWidget {
@@ -38,6 +39,8 @@ class _QuizGameScreenState extends State<QuizGameScreen> with TickerProviderStat
   int? _selectedAnswerIndex;
   Timer? _timer;
   int _remainingTime = 30;
+  final Set<int> _hiddenOptionIndexes = <int>{};
+  bool _usedFiftyFiftyForCurrentQuestion = false;
   // bool _isGameOver = false; // kaldırıldı
 
   @override
@@ -207,6 +210,8 @@ class _QuizGameScreenState extends State<QuizGameScreen> with TickerProviderStat
         _selectedAnswerIndex = null;
         _remainingTime = 30;
         _slideFromRight = !_slideFromRight;
+        _hiddenOptionIndexes.clear();
+        _usedFiftyFiftyForCurrentQuestion = false;
       });
 
       _questionAnimationController.reset();
@@ -304,6 +309,10 @@ class _QuizGameScreenState extends State<QuizGameScreen> with TickerProviderStat
     } catch (e) {
       print('❌ Quiz profil kaydetme hatası: $e');
     }
+
+    if (!mounted) return;
+    await AdMobService.instance.showQuizInterstitialAdIfAvailable();
+    if (!mounted) return;
 
     showDialog(
       context: context,
@@ -459,6 +468,8 @@ class _QuizGameScreenState extends State<QuizGameScreen> with TickerProviderStat
       _selectedAnswerIndex = null;
       _isAnswered = false;
       _remainingTime = 30;
+      _hiddenOptionIndexes.clear();
+      _usedFiftyFiftyForCurrentQuestion = false;
     });
 
     final desiredCount = widget.questions.isNotEmpty ? widget.questions.length : 10;
@@ -530,19 +541,30 @@ class _QuizGameScreenState extends State<QuizGameScreen> with TickerProviderStat
                   opacity: _questionFadeAnimation,
                   child: SlideTransition(
                     position: _questionSlideAnimation,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          // Soru kartı
-                          _buildQuestionCard(currentQuestion),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        return SingleChildScrollView(
+                          padding: const EdgeInsets.all(16),
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minHeight: constraints.maxHeight - 32,
+                            ),
+                            child: Column(
+                              children: [
+                                // Soru kartı
+                                _buildQuestionCard(currentQuestion),
 
-                          const SizedBox(height: 24),
+                                const SizedBox(height: 24),
 
-                          // Cevap seçenekleri
-                          _buildAnswerOptions(currentQuestion),
-                        ],
-                      ),
+                                _buildFiftyFiftyCard(currentQuestion),
+
+                                // Cevap seçenekleri
+                                _buildAnswerOptions(currentQuestion),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -732,11 +754,124 @@ class _QuizGameScreenState extends State<QuizGameScreen> with TickerProviderStat
     );
   }
 
+  bool _canUseFiftyFifty(QuizQuestion question) {
+    if (_isAnswered || _usedFiftyFiftyForCurrentQuestion) return false;
+    final wrongIndexes = question.options.asMap().keys.where(
+      (index) => index != question.correctAnswerIndex,
+    );
+    return wrongIndexes.length >= 2;
+  }
+
+  Future<void> _watchAdForFiftyFifty(QuizQuestion question) async {
+    if (!_canUseFiftyFifty(question)) return;
+
+    if (!AdMobService.instance.isRewardedAdReady(RewardedPlacement.quizFiftyFifty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('50/50 reklami yukleniyor, biraz sonra tekrar dene.'),
+        ),
+      );
+      return;
+    }
+
+    final success = await AdMobService.instance.showRewardedAd(
+      placement: RewardedPlacement.quizFiftyFifty,
+      onRewarded: () {
+        final wrongIndexes = question.options.asMap().keys.where(
+          (index) => index != question.correctAnswerIndex,
+        ).toList()
+          ..shuffle();
+
+        if (!mounted) return;
+        setState(() {
+          _hiddenOptionIndexes
+            ..clear()
+            ..addAll(wrongIndexes.take(2));
+          _usedFiftyFiftyForCurrentQuestion = true;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('50/50 jokeri aktif. Iki yanlis şık kaldırıldı.'),
+          ),
+        );
+      },
+    );
+
+    if (!success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Reklam tamamlanmadi. 50/50 kullanilamadi.'),
+        ),
+      );
+    }
+  }
+
+  Widget _buildFiftyFiftyCard(QuizQuestion question) {
+    final adReady =
+        AdMobService.instance.isRewardedAdReady(RewardedPlacement.quizFiftyFifty);
+    final canUse = _canUseFiftyFifty(question);
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            '50/50 Jokeri',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            _usedFiftyFiftyForCurrentQuestion
+                ? 'Bu soruda 50/50 kullanildi.'
+                : 'Reklam izle, iki yanlis sik otomatik kalksin.',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.9),
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: 10),
+          ElevatedButton.icon(
+            onPressed: (!adReady || !canUse)
+                ? null
+                : () => _watchAdForFiftyFifty(question),
+            icon: const Icon(Icons.smart_display_outlined),
+            label: Text(
+              adReady ? 'Reklam Izle + 50/50' : 'Reklam Yukleniyor...',
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange.shade400,
+              foregroundColor: Colors.white,
+              disabledBackgroundColor: Colors.white.withOpacity(0.15),
+              disabledForegroundColor: Colors.white54,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildAnswerOptions(QuizQuestion question) {
     return Column(
       children: question.options.asMap().entries.map((entry) {
         final index = entry.key;
         final option = entry.value;
+        if (_hiddenOptionIndexes.contains(index)) {
+          return const SizedBox.shrink();
+        }
         final isSelected = _selectedAnswerIndex == index;
         final isCorrect = index == question.correctAnswerIndex;
         final showResult = _isAnswered;

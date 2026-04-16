@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
 import 'dart:io';
 import 'dart:math';
+
+import 'package:flutter/material.dart';
 
 /// Pixel density ve responsive tasarım sorunlarını çözen servis
 class PixelService {
@@ -122,18 +123,23 @@ class PixelService {
 
   /// Ekran boyutuna göre scale factor hesapla
   double _getScaleFactor(Size screenSize) {
-    final diagonal = _calculateDiagonal(screenSize);
+    final shortestSide = min(screenSize.width, screenSize.height);
+    final longestSide = max(screenSize.width, screenSize.height);
 
-    if (diagonal <= 600) {
-      return 0.8; // Küçük ekranlar
-    } else if (diagonal <= 800) {
-      return 0.9; // Orta ekranlar
-    } else if (diagonal <= 1000) {
-      return 1.0; // Standart ekranlar
-    } else if (diagonal <= 1200) {
-      return 1.1; // Büyük ekranlar
+    if (shortestSide < 340) {
+      return 0.82;
+    } else if (shortestSide < 375) {
+      return 0.9;
+    } else if (shortestSide < 430) {
+      return 0.97;
+    } else if (shortestSide < 600) {
+      return 1.0;
+    } else if (shortestSide < 840) {
+      return 1.08;
+    } else if (longestSide >= 1200) {
+      return 1.16;
     } else {
-      return 1.2; // Çok büyük ekranlar
+      return 1.12;
     }
   }
 
@@ -217,18 +223,15 @@ class PixelService {
 
   /// Responsive font scale
   double getResponsiveFontScale(BuildContext context) {
-    final deviceType = getDeviceType(context);
-
-    switch (deviceType) {
-      case DeviceType.small:
-        return 0.9;
-      case DeviceType.medium:
-        return 1.0;
-      case DeviceType.large:
-        return 1.1;
-      case DeviceType.extraLarge:
-        return 1.2;
-    }
+    final shortestSide = min(
+      MediaQuery.of(context).size.width,
+      MediaQuery.of(context).size.height,
+    );
+    if (shortestSide < 360) return 0.94;
+    if (shortestSide < 430) return 0.98;
+    if (shortestSide < 600) return 1.0;
+    if (shortestSide < 840) return 1.04;
+    return 1.08;
   }
 
   /// Safe area padding'i al
@@ -361,6 +364,10 @@ class PixelService {
       right: responsivePadding.right.clamp(minPadding, maxPadding),
     );
   }
+
+  bool isCompactWidth(BuildContext context) => getScreenSize(context).width < 380;
+
+  bool isNarrowWidth(BuildContext context) => getScreenSize(context).width < 430;
 }
 
 /// Cihaz tipleri

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../services/pixel_service.dart';
+
 class FancyBottomButtons extends StatelessWidget {
   final VoidCallback onWheelTap;
   final VoidCallback onGamesTap;
@@ -16,11 +18,13 @@ class FancyBottomButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = PixelService.instance.isCompactWidth(context);
+
     return SafeArea(
       top: false,
       bottom: true,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(4, 4, 4, 4),
+        padding: EdgeInsets.fromLTRB(compact ? 6 : 8, 6, compact ? 6 : 8, 8),
         child: Row(
           children: [
             _FancyButton(
@@ -28,20 +32,23 @@ class FancyBottomButtons extends StatelessWidget {
               icon: Icons.casino,
               colors: [Colors.pinkAccent, Colors.deepPurpleAccent],
               onTap: onWheelTap,
+              compact: compact,
             ),
-            const SizedBox(width: 4),
+            SizedBox(width: compact ? 6 : 8),
             _FancyButton(
               label: 'Oyun',
               icon: Icons.sports_esports,
               colors: [Colors.lightBlueAccent, Colors.blueAccent],
               onTap: onGamesTap,
+              compact: compact,
             ),
-            const SizedBox(width: 4),
+            SizedBox(width: compact ? 6 : 8),
             _FancyButton(
               label: 'Quiz',
               icon: Icons.psychology,
               colors: [Colors.orangeAccent, Colors.deepOrange],
               onTap: onQuizTap,
+              compact: compact,
             ),
           ],
         ),
@@ -55,12 +62,14 @@ class _FancyButton extends StatelessWidget {
   final IconData icon;
   final List<Color> colors;
   final VoidCallback onTap;
+  final bool compact;
 
   const _FancyButton({
     required this.label,
     required this.icon,
     required this.colors,
     required this.onTap,
+    required this.compact,
   });
 
   @override
@@ -70,9 +79,9 @@ class _FancyButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(10),
         child: Ink(
-          height: 32,
+          height: compact ? 46 : 50,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(compact ? 12 : 14),
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -89,14 +98,25 @@ class _FancyButton extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: Colors.white, size: 16),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(icon, color: Colors.white, size: compact ? 18 : 20),
+                      SizedBox(width: compact ? 6 : 8),
+                      Text(
+                        label,
+                        maxLines: 1,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: compact ? 12 : 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
@@ -20,6 +21,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import '../data/task_repository.dart';
 import '../services/user_service.dart';
+import '../services/admob_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -48,8 +50,25 @@ class _HomeScreenState extends State<HomeScreen> {
   // Ekstra spin arming kaldırıldı; tıklayınca kullanıcı çarkı kendi çevirir
   bool _pendingExtraSpin =
       false; // bir sonraki spin ekstra hak olarak sayılacak
+  // Ödüllü reklam izleyerek kazanılan günlük 1 çark hakkı
+  String? _rewardedAdSpinWatchDay; // 'YYYY-M-D'
+  bool _rewardedAdSpinConsumed = false;
 
   bool get _isTaskActive => _selectedTask != null;
+
+  bool get _rewardedAdSpinAvailable {
+    final now = DateTime.now();
+    final todayStr = '${now.year}-${now.month}-${now.day}';
+    return _rewardedAdSpinWatchDay == todayStr && !_rewardedAdSpinConsumed;
+  }
+
+  /// Bugün reklam izleyerek henüz hak kazanılmadı mı? (1 reklam/gün)
+  bool get _canWatchRewardedAdForSpin {
+    final now = DateTime.now();
+    final todayStr = '${now.year}-${now.month}-${now.day}';
+    if (_rewardedAdSpinWatchDay != todayStr) return true;
+    return _rewardedAdSpinConsumed; // bugün izledi ve kullandı, yarın tekrar
+  }
 
   @override
   void initState() {
@@ -67,6 +86,88 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadExtraSpinDate();
     _loadExtraSpinUsage();
     _loadDailySpinUsedDay();
+    _loadRewardedAdSpinState();
+  }
+
+  Future<void> _loadRewardedAdSpinState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _rewardedAdSpinWatchDay = prefs.getString('rewarded_ad_spin_day');
+      _rewardedAdSpinConsumed =
+          prefs.getBool('rewarded_ad_spin_consumed') ?? false;
+      if (mounted) setState(() {});
+    } catch (_) {}
+  }
+
+  Future<void> _saveRewardedAdSpinState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+          'rewarded_ad_spin_day', _rewardedAdSpinWatchDay ?? '');
+      await prefs.setBool('rewarded_ad_spin_consumed', _rewardedAdSpinConsumed);
+    } catch (_) {}
+  }
+
+  void _consumeRewardedAdSpin() {
+    _rewardedAdSpinConsumed = true;
+    _saveRewardedAdSpinState();
+  }
+
+  Future<void> _watchRewardedAdForSpin() async {
+    if (!_canWatchRewardedAdForSpin) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Bugün zaten reklam izledin. Yarın tekrar deneyebilirsin.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+    if (kIsWeb) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ödüllü reklam web\'de desteklenmez.')),
+      );
+      return;
+    }
+    if (!AdMobService.instance.isRewardedAdReady(
+      RewardedPlacement.homeExtraSpin,
+    )) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Reklam yükleniyor, lütfen biraz bekleyip tekrar deneyin.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+    final success = await AdMobService.instance.showRewardedAd(
+      placement: RewardedPlacement.homeExtraSpin,
+      onRewarded: () {
+        final now = DateTime.now();
+        _rewardedAdSpinWatchDay = '${now.year}-${now.month}-${now.day}';
+        _rewardedAdSpinConsumed = false;
+        _saveRewardedAdSpinState();
+        if (mounted) {
+          setState(() {});
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Tebrikler! Reklam izleyerek çark çevirme hakkı kazandın.'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      },
+    );
+    if (mounted && !success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Reklam gösterilemedi veya izlenmedi. Lütfen tekrar deneyin.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } else if (mounted) {
+      setState(() {});
+    }
   }
 
   Set<String> _buildEligibleCategoryIds() {
@@ -888,13 +989,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildWheelPage() {
-    return Align(
-      alignment: Alignment.topCenter,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(16, 8, 16, 88 + bottomInset),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight - 96),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
             // Puan Kartı - Modern Glassmorphism Tasarım
             Container(
               width: double.infinity,
@@ -1160,6 +1265,15 @@ class _HomeScreenState extends State<HomeScreen> {
                         } else if (_canUseDailySpin) {
                           _onCategorySelected(c);
                           _saveDailySpinUsedDay();
+                        } else if (_rewardedAdSpinAvailable) {
+                          _onCategorySelected(c);
+                          _consumeRewardedAdSpin();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Reklam hakkını kullandın!'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
@@ -1169,9 +1283,33 @@ class _HomeScreenState extends State<HomeScreen> {
                           );
                         }
                       },
-                      canSpin: _canUseDailySpin || _pendingExtraSpin,
+                      canSpin: _canUseDailySpin ||
+                          _pendingExtraSpin ||
+                          _rewardedAdSpinAvailable,
                       eligibleCategoryIds: _buildEligibleCategoryIds(),
                     ),
+                    if (!(_canUseDailySpin ||
+                            _pendingExtraSpin ||
+                            _rewardedAdSpinAvailable) &&
+                        _canWatchRewardedAdForSpin &&
+                        !kIsWeb)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: OutlinedButton.icon(
+                          onPressed: AdMobService.instance.isRewardedAdReady(
+                                  RewardedPlacement.homeExtraSpin)
+                              ? _watchRewardedAdForSpin
+                              : null,
+                          icon: const Icon(Icons.play_circle_outline, size: 20),
+                          label: const Text('Reklam izle + ekstra çark'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.orange,
+                            side: const BorderSide(color: Colors.orange),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 12),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               )
@@ -1223,7 +1361,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 8),
                 ],
               ),
-          ],
+            ],
+          ),
         ),
       ),
     );

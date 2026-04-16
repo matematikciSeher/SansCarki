@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_page.dart';
@@ -6,7 +7,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 import 'services/performance_service.dart';
-import 'services/pixel_service.dart';
+import 'services/admob_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
@@ -18,11 +19,22 @@ void main() async {
   // Performans seviyesini tespit et
   await PerformanceService.instance.detectPerformanceLevel();
 
+  // AdMob SDK başlat (web'de desteklenmez)
+  if (!kIsWeb) {
+    await AdMobService.instance.initialize();
+  }
+
   runApp(const CarkiGoApp());
 }
 
-class CarkiGoApp extends StatelessWidget {
+class CarkiGoApp extends StatefulWidget {
   const CarkiGoApp({super.key});
+
+  @override
+  State<CarkiGoApp> createState() => _CarkiGoAppState();
+}
+
+class _CarkiGoAppState extends State<CarkiGoApp> {
 
   @override
   Widget build(BuildContext context) {
@@ -36,17 +48,6 @@ class CarkiGoApp extends StatelessWidget {
         useMaterial3: true,
       ),
       debugShowCheckedModeBanner: false,
-      // Pixel perfect rendering
-      builder: (context, child) {
-        return MediaQuery(
-          data: MediaQuery.of(context).copyWith(
-            textScaler: TextScaler.linear(
-              PixelService.instance.getResponsiveFontScale(context),
-            ),
-          ),
-          child: child!,
-        );
-      },
       home: const AuthWrapper(),
     );
   }

@@ -101,8 +101,14 @@ class ResponsiveContainer extends StatelessWidget {
           ? PixelService.instance.getResponsiveHeight(context, height!)
           : null,
       padding: padding != null
-          ? PixelService.instance
-              .getSafePadding(context, basePadding: padding!.left)
+          ? PixelService.instance.getSafePadding(
+              context,
+              basePadding: padding!.left,
+              top: padding!.top,
+              bottom: padding!.bottom,
+              left: padding!.left,
+              right: padding!.right,
+            )
           : null,
       margin: margin != null
           ? PixelService.instance.getPixelPerfectMargin(context, margin!)
@@ -134,7 +140,7 @@ class ResponsiveButton extends StatelessWidget {
     return ElevatedButton(
       onPressed: onPressed,
       style: style?.copyWith(
-        padding: MaterialStateProperty.all(
+        padding: WidgetStateProperty.all(
           padding ??
               PixelService.instance.getResponsivePadding(
                 context,

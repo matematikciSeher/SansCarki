@@ -257,8 +257,10 @@ class ProfilePage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+            Wrap(
+              alignment: WrapAlignment.spaceAround,
+              spacing: 12,
+              runSpacing: 12,
               children: [
                 _buildStatItem(
                   icon: Icons.task_alt,
@@ -294,12 +296,15 @@ class ProfilePage extends StatelessWidget {
                 ),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Wrap(
+                alignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 12,
+                runSpacing: 8,
                 children: [
                   const Icon(Icons.emoji_events, color: Colors.white, size: 32),
-                  const SizedBox(width: 12),
                   Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       const Text(
                         'Toplam Puan',
@@ -309,12 +314,15 @@ class ProfilePage extends StatelessWidget {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      Text(
-                        '${profile.totalAllPoints}',
-                        style: const TextStyle(
-                          fontSize: 28,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          '${profile.totalAllPoints}',
+                          style: const TextStyle(
+                            fontSize: 28,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],
@@ -334,7 +342,9 @@ class ProfilePage extends StatelessWidget {
     required String value,
     required Color color,
   }) {
-    return Column(
+    return SizedBox(
+      width: 110,
+      child: Column(
       children: [
         Container(
           padding: const EdgeInsets.all(16),
@@ -351,6 +361,7 @@ class ProfilePage extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           value,
+          maxLines: 1,
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
@@ -366,6 +377,7 @@ class ProfilePage extends StatelessWidget {
           textAlign: TextAlign.center,
         ),
       ],
+      ),
     );
   }
 

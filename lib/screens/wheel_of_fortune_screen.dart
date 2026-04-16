@@ -2,12 +2,14 @@ import 'dart:math';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:characters/characters.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_profile.dart';
 import '../services/audio_service.dart';
+import '../services/admob_service.dart';
+import '../services/ad_manager.dart';
 import '../services/user_service.dart';
 import '../services/performance_service.dart';
+import '../widgets/banner_ad_widget.dart';
 
 class GameLogic {
   final List<String> players;
@@ -136,6 +138,9 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
   bool _showIntro = true;
   int? _pendingTargetIndex; // Seçilen dilim indeksi
   bool _sessionSaved = false;
+  int _rewardedHintWatchCount = 0;
+
+  static const int _maxRewardedHintWatchCountPerItem = 3;
 
   final List<String> _segments = const [
     '+100',
@@ -192,9 +197,523 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
     return 'medium';
   }
 
+  static const Map<String, String> _semanticHintMap = {
+    'KİTAP': 'Sayfaları çevrilerek okunan bir yayındır.',
+    'KALEM': 'Defterin yanında sık kullanılan bir okul aracıdır.',
+    'DEFTER': 'Derslerde yazı yazmak için kullanılan sayfalı eşyadır.',
+    'OKUL': 'Öğrencilerin ders gördüğü eğitim kurumudur.',
+    'ÖĞRETMEN': 'Öğrencilere bilgi aktaran eğitimcidir.',
+    'ARKADAŞ': 'Birlikte vakit geçirilen yakın dosttur.',
+    'OYUN': 'Kurallı ya da serbest şekilde eğlenmek için yapılır.',
+    'TOP': 'Futbol ve basketbol gibi sporlarda kullanılır.',
+    'EV': 'Ailenle birlikte yaşadığın yerdir.',
+    'AĞAÇ': 'Gövdesi olan, meyve ya da gölge verebilen bitkidir.',
+    'GÜNEŞ': 'Gündüzü aydınlatan gök cismidir.',
+    'AY': 'Dünya\'nın çevresinde dolanan gök cismidir.',
+    'YILDIZ': 'Gece gökyüzünde parlak nokta gibi görünür.',
+    'KUŞ': 'Kanatlarıyla uçabilen canlıdır.',
+    'BALIK': 'Deniz, göl ya da akarsuda yaşar.',
+    'ARABA': 'İnsanları bir yerden başka yere taşır.',
+    'BİSİKLET': 'İki tekerleği ve gidonu vardır.',
+    'ELMA': 'Dalında yetişen ve ısırılarak yenilen bir meyvedir.',
+    'MUZ': 'Kabuğu soyularak yenir.',
+    'PORTAKAL': 'Suyu sıkılarak da tüketilen bir meyvedir.',
+    'SEBZE': 'Yemeklerde sık kullanılan bitkisel besindir.',
+    'MEYVE': 'Genelde tatlı olarak tüketilen bitki ürünüdür.',
+    'ÇİÇEK': 'Renkli yapraklarıyla bilinir ve hoş koku verebilir.',
+    'KEDİ': 'Miyavlayan evcil bir hayvandır.',
+    'KÖPEK': 'Havlamasıyla bilinen evcil hayvandır.',
+    'TAVŞAN': 'Hızlı koşar ve havuçla anılır.',
+    'AYAKKABI': 'Dışarı çıkarken ayağa giyilir.',
+    'ÇORAP': 'Ayakkabının içinde ayağı korur.',
+    'PANTOLON': 'Bacakları örten bir kıyafettir.',
+    'ELBİSE': 'Genelde tek parça olarak giyilen kıyafettir.',
+    'ŞAPKA': 'Güneşten korunmak ya da süs için başa takılır.',
+    'SU': 'Yaşam için en temel içecektir.',
+    'SÜT': 'Kahvaltıda ve tatlılarda sık kullanılır.',
+    'PEYNİR': 'Kahvaltı sofralarında sıkça bulunur.',
+    'EKMEK': 'Öğünlerde yemeğin yanında sık yenir.',
+    'TATLI': 'Yemekten sonra da yenebilen şekerli yiyecektir.',
+    'TUZ': 'Yemeğin tadını artırmak için az miktarda kullanılır.',
+    'ŞEKER': 'Çaya ya da tatlılara tat verir.',
+    'ÇİKOLATA': 'Kakao ile yapılan sevilen bir atıştırmalıktır.',
+    'SAÇ': 'Kesilebilir, taranabilir ve uzar.',
+    'GÖZ': 'Bakmak ve görmek için kullanılır.',
+    'KULAK': 'Sesleri algılar ve duymayı sağlar.',
+    'BURUN': 'Yüzde bulunur ve kokuları algılar.',
+    'AĞIZ': 'Konuşurken ve yemek yerken kullanılır.',
+    'DİŞ': 'Ağız içinde bulunur ve besinleri parçalar.',
+    'EL': 'Yazı yazarken, tutarken ve taşırken kullanılır.',
+    'AYAK': 'Vücudu taşır ve yürümeye yardım eder.',
+    'KOL': 'Omuzdan ele uzanan uzuvdur.',
+    'BACAK': 'Koşarken ve zıplarken büyük görev yapar.',
+    'YÜZ': 'Göz, burun ve ağız bu bölgede bulunur.',
+    'BAŞ': 'Düşünme ve duyularla ilgili organları taşır.',
+    'KALP': 'Kan dolaşımında önemli görev yapar.',
+    'BEYİN': 'Karar verme, öğrenme ve düşünmede görev alır.',
+    'OKUMAK': 'Kitap, dergi ya da yazılardaki bilgiyi anlamayı sağlar.',
+    'YAZMAK': 'Düşünceleri harflerle ifade etmektir.',
+    'ÇİZMEK': 'Kalemle şekil ya da resim oluşturmaktır.',
+    'DİNLEMEK': 'Söyleneni dikkatle işitmektir.',
+    'KONUŞMAK': 'Duygu ve düşünceleri sözle anlatmaktır.',
+    'KOŞMAK': 'Yürümekten daha hızlı hareket etmektir.',
+    'ZIPLAMAK': 'Ayaklarla yerden yükselmektir.',
+    'YÜZMEK': 'Suda batmadan ilerlemeyi sağlar.',
+    'UYUMAK': 'Gece dinlenmek için yapılan eylemdir.',
+    'GÜLMEK': 'Sevinç ve neşe belirtisidir.',
+    'AĞLAMAK': 'Üzüntü ya da acı sırasında olabilir.',
+    'SEVİNMEK': 'İyi bir olay karşısında mutlu olmaktır.',
+    'ÜZÜLMEK': 'Kötü bir durumda mutsuz hissetmektir.',
+    'YARDIM ETMEK': 'Birine işini kolaylaştıracak destek vermektir.',
+    'PAYLAŞMAK': 'Sahip olunan şeyi başkasıyla bölüşmektir.',
+    'BEKLEMEK': 'Bir şeyin olacağı zamana kadar sabretmektir.',
+    'TEMİZLEMEK': 'Kirli bir şeyi düzenli ve temiz hale getirmektir.',
+    'YEMEK YAPMAK': 'Mutfakta malzemeleri hazırlayıp pişirmektir.',
+    'ALIŞVERİŞ': 'Mağaza ya da marketten ihtiyaç almaktır.',
+    'OYNAMAK': 'Eğlenmek için hareket etmek ya da vakit geçirmektir.',
+    'KOŞU': 'Hızlı hareket edilen bir spor dalıdır.',
+    'DANS': 'Ritme uyularak yapılan vücut hareketleridir.',
+    'ŞARKI': 'Söz ve melodiyle söylenen müzik eseridir.',
+    'RESİM': 'Boyalar ya da kalemle oluşturulan görseldir.',
+    'FİLM': 'Ekranda izlenen kurmaca ya da gerçek hikayedir.',
+    'HİKAYE': 'Başlangıcı ve sonu olan kısa anlatımdır.',
+    'BİLGİSAYAR': 'Bilgiye ulaşmak, yazı yazmak ve oyun oynamak için de kullanılır.',
+    'TABLET': 'Ekranına dokunularak kullanılan taşınabilir cihazdır.',
+    'TELEFON': 'Mesajlaşma ve arama yapmaya yarar.',
+    'İNTERNET': 'Dünyadaki bilgilere çevrim içi ulaşmayı sağlar.',
+    'ROBOT': 'Bazı işleri insan yerine otomatik yapabilir.',
+    'YAZILIM': 'Bir cihazın ne yapacağını belirleyen komutlardır.',
+    'DONANIM': 'Ekran, klavye ve işlemci gibi somut parçalardan oluşur.',
+    'KODLAMA': 'Bilgisayara ne yapacağını adım adım anlatmaktır.',
+    'MATEMATİK': 'Problemler, sayılar ve işlemlerle ilgilenir.',
+    'FİZİK': 'Hareket, kuvvet, ışık ve enerji gibi konuları inceler.',
+    'KİMYA': 'Maddelerin değişimini ve tepkimelerini araştırır.',
+    'BİYOLOJİ': 'İnsan, hayvan ve bitki yaşamını inceler.',
+    'GEOMETRİ': 'Üçgen, kare ve çember gibi şekillerle ilgilenir.',
+    'TARİH': 'Geçmişte yaşanan olayları zaman sırasıyla ele alır.',
+    'COĞRAFYA': 'Haritalar, iklim ve yeryüzü şekilleriyle ilgilenir.',
+    'SANAT': 'Duygu ve düşünceleri estetik biçimde anlatma yoludur.',
+    'MÜZİK': 'Nota, ritim ve melodiyle ilgilidir.',
+    'DRAMA': 'Rol yapma ve canlandırma etkinliklerini içerir.',
+    'SPOR': 'Bedeni güçlendiren ve kurallı yapılan etkinlikler bütünüdür.',
+    'FUTBOL': 'Ayakla oynanan ve kaleye gol atılan spordur.',
+    'BASKETBOL': 'Topun potadan geçirilmesi amaçlanır.',
+    'VOLEYBOL': 'Top file üzerinden karşı sahaya gönderilir.',
+    'TENİS': 'Rakiple file üzerinden raketle oynanır.',
+    'ATLETİZM': 'Koşu, atlama ve atma branşlarını kapsar.',
+    'FOTOĞRAF': 'Bir anı ya da görüntüyü kalıcı hale getirir.',
+    'TİYATRO': 'Seyirci önünde sahnede canlı olarak oynanır.',
+    'ROMAN': 'Kişi ve olayları ayrıntılı anlatan uzun edebi türdür.',
+    'ŞİİR': 'Uyum, imge ve duygu yönü güçlü edebi türdür.',
+    'GAZETE': 'Günlük haber, köşe yazısı ve ilanlar içerebilir.',
+    'DERGİ': 'Belirli aralıklarla yayımlanan süreli yayındır.',
+    'BİLGİ': 'Öğrenme, deneyim ya da araştırma sonucunda elde edilir.',
+    'ARAŞTIRMA': 'Bir konuyu derinlemesine öğrenmek için yapılır.',
+    'DENEY': 'Bir sonucu gözlemlemek için kontrollü koşullarda yapılır.',
+    'GÖZLEM': 'Bir olayı dikkatle izleyip bilgi toplamaktır.',
+    'HİPOTEZ': 'Doğrulanması beklenen bilimsel tahmindir.',
+    'TEORİ': 'Birçok kanıtla desteklenen açıklamadır.',
+    'PROBLEM': 'Çözüm bekleyen güçlük ya da sorundur.',
+    'ÇÖZÜM': 'Bir sorunu ortadan kaldıran cevap ya da yöntemdir.',
+    'STRATEJİ': 'Hedefe ulaşmak için önceden belirlenen yoldur.',
+    'TARTIŞMA': 'Farklı görüşlerin konuşularak değerlendirildiği ortamdır.',
+    'SUNUM': 'Bir konuyu dinleyicilere düzenli biçimde anlatmadır.',
+    'SÖZLÜK': 'Kelimelerin anlamını ve bazen yazımını gösterir.',
+    'ANSİKLOPEDİ': 'Birçok konuda sistemli bilgi sunar.',
+    'MAKALE': 'Bir düşünceyi ya da araştırmayı açıklayan yazı türüdür.',
+    'BİLİM': 'Doğru ve kanıtlanabilir bilgi üretmeyi amaçlar.',
+    'TEKNOLOJİ': 'Günlük yaşamı kolaylaştıran araç ve sistemler üretir.',
+    'SANAYİ': 'Fabrikalar ve üretim süreçleriyle ilişkilidir.',
+    'TRAFİK': 'Araç ve yayaların yoldaki hareket düzenidir.',
+    'ÇEVRE': 'İnsan, doğa ve yaşam alanlarıyla ilgilidir.',
+    'DOĞA': 'İnsan eli değmeden var olan canlı ve cansız çevredir.',
+    'HAYVAN': 'Hareket edebilen ve beslenen canlı grubudur.',
+    'BİTKİ': 'Büyüyen, fotosentez yapan canlı grubudur.',
+    'DERS': 'Okulda belli bir konuda işlenen öğretim saatidir.',
+    'SINAV': 'Bilgi düzeyini ölçmek için uygulanır.',
+    'ÖDEV': 'Ders sonrası öğrenciden yapması beklenen çalışmadır.',
+    'PROJELER': 'Planlama, araştırma ve üretim içeren çalışmalardır.',
+    'TAKIM': 'Ortak amaç için birlikte hareket eden gruptur.',
+    'LİDER': 'Gruba yön veren ve karar almada etkili olan kişidir.',
+    'GÜVEN': 'İnsanın birine ya da bir şeye içten inanmasıdır.',
+    'SORUMLULUK': 'Yapılması gereken görevi üstlenme durumudur.',
+    'MOTİVASYON': 'İnsanı harekete geçiren iç güçtür.',
+    'PLANLAMA': 'Bir işi yapmadan önce adımları belirlemektir.',
+    'DİSİPLİN': 'Kurallı ve düzenli davranma alışkanlığıdır.',
+    'ARKADAŞLIK': 'İki kişi arasında sevgi ve güvene dayanan bağdır.',
+    'İLETİŞİM': 'Duygu, düşünce ve bilgiyi karşı tarafa aktarmaktır.',
+    'PAYLAŞIM': 'Bir şeyi tek başına tutmayıp başkalarıyla da kullanmaktır.',
+    'BİLİNÇ': 'Kişinin kendisinin ve çevresinin farkında olmasıdır.',
+    'KARAR': 'Seçenekler arasından birini seçme sonucudur.',
+    'BAŞARI': 'Emek vererek istenen sonuca ulaşmaktır.',
+    'HEDEF': 'Ulaşılmak istenen sonuç ya da noktadır.',
+    'DENEME': 'Sonucu görmek için yapılan girişimdir.',
+    'BAŞLAMAK': 'Bir işe ilk adımı atmak demektir.',
+    'BİTİRMEK': 'Bir işi sona erdirip tamamlamak demektir.',
+    'YENİLİK': 'Daha önce olmayan yeni bir durum ya da fikir demektir.',
+    'FİKİR': 'Aklında oluşan düşünce ya da görüştür.',
+    'KOMŞU KOMŞUNUN KÜLÜNE MUHTAÇTIR.':
+        'İnsanların birbirine destek olması gerektiğini anlatır.',
+    'DAMLAYA DAMLAYA GÖL OLUR.':
+        'Az görünen kazançların zamanla büyümesini anlatır.',
+    'İYİLİK EDEN, İYİLİK BULUR.':
+        'Başkalarına iyi davranmanın karşılıksız kalmayacağını söyler.',
+    'SABRIN SONU SELAMETTİR.':
+        'Zor zamanlarda pes etmemeyi öğütler.',
+    'BİR ELİN NESİ VAR, İKİ ELİN SESİ VAR.':
+        'İş birliği ve yardımlaşmanın önemini vurgular.',
+    'ACELE İŞE ŞEYTAN KARIŞIR.':
+        'Düşünmeden yapılan işlerin bozulabileceğini anlatır.',
+    'TAŞ YERİNDE AĞIRDIR.':
+        'Bir insanın kendi çevresinde daha değerli görüldüğünü anlatır.',
+    'AZICIK AŞIM KAYGISIZ BAŞIM.':
+        'Azla yetinmenin huzur getirdiğini söyler.',
+    'SÖZ GÜMÜŞSE, SÜKÛT ALTINDIR.':
+        'Bazen susmanın konuşmaktan daha doğru olduğunu anlatır.',
+    'SAKINAN GÖZE ÇÖP BATAR.':
+        'Aşırı titizliğin beklenmedik zararlara yol açabileceğini söyler.',
+    'KOMŞU HAKKI, ALLAH HAKKIDIR.':
+        'Yakın çevreye saygı göstermenin büyük önemini vurgular.',
+    'NE EKERSEN, ONU BİÇERSİN.':
+        'Yapılan davranışların sonucunun yine kişiye döneceğini anlatır.',
+    'GÜZELE BAKMAK SEVAPTIR.':
+        'Güzelliğin insana iyi geldiğini ifade eder.',
+    'HER İŞİN BAŞI SAĞLIK.':
+        'Hayattaki her şey için önce iyi olmanın gerektiğini söyler.',
+    'İYİLİK EDEN, KÖTÜLÜK GÖRMEZ.':
+        'İyi kalpli insanların sonunda kazançlı çıkacağını anlatır.',
+    'AYAĞINI YORGANINA GÖRE UZAT.':
+        'Harcamalarda elindeki imkanları aşmaman gerektiğini söyler.',
+    'GÜVENME VARLIĞA, DÜŞERSİN DARLIĞA.':
+        'Maddi imkanların her zaman sürmeyeceğini hatırlatır.',
+    'ÇALIŞAN KAZANIR, TEMBEL YANILIR.':
+        'Başarı için çaba göstermek gerektiğini anlatır.',
+    'TAŞIN ÜSTÜNE TAŞ KOYMAK GEREKİR.':
+        'Gelişmek için emek verip üzerine koymak gerektiğini söyler.',
+    'İKİ GÖNÜL BİR OLUNCA SAMANLIK SEYRAN OLUR.':
+        'Sevginin zor şartları bile güzelleştirebileceğini anlatır.',
+    'KOMŞU KOMŞUYA, DOST DOSTUNA MUHTAÇTIR.':
+        'İnsanların hem dosta hem komşuya ihtiyaç duyduğunu anlatır.',
+    'SABREDEN DERVİŞ MURADINA ERMİŞ.':
+        'İstenen sonuca sabırla ulaşılabileceğini söyler.',
+    'AZICIK KANAATKÂR, BOLCA MUTLU.':
+        'Kanaat etmenin huzur verdiğini anlatır.',
+    'ÖNCE İŞ, SONRA EĞLENCE.':
+        'Sorumlulukların keyiften önce gelmesi gerektiğini söyler.',
+    'HERKES KENDİ EVİNDE KRALDIR.':
+        'İnsanın kendi alanında daha rahat ve etkili olduğunu anlatır.',
+    'EL ELDEN ÜSTÜNDÜR.':
+        'Her zaman daha bilgili ya da daha güçlü birinin olabileceğini hatırlatır.',
+    'İYİLİK EDEN, GÖNÜL ALIR.':
+        'Nazik davranışların insanların kalbini kazandığını anlatır.',
+    'SÖZ UÇAR, YAZI KALIR.':
+        'Yazılı bilginin daha kalıcı olduğunu vurgular.',
+    'İYİLİK EDEN, GÖNÜL KAZANIR.':
+        'İyi davranışların sevgi ve dostluk getirdiğini söyler.',
+    'KOMŞU KOMŞUYA MİHMANDIR.':
+        'Yakın çevrenin zor zamanda destek olacağını anlatır.',
+    'SABIR ACIDIR, MEYVESİ TATLIDIR.':
+        'Zorluklara katlanan kişinin sonunda ödül alacağını söyler.',
+  };
+
+  String _buildSemanticTypeHint(
+    String seedText, {
+    required bool isProverb,
+  }) {
+    final seed = seedText.toLowerCase();
+    if (isProverb) {
+      return 'Bu atasözü günlük yaşam için yol gösteren bir öğüt içerir.';
+    }
+    if (seed.contains('hayvan') || seed.contains('canlı')) {
+      return 'Bu kelime canlılar dünyasıyla ilgilidir.';
+    }
+    if (seed.contains('meyve') ||
+        seed.contains('sebze') ||
+        seed.contains('yiyecek') ||
+        seed.contains('içecek') ||
+        seed.contains('besin') ||
+        seed.contains('süt ürünü')) {
+      return 'Bu kelime beslenme ve mutfakla ilişkilidir.';
+    }
+    if (seed.contains('organ') ||
+        seed.contains('uzuv') ||
+        seed.contains('vücud') ||
+        seed.contains('başımızda')) {
+      return 'Bu kelime insan vücuduyla ilgili bir bölümü anlatır.';
+    }
+    if (seed.contains('giysi') ||
+        seed.contains('giyilen') ||
+        seed.contains('ayağa') ||
+        seed.contains('baş için')) {
+      return 'Bu kelime giyimle ilgili bir parçayı anlatır.';
+    }
+    if (seed.contains('okul') ||
+        seed.contains('ders') ||
+        seed.contains('öğren') ||
+        seed.contains('kitap') ||
+        seed.contains('yazı') ||
+        seed.contains('ödev') ||
+        seed.contains('sınav') ||
+        seed.contains('öğrenci')) {
+      return 'Bu kelime eğitim hayatında sık karşılaşılan bir kavramdır.';
+    }
+    if (seed.contains('cihaz') ||
+        seed.contains('elektronik') ||
+        seed.contains('program') ||
+        seed.contains('bilgisayar') ||
+        seed.contains('dokunmatik')) {
+      return 'Bu kelime teknolojiyle ilişkili bir kavramdır.';
+    }
+    if (seed.contains('bilim') ||
+        seed.contains('matematik') ||
+        seed.contains('fizik') ||
+        seed.contains('kimya') ||
+        seed.contains('biyoloji') ||
+        seed.contains('geometri') ||
+        seed.contains('tarih') ||
+        seed.contains('coğrafya')) {
+      return 'Bu kelime bilgi ve öğrenme alanında kullanılan bir kavramdır.';
+    }
+    if (seed.contains('oyun') ||
+        seed.contains('spor') ||
+        seed.contains('top') ||
+        seed.contains('yarış') ||
+        seed.contains('raket') ||
+        seed.contains('file')) {
+      return 'Bu kelime hareket ve etkinlik içeren bir alanla ilgilidir.';
+    }
+    if (seed.contains('mutlu') ||
+        seed.contains('mutsuz') ||
+        seed.contains('duygu') ||
+        seed.contains('sevinç') ||
+        seed.contains('üzüntü')) {
+      return 'Bu kelime insanın iç dünyasıyla ilgili bir durumu anlatır.';
+    }
+    if (seed.contains('yer') ||
+        seed.contains('kurum') ||
+        seed.contains('alan') ||
+        seed.contains('yaşanılan')) {
+      return 'Bu kelime bir mekan ya da yaşam alanıyla ilgilidir.';
+    }
+    if (seed.contains('sanat') ||
+        seed.contains('müzik') ||
+        seed.contains('şiir') ||
+        seed.contains('hikaye') ||
+        seed.contains('görsel')) {
+      return 'Bu kelime sanat ve anlatımla ilgili bir kavramdır.';
+    }
+    return 'Bu kelime günlük yaşamda kullanılan temel bir kavramdır.';
+  }
+
+  String _buildSemanticContextHint(
+    String subject,
+    String seedText, {
+    required bool isProverb,
+  }) {
+    final normalizedSubject = _normalizeTr(subject);
+    final seed = seedText.toLowerCase();
+    if (isProverb) {
+      if (seed.contains('sabır')) {
+        return 'Mesajı, zorluklara dayanmanın sonunda iyi bir sonuç gelebileceğidir.';
+      }
+      if (seed.contains('iyilik')) {
+        return 'Ana fikri, iyi davranışların olumlu karşılık bulmasıdır.';
+      }
+      if (seed.contains('komşu') || seed.contains('dost')) {
+        return 'İnsan ilişkileri ve dayanışma üzerine kuruludur.';
+      }
+      if (seed.contains('çalış') || seed.contains('emek')) {
+        return 'Emek vermenin ve çaba göstermenin önemini anlatır.';
+      }
+      if (seed.contains('harca') || seed.contains('gelir') || seed.contains('varlık')) {
+        return 'Maddi imkanları dikkatli kullanmak gerektiğini hatırlatır.';
+      }
+      return 'Anlamı, davranışlara yön veren bir hayat dersi vermesidir.';
+    }
+    if (normalizedSubject.endsWith('MAK') || normalizedSubject.endsWith('MEK')) {
+      return 'Bu cevap yapılabilen bir eylem ya da davranışı anlatır.';
+    }
+    if (seed.contains('hayvan') || seed.contains('canlı')) {
+      return 'Doğada ya da günlük yaşamda karşılaşabileceğin bir canlıdır.';
+    }
+    if (seed.contains('meyve') ||
+        seed.contains('sebze') ||
+        seed.contains('yiyecek') ||
+        seed.contains('içecek') ||
+        seed.contains('besin')) {
+      return 'Sofrada, mutfakta ya da markette karşına çıkabilir.';
+    }
+    if (seed.contains('organ') || seed.contains('uzuv') || seed.contains('vücud')) {
+      return 'İnsan bedeninin bir parçası olarak görev yapar.';
+    }
+    if (seed.contains('giysi') || seed.contains('giyilen') || seed.contains('ayağa')) {
+      return 'Günlük kıyafetlerle birlikte kullanılan bir parçadır.';
+    }
+    if (seed.contains('okul') || seed.contains('ders') || seed.contains('öğren')) {
+      return 'Öğrencilik hayatında sıkça duyulan ya da kullanılan bir kavramdır.';
+    }
+    if (seed.contains('cihaz') || seed.contains('elektronik') || seed.contains('program')) {
+      return 'Günümüzde dijital dünyada sık karşılaşılan bir kavramdır.';
+    }
+    if (seed.contains('sanat') || seed.contains('müzik') || seed.contains('görsel')) {
+      return 'Üretim, ifade ve yaratıcılıkla bağlantılıdır.';
+    }
+    if (seed.contains('spor') || seed.contains('oyun') || seed.contains('yarış')) {
+      return 'Hareket, eğlence ya da rekabet içeren durumlarda öne çıkar.';
+    }
+    return 'Anlamı, günlük hayatta sık karşılaşılan bir durum veya nesneye dayanır.';
+  }
+
+  List<String> _buildGeneratedExtraHints(
+    String subject, {
+    required String seedText,
+    required bool isProverb,
+  }) {
+    final normalizedSubject = _normalizeTr(subject);
+    final semanticHint = _semanticHintMap[normalizedSubject];
+    final hints = <String>[
+      if (semanticHint != null && semanticHint.isNotEmpty) semanticHint,
+      _buildSemanticTypeHint(
+        semanticHint ?? seedText,
+        isProverb: isProverb,
+      ),
+      _buildSemanticContextHint(
+        subject,
+        semanticHint ?? seedText,
+        isProverb: isProverb,
+      ),
+    ];
+
+    final uniqueHints = <String>[];
+    for (final hint in hints) {
+      final trimmed = hint.trim();
+      if (trimmed.isEmpty || uniqueHints.contains(trimmed)) continue;
+      uniqueHints.add(trimmed);
+    }
+    return uniqueHints;
+  }
+
+  List<Map<String, String>> _normalizeHints(
+    List<dynamic>? rawHints, {
+    required String fallbackCategory,
+    required String fallbackText,
+    required String subject,
+    required bool isProverb,
+  }) {
+    final hints = <Map<String, String>>[];
+
+    if (rawHints != null) {
+      for (final item in rawHints) {
+        if (item is! Map) continue;
+        final text = (item['text'] ?? item['hint'] ?? item['ipucu'] ?? '')
+            .toString()
+            .trim();
+        if (text.isEmpty || text == 'Atasözü') continue;
+        final category = (item['category'] ?? fallbackCategory).toString().trim();
+        hints.add({
+          'category': category.isEmpty ? fallbackCategory : category,
+          'text': text,
+        });
+      }
+    }
+
+    if (hints.isEmpty) {
+      hints.add({
+        'category': fallbackCategory,
+        'text': fallbackText,
+      });
+    }
+
+    final extraHints = _buildGeneratedExtraHints(
+      subject,
+      seedText: hints.first['text'] ?? fallbackText,
+      isProverb: isProverb,
+    );
+    for (final extraHint in extraHints) {
+      if (hints.any((hint) => hint['text'] == extraHint)) continue;
+      hints.add({
+        'category': 'Ekstra İpucu',
+        'text': extraHint,
+      });
+    }
+
+    return hints.take(4).toList();
+  }
+
+  Map<String, String>? _findCurrentItem() {
+    for (final item in _singleItems) {
+      if (item['word'] == _logic.secretWord) return item;
+    }
+    return null;
+  }
+
+  List<Map<String, String>> _currentHints() {
+    final current = _findCurrentItem();
+    final encoded = current?['hints'];
+    if (encoded == null || encoded.isEmpty) {
+      return const [
+        {'category': 'İpucu', 'text': 'İpucu yok.'}
+      ];
+    }
+
+    final decoded = json.decode(encoded);
+    if (decoded is! List) {
+      return const [
+        {'category': 'İpucu', 'text': 'İpucu yok.'}
+      ];
+    }
+
+    return decoded
+        .whereType<Map>()
+        .map((hint) => {
+              'category': '${hint['category'] ?? 'İpucu'}',
+              'text': '${hint['text'] ?? 'İpucu yok.'}',
+            })
+        .toList();
+  }
+
+  int _currentHintIndex(List<Map<String, String>> hints) {
+    if (hints.isEmpty) return -1;
+    final index = hints.indexWhere(
+      (hint) =>
+          hint['category'] == _hintCategory && hint['text'] == _hintText,
+    );
+    return index >= 0 ? index : 0;
+  }
+
+  bool _hasMoreHints() {
+    final hints = _currentHints();
+    if (hints.isEmpty) return false;
+    return _currentHintIndex(hints) < hints.length - 1;
+  }
+
+  bool _canWatchMoreHintAds() {
+    return _rewardedHintWatchCount < _maxRewardedHintWatchCountPerItem;
+  }
+
+  int _remainingHintAdCount() {
+    return _maxRewardedHintWatchCountPerItem - _rewardedHintWatchCount;
+  }
+
+  Map<String, String>? _unlockNextHint() {
+    final hints = _currentHints();
+    if (hints.isEmpty) return null;
+
+    final nextIndex = _currentHintIndex(hints) + 1;
+    if (nextIndex >= hints.length) return null;
+
+    final next = hints[nextIndex];
+    setState(() {
+      _hintCategory = next['category'];
+      _hintText = next['text'];
+    });
+    return next;
+  }
+
   @override
   void initState() {
     super.initState();
+    WheelAdManager.instance.preloadAll();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _loadWords();
       final initial = _pickFromAssets();
@@ -202,6 +721,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
         final hints = (json.decode(initial['hints']!) as List).cast<Map>();
         _hintCategory = '${hints.first['category']}';
         _hintText = '${hints.first['text']}';
+        _rewardedHintWatchCount = 0;
         _logic = GameLogic(
           players: ['Oyuncu'],
           secretWord: initial['word']!,
@@ -236,18 +756,22 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
               ? _segments[_pendingTargetIndex!]
               : _resultFromAngle(_rotation.value);
           _pendingTargetIndex = null;
+
+          final previousScore = _logic.scores[_logic.currentPlayerIndex];
           _logic.applySpinResult(result);
 
-          // Çark durduktan sonra popup aç
-          _showActionPopup(result);
-
-          // Sonuca göre sesler
           if (result == 'İflas') {
             AudioService.playBankrupt();
           } else if (result == 'Pas') {
             AudioService.playPass();
           } else if (result.startsWith('+')) {
             AudioService.playPoints();
+          }
+
+          if (WheelAdManager.isBadResult(result)) {
+            _showBadResultOffer(result, previousScore);
+          } else {
+            _showActionPopup(result);
           }
 
           if (result == 'İflas' || result == 'Pas') {
@@ -294,20 +818,18 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
                 (m['ipuç'] ?? m['ipucu'] ?? m['hint'] ?? m['hints'] ?? '')
                     .toString();
             final word = raw.toString();
-            final hintsList = (m['hints'] is List)
-                ? (m['hints'] as List)
-                : [
-                    {
-                      'category': 'İpucu',
-                      'text': hintText.isNotEmpty
-                          ? hintText
-                          : 'Kelime hakkında ipucu'
-                    },
-                    {'category': 'İpucu', 'text': 'Kategori: Kelime'},
-                    {'category': 'İpucu', 'text': 'Seviye: $diffTag'},
-                  ];
+            final normalizedWord = _normalizeTr(word.toString());
+            final hintsList = _normalizeHints(
+              (m['hints'] is List) ? (m['hints'] as List) : null,
+              fallbackCategory: 'Kelime İpucu',
+              fallbackText: hintText.isNotEmpty
+                  ? hintText
+                  : 'Kelime hakkında ipucu',
+              subject: normalizedWord,
+              isProverb: false,
+            );
             return {
-              'word': _normalizeTr(word.toString()),
+              'word': normalizedWord,
               'hints': json.encode(hintsList),
               'difficulty': normDiff(diffTag),
             };
@@ -321,25 +843,12 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
       return list
           .map((it) {
             if (it is String) {
+              final proverb = _normalizeTr(it);
               return {
-                'word': _normalizeTr(it),
-                'hints': json.encode([
-                  {
-                    'category': 'Atasözü',
-                    'text': 'Geleneksel bir öğüt içerir.'
-                  },
-                  {'category': 'Atasözü', 'text': 'Günlük hayatta kullanılır.'},
-                  {'category': 'Atasözü', 'text': 'Seviye: $diffTag'},
-                ]),
-                'difficulty': normDiff(diffTag),
-              };
-            } else {
-              final m = it as Map<String, dynamic>;
-              return {
-                'word':
-                    _normalizeTr((m['word'] ?? m['kelime'] ?? '').toString()),
-                'hints': json.encode(m['hints'] ??
-                    [
+                'word': proverb,
+                'hints': json.encode(
+                  _normalizeHints(
+                    const [
                       {
                         'category': 'Atasözü',
                         'text': 'Geleneksel bir öğüt içerir.'
@@ -348,8 +857,30 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
                         'category': 'Atasözü',
                         'text': 'Günlük hayatta kullanılır.'
                       },
-                      {'category': 'Atasözü', 'text': 'Seviye: $diffTag'},
-                    ]),
+                    ],
+                    fallbackCategory: 'Atasözü',
+                    fallbackText: 'Geleneksel bir öğüt içerir.',
+                    subject: proverb,
+                    isProverb: true,
+                  ),
+                ),
+                'difficulty': normDiff(diffTag),
+              };
+            } else {
+              final m = it as Map<String, dynamic>;
+              final proverb =
+                  _normalizeTr((m['word'] ?? m['kelime'] ?? '').toString());
+              return {
+                'word': proverb,
+                'hints': json.encode(
+                  _normalizeHints(
+                    (m['hints'] is List) ? (m['hints'] as List) : null,
+                    fallbackCategory: 'Atasözü',
+                    fallbackText: 'Geleneksel bir öğüt içerir.',
+                    subject: proverb,
+                    isProverb: true,
+                  ),
+                ),
                 'difficulty': normDiff(diffTag),
               };
             }
@@ -363,9 +894,18 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
       _singleItems = (data['single'] as List)
           .map((e) {
             final m = e as Map<String, dynamic>;
+            final word = '${m['word']}';
             return {
-              'word': '${m['word']}',
-              'hints': json.encode(m['hints']),
+              'word': _normalizeTr(word),
+              'hints': json.encode(
+                _normalizeHints(
+                  (m['hints'] is List) ? (m['hints'] as List) : null,
+                  fallbackCategory: 'Kelime İpucu',
+                  fallbackText: 'Kelime hakkında ipucu',
+                  subject: _normalizeTr(word),
+                  isProverb: false,
+                ),
+              ),
               'difficulty': _normalizeDifficulty(m['difficulty']?.toString()),
             };
           })
@@ -447,21 +987,31 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
     return selectionPool[_random.nextInt(selectionPool.length)];
   }
 
-  void _spinWheel() {
+  void _spinWheel() async {
     if (_spinning) return;
+
+    WheelAdManager.instance.incrementSpinCount();
+    if (WheelAdManager.instance.shouldShowInterstitial &&
+        WheelAdManager.instance.isInterstitialReady) {
+      await WheelAdManager.instance.showInterstitialAd();
+      if (!mounted) return;
+    }
+
+    _doSpin();
+  }
+
+  void _doSpin() {
     setState(() => _spinning = true);
     AudioService.playSpinStart();
-    final spins = 3; // 3 tam tur (30 sn'de daha uzun yol)
+    final spins = 3;
     final targetIndex = _random.nextInt(_segments.length);
     _pendingTargetIndex = targetIndex;
     final perSlice = 2 * pi / _segments.length;
-    // Pointer üstte, tepe noktası -pi/2 yönünde. Dilim merkezini oraya hizala:
-    // hedef merkez açısı = -(pi/2 + per/2) - index*per (mod 2π)
     final double current = _rotation.value % (2 * pi);
     final double targetCenter =
         -(pi / 2 + perSlice / 2) - targetIndex * perSlice;
     double base = (targetCenter - current) % (2 * pi);
-    if (base < 0) base += 2 * pi; // pozitif aralık
+    if (base < 0) base += 2 * pi;
     final double totalAdvance = spins * 2 * pi + base;
     final double endAngle = _rotation.value + totalAdvance;
     _rotation = Tween<double>(begin: _rotation.value, end: endAngle).animate(
@@ -579,6 +1129,163 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
       SnackBar(content: Text('Joker açtı: $letter')),
     );
     if (_logic.isSolved) _showWinDialog();
+  }
+
+  Future<void> _watchAdForExtraHint() async {
+    if (_logic.isSolved) return;
+    if (!_canWatchMoreHintAds()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Bu soru için maksimum 3 ipucu reklamı izlendi.'),
+        ),
+      );
+      return;
+    }
+    if (!_hasMoreHints()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Bu soru için açılacak başka ipucu kalmadı.'),
+        ),
+      );
+      return;
+    }
+
+    if (!AdMobService.instance.isRewardedAdReady(
+      RewardedPlacement.wheelExtraHint,
+    )) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('İpucu reklamı yükleniyor, biraz sonra tekrar dene.'),
+        ),
+      );
+      return;
+    }
+
+    final success = await AdMobService.instance.showRewardedAd(
+      placement: RewardedPlacement.wheelExtraHint,
+      onRewarded: () {
+        final nextHint = _unlockNextHint();
+        if (nextHint == null || !mounted) return;
+        setState(() {
+          _rewardedHintWatchCount++;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Ekstra ipucu açıldı. Kalan reklam hakkı: ${_remainingHintAdCount()}',
+            ),
+          ),
+        );
+      },
+    );
+
+    if (!success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Reklam tamamlanmadı. Ekstra ipucu açılamadı.'),
+        ),
+      );
+    }
+  }
+
+  void _showBadResultOffer(String result, int previousScore) {
+    String title;
+    String message;
+    IconData icon;
+
+    if (result == 'İflas') {
+      title = 'İflas!';
+      message =
+          'Puanın sıfırlandı! Reklam izleyerek puanını geri al ve tekrar çevir.';
+      icon = Icons.dangerous;
+    } else if (result == 'Pas') {
+      title = 'Pas!';
+      message = 'Tur boşa geçti! Reklam izleyerek tekrar çevir.';
+      icon = Icons.skip_next;
+    } else {
+      title = 'Düşük Puan: $result';
+      message =
+          'Ödülü beğenmedin mi? Reklam izle ve daha yüksek puan için tekrar çevir!';
+      icon = Icons.sentiment_dissatisfied;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(icon, color: Colors.redAccent, size: 28),
+            const SizedBox(width: 8),
+            Flexible(child: Text(title)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(message, style: const TextStyle(fontSize: 15)),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: WheelAdManager.instance.isRewardedReady
+                    ? () async {
+                        Navigator.pop(ctx);
+                        final success =
+                            await WheelAdManager.instance.showRewardedAd(
+                          onRewarded: () {
+                            if (!mounted) return;
+                            if (result == 'İflas') {
+                              _logic.scores[_logic.currentPlayerIndex] =
+                                  previousScore;
+                            }
+                            _logic.lastSpin = null;
+                          },
+                        );
+                        if (success && mounted) {
+                          setState(() {});
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content:
+                                  Text('Tekrar çevirme hakkı kazandın!'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                          Future.delayed(const Duration(milliseconds: 500),
+                              () {
+                            if (mounted && !_spinning) _doSpin();
+                          });
+                        }
+                      }
+                    : null,
+                icon: const Icon(Icons.play_circle_outline),
+                label: Text(
+                  WheelAdManager.instance.isRewardedReady
+                      ? 'Reklam İzle → Tekrar Çevir'
+                      : 'Reklam Yükleniyor...',
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              if (result.startsWith('+')) {
+                _showActionPopup(result);
+              }
+            },
+            child: Text(result.startsWith('+') ? 'Devam Et' : 'Kapat'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<String?> _askForLetter() async {
@@ -726,6 +1433,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
       _logic = newLogic;
       _hintCategory = '${hints.first['category']}';
       _hintText = '${hints.first['text']}';
+      _rewardedHintWatchCount = 0;
       _logic.lastSpin = null;
       _spinning = false;
       _usedWords.add(picked['word']!);
@@ -905,6 +1613,9 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
         _logic.lastSpin != null && _logic.lastSpin!.startsWith('+');
     final bool isProverb =
         (_hintCategory ?? '').toLowerCase().contains('atasö');
+    final bool hasMoreHints = !_loading && _hasMoreHints();
+    final bool canWatchHintAd =
+        !_loading && hasMoreHints && _canWatchMoreHintAds();
     final controls = Wrap(
       alignment: WrapAlignment.center,
       spacing: 12,
@@ -933,6 +1644,29 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
           onPressed: _useJoker,
           icon: const Icon(Icons.stars),
           label: const Text('Joker'),
+        ),
+        OutlinedButton.icon(
+          onPressed: (_logic.isSolved || !canWatchHintAd)
+              ? null
+              : (AdMobService.instance.isRewardedAdReady(
+                      RewardedPlacement.wheelExtraHint)
+                  ? _watchAdForExtraHint
+                  : null),
+          icon: const Icon(Icons.tips_and_updates_outlined),
+          label: Text(
+            !hasMoreHints
+                ? 'Tüm İpuçları Açıldı'
+                : !_canWatchMoreHintAds()
+                    ? '3/3 Reklam İpucusu Kullanıldı'
+                : (AdMobService.instance.isRewardedAdReady(
+                        RewardedPlacement.wheelExtraHint)
+                    ? 'Reklam İzle + Ekstra İpucu (${_remainingHintAdCount()})'
+                    : 'İpucu Reklamı Yükleniyor...'),
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.teal,
+            foregroundColor: Colors.white,
+          ),
         ),
       ],
     );
@@ -1059,17 +1793,19 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
                             ),
                             const SizedBox(height: 2),
                             TextButton.icon(
-                              onPressed: () {
+                              onPressed: hasMoreHints
+                                  ? () {
                                 // Cost for next hint scales with grade: ilkokul 50, ortaokul 100, lise 150
                                 int cost = 100;
                                 final grade = widget.profile.grade;
                                 if (grade != null) {
-                                  if (grade <= 4)
+                                  if (grade <= 4) {
                                     cost = 50;
-                                  else if (grade <= 8)
+                                  } else if (grade <= 8) {
                                     cost = 100;
-                                  else
+                                  } else {
                                     cost = 150;
+                                  }
                                 }
                                 // Deduct locally from current player's score if possible; else do nothing
                                 if (_logic.scores[_logic.currentPlayerIndex] <
@@ -1081,32 +1817,19 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
                                   );
                                   return;
                                 }
+                                final nextHint = _unlockNextHint();
+                                if (nextHint == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                          'Bu soru için açılacak başka ipucu kalmadı.'),
+                                    ),
+                                  );
+                                  return;
+                                }
                                 setState(() {
                                   _logic.scores[_logic.currentPlayerIndex] -=
                                       cost;
-                                });
-                                final list = _singleItems;
-                                final current = list.firstWhere(
-                                  (e) => e['word'] == _logic.secretWord,
-                                  orElse: () => {
-                                    'word': _logic.secretWord,
-                                    'hints':
-                                        '[{"category":"İpucu","text":"İpucu yok"}]'
-                                  },
-                                );
-                                final hints =
-                                    (json.decode(current['hints']!) as List)
-                                        .cast<Map>();
-                                // rotate hint
-                                final next = hints.length <= 1
-                                    ? hints.first
-                                    : hints[(hints.indexWhere((h) =>
-                                                '${h['text']}' == _hintText) +
-                                            1) %
-                                        hints.length];
-                                setState(() {
-                                  _hintCategory = '${next['category']}';
-                                  _hintText = '${next['text']}';
                                 });
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
@@ -1115,9 +1838,14 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
                                     duration: const Duration(seconds: 2),
                                   ),
                                 );
-                              },
+                              }
+                                  : null,
                               icon: const Icon(Icons.tips_and_updates_outlined),
-                              label: const Text('Başka ipucu (puan düşer)'),
+                              label: Text(
+                                hasMoreHints
+                                    ? 'Başka ipucu (puan düşer)'
+                                    : 'Tüm ipuçları açıldı',
+                              ),
                             ),
                           ],
                         ),
@@ -1152,10 +1880,16 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
                       Expanded(
                           child: Center(
                               child: SingleChildScrollView(child: centerBody))),
-                      Container(
-                        width: 220,
-                        padding: const EdgeInsets.all(12),
-                        child: !_loading ? scoreboard : const SizedBox(),
+                      Flexible(
+                        flex: 2,
+                        child: Container(
+                          constraints: const BoxConstraints(
+                            minWidth: 180,
+                            maxWidth: 280,
+                          ),
+                          padding: const EdgeInsets.all(12),
+                          child: !_loading ? scoreboard : const SizedBox(),
+                        ),
                       ),
                     ],
                   );
@@ -1174,6 +1908,7 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
                 );
               },
             ),
+      bottomNavigationBar: _showIntro ? null : const BannerAdWidget(),
     );
   }
 
@@ -1192,47 +1927,65 @@ class _WheelOfFortuneScreenState extends State<WheelOfFortuneScreen>
         ),
       ),
       child: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const Text(
-                  '🎡 Çarkıfelek',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = constraints.maxWidth < 420;
+
+            return Center(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.all(compact ? 16 : 24),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 640),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        '🎡 Çarkıfelek',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: compact ? 28 : 32,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      SizedBox(height: compact ? 16 : 24),
+                      Container(
+                        padding: EdgeInsets.all(compact ? 14 : 16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          'Kurallar:\n\n• Çarkı çevir; sayı gelirse harf tahmin et.\n• Doğru harf sayısı × çark puanı kadar kazan.\n• Pas: (tek oyuncuda) tur boşa geçer.\n• İflas: puanın sıfırlanır.\n• İstersen tüm kelimeyi tahmin edebilirsin.\n• Sesli harf: 200 puan; Joker: bir harfi açar (1 kez).\n',
+                          style: TextStyle(
+                            fontSize: compact ? 16 : 18,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: compact ? 32 : 64),
+                      ElevatedButton(
+                        onPressed: () => setState(() => _showIntro = false),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.deepPurple,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: compact ? 28 : 32,
+                            vertical: compact ? 14 : 16,
+                          ),
+                        ),
+                        child: Text(
+                          'Başla',
+                          style: TextStyle(fontSize: compact ? 20 : 22),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 24),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Text(
-                    'Kurallar:\n\n• Çarkı çevir; sayı gelirse harf tahmin et.\n• Doğru harf sayısı × çark puanı kadar kazan.\n• Pas: (tek oyuncuda) tur boşa geçer.\n• İflas: puanın sıfırlanır.\n• İstersen tüm kelimeyi tahmin edebilirsin.\n• Sesli harf: 200 puan; Joker: bir harfi açar (1 kez).\n',
-                    style: TextStyle(fontSize: 18, color: Colors.white),
-                  ),
-                ),
-                const SizedBox(height: 86),
-                ElevatedButton(
-                  onPressed: () => setState(() => _showIntro = false),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.deepPurple,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 32, vertical: 16),
-                  ),
-                  child: const Text('Başla', style: TextStyle(fontSize: 22)),
-                ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         ),
       ),
     );

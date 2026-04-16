@@ -423,8 +423,10 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
             children: [
               _buildStatItem('🎮', 'Toplam Oyun', '${_games.length}'),
               _buildStatItem(
@@ -433,8 +435,10 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
             ],
           ),
           const SizedBox(height: 6),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
             children: [
               _buildStatItem(
                   '🎲', 'Oyun Puanı', '${_profile.totalGamePoints ?? 0}'),
@@ -450,6 +454,7 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
 
   Widget _buildStatItem(String emoji, String label, String value) {
     return Container(
+      width: 104,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.15),
@@ -464,6 +469,7 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
           const SizedBox(height: 1),
           Text(
             label,
+            textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 10,
               color: Colors.white.withOpacity(0.8),
@@ -517,98 +523,128 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
         child: InkWell(
           onTap: () => _navigateToGame(game.id),
           borderRadius: BorderRadius.circular(20),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  game.color.withOpacity(0.3),
-                  game.color.withOpacity(0.1),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: game.color.withOpacity(0.5),
-                width: 2,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: game.color.withOpacity(0.2),
-                  blurRadius: 15,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: game.color.withOpacity(0.2),
-                    shape: BoxShape.circle,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 380;
+
+              return Container(
+                padding: EdgeInsets.all(compact ? 16 : 20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      game.color.withOpacity(0.3),
+                      game.color.withOpacity(0.1),
+                    ],
                   ),
-                  child: Text(
-                    game.emoji,
-                    style: const TextStyle(fontSize: 32),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: game.color.withOpacity(0.5),
+                    width: 2,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: game.color.withOpacity(0.2),
+                      blurRadius: 15,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 20),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        game.name,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        game.description,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.white.withOpacity(0.8),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
+                child: compact
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              game.estimatedTime,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                          Row(
+                            children: [
+                              _buildGameEmoji(game, compact: compact),
+                              const SizedBox(width: 12),
+                              Expanded(child: _buildGameText(game)),
+                              Icon(
+                                Icons.play_arrow,
+                                color: game.color,
+                                size: 28,
                               ),
-                            ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          _buildGameMeta(game),
+                        ],
+                      )
+                    : Row(
+                        children: [
+                          _buildGameEmoji(game, compact: compact),
+                          const SizedBox(width: 20),
+                          Expanded(child: _buildGameText(game)),
+                          const SizedBox(width: 12),
+                          _buildGameMeta(game),
+                          const SizedBox(width: 12),
+                          Icon(
+                            Icons.play_arrow,
+                            color: game.color,
+                            size: 32,
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.play_arrow,
-                  color: game.color,
-                  size: 32,
-                ),
-              ],
-            ),
+              );
+            },
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGameEmoji(GameInfo game, {required bool compact}) {
+    return Container(
+      padding: EdgeInsets.all(compact ? 12 : 16),
+      decoration: BoxDecoration(
+        color: game.color.withOpacity(0.2),
+        shape: BoxShape.circle,
+      ),
+      child: Text(
+        game.emoji,
+        style: TextStyle(fontSize: compact ? 28 : 32),
+      ),
+    );
+  }
+
+  Widget _buildGameText(GameInfo game) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          game.name,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          game.description,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.white.withOpacity(0.8),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGameMeta(GameInfo game) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        game.estimatedTime,
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
         ),
       ),
     );

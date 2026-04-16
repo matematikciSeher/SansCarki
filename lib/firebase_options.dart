@@ -17,10 +17,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -57,6 +54,14 @@ class DefaultFirebaseOptions {
     storageBucket: 'carkigo.firebasestorage.app',
   );
 
+  /// Google Sign-In için Web Client ID (zorunlu).
+  /// 1. Firebase Console: https://console.firebase.google.com/
+  /// 2. Projenizi seçin → Authentication → Sign-in method → Google'ı etkinleştirin
+  /// 3. "Web client ID" ve "Web client secret" alanlarını kopyalayın
+  /// 4. Buraya Web client ID'yi yapıştırın (örn: 123456789-xxx.apps.googleusercontent.com)
+  /// 5. android/app/google-services.json dosyasını yeniden indirin (SHA-1 eklediyseniz)
+  static const String? googleWebClientId = '608870837825-8lr5b0mg42qrhtletgbnuv9kb4qpicqq.apps.googleusercontent.com';
+
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyArToPGBztKpDnKfhR7jMBTp7duTfwQbMo',
     appId: '1:608870837825:ios:d63f3fc919fd2a9a7b20c0',
@@ -65,4 +70,15 @@ class DefaultFirebaseOptions {
     storageBucket: 'carkigo.firebasestorage.app',
     iosBundleId: 'com.sanscarki.app',
   );
+
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyAR181Oyxi_g_rrJvOO8rwpJWk2evnADQU',
+    appId: '1:608870837825:web:4fe1bc99121c28f77b20c0',
+    messagingSenderId: '608870837825',
+    projectId: 'carkigo',
+    authDomain: 'carkigo.firebaseapp.com',
+    storageBucket: 'carkigo.firebasestorage.app',
+    measurementId: 'G-J0N3GN0T7X',
+  );
+
 }
