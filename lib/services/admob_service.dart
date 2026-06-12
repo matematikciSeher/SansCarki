@@ -15,13 +15,15 @@ class AdMobService {
 
   static final AdMobService instance = AdMobService._();
 
-  // Not: Release'te sadece olusturulmus gercek reklam birimlerini kullanin.
-  // Henuz olusturulmayan alanlar bos birakildi; bu durumda ilgili reklam gosterilmez.
-  static const String _homeRewardedAdUnitId = '';
-  static const String _wheelRewardedAdUnitId =
-      'ca-app-pub-7068164541011250/8157435697';
-  static const String _quizRewardedAdUnitId = '';
-  static const String _quizInterstitialAdUnitId = '';
+  // Release reklam birimleri (AdMob konsolundaki gercek ID'ler).
+  // Ödüllü ("kötü ödüle teklif") birimi tüm rewarded yerlesimlerde kullanilir.
+  static const String _rewardedAdUnitId =
+      'ca-app-pub-7068164541011250/7838695908';
+  static const String _homeRewardedAdUnitId = _rewardedAdUnitId;
+  static const String _wheelRewardedAdUnitId = _rewardedAdUnitId;
+  static const String _quizRewardedAdUnitId = _rewardedAdUnitId;
+  static const String _quizInterstitialAdUnitId =
+      'ca-app-pub-7068164541011250/1464859247';
 
   static String get _testRewardedAdUnitId {
     if (Platform.isAndroid) return 'ca-app-pub-3940256099942544/5224354917';
